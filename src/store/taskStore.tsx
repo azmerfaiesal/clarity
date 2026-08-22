@@ -220,10 +220,14 @@ function initState(): State {
   const tasks = loadTasks()
   const lists = loadLists()
   if (tasks !== null && lists !== null) {
-    // Migrate older records that predate the recycle bin
+    // Migrate older records that predate the recycle bin / Reminders sync
     const migrated = tasks.map((t) => ({
       ...t,
       deletedAt: (t.deletedAt ?? null) as string | null,
+      source: (t.source ?? 'local') as 'local' | 'reminders',
+      externalId: (t.externalId ?? null) as string | null,
+      sourceList: (t.sourceList ?? null) as string | null,
+      syncedAt: (t.syncedAt ?? null) as string | null,
     }))
     return { tasks: migrated, lists, lastDeleted: null }
   }
@@ -338,6 +342,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       completedAt: null,
       updatedAt: new Date().toISOString(),
       deletedAt: null,
+      source: 'local',
+      externalId: null,
+      sourceList: null,
+      syncedAt: null,
     }
     dispatch({ type: 'ADD_TASK', task })
     return task

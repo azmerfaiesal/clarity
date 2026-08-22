@@ -16,6 +16,11 @@ export interface Task {
   completedAt: string | null
   updatedAt: string
   deletedAt: string | null // set when moved to the recycle bin
+  // Apple Reminders sync (two-way via the Mac bridge)
+  source: 'local' | 'reminders' // 'local' = created in Clarity; 'reminders' = mirrored from Reminders.app
+  externalId: string | null // persistent Reminders.app id (null for local tasks)
+  sourceList: string | null // the Reminders list name, shown as a label
+  syncedAt: string | null // last reconciled by the bridge (for conflict resolution)
 }
 
 export interface TaskList {

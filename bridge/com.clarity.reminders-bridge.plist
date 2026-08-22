@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.clarity.reminders-bridge</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/azmerfaiesal/Library/CloudStorage/GoogleDrive-azmerfaiesal@gmail.com/My Drive/Obsidian/The Second Brain/AI Playground/Hermes/clarity/bridge/clarity_reminders_bridge.py</string>
+    <string>--once</string>
+  </array>
+
+  <!-- Poll every 30s; the bridge no-ops unless Clarity set the pending flag. -->
+  <key>StartInterval</key>
+  <integer>30</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Keep the Python process from being killed when the user is idle;
+       it's lightweight and exits within ~1s when nothing is pending. -->
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/clarity-bridge.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/clarity-bridge.err.log</string>
+
+  <!-- Only run when the user is logged in (Reminders.app requires a session) -->
+  <key>LimitLoadToSessionType</key>
+  <string>Aqua</string>
+</dict>
+</plist>
