@@ -20,29 +20,29 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-50 text-neutral-400 dark:bg-neutral-950">
-        <Loader2 className="h-6 w-6 animate-spin" />
+ <div className="flex min-h-screen items-center justify-center bg-bg text-faint">
+ <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     )
   }
 
   if (!user && !LOCAL_ONLY) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">
-        <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-7 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <div className="mb-5 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shadow-sm">
-              <CheckCircle2 className="h-5 w-5 text-white" strokeWidth={2.5} />
+ <div className="flex min-h-screen items-center justify-center bg-bg px-4">
+ <div className="w-full max-w-sm glow rounded-xl border border-line bg-raised p-7">
+ <div className="mb-5 flex items-center gap-2.5">
+ <div className="flex h-8 w-8 items-center justify-center glow rounded-md bg-accent">
+ <CheckCircle2 className="h-5 w-5 text-accent-ink" strokeWidth={2.5} />
             </div>
             <div>
-              <div className="text-[17px] font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+ <div className="text-[17px] font-semibold tracking-tight text-ink">
                 Clarity
               </div>
-              <div className="text-xs text-neutral-400">Sign in to sync across devices</div>
+ <div className="text-xs text-faint">Sign in to sync across devices</div>
             </div>
           </div>
 
-          <label className="mb-1 block text-[11px] uppercase tracking-wide text-neutral-400">
+ <label className="mb-1 block text-[11px] uppercase tracking-wide text-faint">
             Email
           </label>
           <input
@@ -51,10 +51,10 @@ function AuthGate({ children }: { children: ReactNode }) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             autoComplete="email"
-            className="mb-3 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:ring-indigo-900/40"
+ className="mb-3 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
 
-          <label className="mb-1 block text-[11px] uppercase tracking-wide text-neutral-400">
+ <label className="mb-1 block text-[11px] uppercase tracking-wide text-faint">
             Password
           </label>
           <input
@@ -64,19 +64,19 @@ function AuthGate({ children }: { children: ReactNode }) {
             placeholder="At least 6 characters"
             autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
-            className="mb-3 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:ring-indigo-900/40"
+ className="mb-3 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
           />
 
-          {error && <div className="mb-3 text-xs text-red-500">{error}</div>}
-          {info && <div className="mb-3 text-xs text-emerald-500">{info}</div>}
+ {error && <div className="mb-3 text-xs text-danger">{error}</div>}
+ {info && <div className="mb-3 text-xs text-accent">{info}</div>}
 
           <button
             type="button"
             onClick={submit}
             disabled={busy}
-            className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+ className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:opacity-60"
           >
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+ {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === 'signin' ? 'Sign In' : 'Create Account'}
           </button>
 
@@ -87,7 +87,7 @@ function AuthGate({ children }: { children: ReactNode }) {
               setError(null)
               setInfo(null)
             }}
-            className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+ className="w-full text-center text-xs text-faint hover:text-ink"
           >
             {mode === 'signin'
               ? "No account? Create one"

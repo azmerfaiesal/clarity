@@ -96,7 +96,7 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
               // Keep it out of sight until measured, so it never flashes at 0,0.
               visibility: pos ? 'visible' : 'hidden',
             }}
-            className="anim-scale-in fixed z-50 min-w-44 rounded-xl border border-neutral-200/80 bg-white p-1 shadow-lg shadow-neutral-900/10 dark:border-neutral-700/60 dark:bg-neutral-900 dark:shadow-black/50"
+            className="anim-scale-in fixed z-50 min-w-44 rounded-lg border border-line bg-raised p-1 shadow-xl shadow-black/10 dark:shadow-black/60"
           >
             {children(() => setOpen(false))}
           </div>,
@@ -124,27 +124,27 @@ export function MenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
+      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors ${
         danger
-          ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40'
+          ? 'text-danger hover:bg-danger-soft'
           : active
-            ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-            : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
+            ? 'bg-accent-soft text-ink'
+            : 'text-muted hover:bg-surface hover:text-ink'
       }`}
     >
-      {icon && <span className="shrink-0 text-neutral-400 dark:text-neutral-500">{icon}</span>}
+      {icon && <span className="shrink-0 text-faint">{icon}</span>}
       <span className="flex-1">{children}</span>
     </button>
   )
 }
 
 export function MenuDivider() {
-  return <div className="mx-1 my-1 h-px bg-neutral-200/70 dark:bg-neutral-700/60" />
+  return <div className="mx-1 my-1 h-px bg-line" />
 }
 
 export function MenuLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="px-2.5 pt-1.5 pb-1 text-[11px] font-medium tracking-wide text-neutral-400 uppercase dark:text-neutral-500">
+    <div className="label px-2.5 pt-2 pb-1.5">
       {children}
     </div>
   )

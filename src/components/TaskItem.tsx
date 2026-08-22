@@ -1,4 +1,4 @@
-import { Calendar, Copy, Flag, MoreHorizontal, Star, Tag, Trash2 } from 'lucide-react'
+import { Calendar, Copy, Flag, MoreHorizontal, Star, Trash2 } from 'lucide-react'
 import type { Task, TaskList } from '../types'
 import { formatDueDate } from '../utils/dateUtils'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
@@ -6,9 +6,9 @@ import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { TaskCheckbox } from './TaskCheckbox'
 
 const FLAG_COLOR: Record<string, string> = {
-  low: 'text-sky-500',
-  medium: 'text-amber-500',
-  high: 'text-red-500',
+  low: 'text-p-low',
+  medium: 'text-p-med',
+  high: 'text-p-high',
 }
 
 export function TaskItem({
@@ -33,8 +33,8 @@ export function TaskItem({
 
   return (
     <div
-      className={`group anim-fade-slide-in flex items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-neutral-200/70 hover:bg-white dark:hover:border-neutral-700/50 dark:hover:bg-neutral-900/60 ${
-        task.completed ? 'opacity-55' : ''
+      className={`group anim-fade-slide-in relative flex items-start gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-line hover:bg-surface ${
+        task.completed ? 'opacity-50' : ''
       }`}
     >
       <TaskCheckbox
@@ -51,38 +51,33 @@ export function TaskItem({
       >
         <div className="flex items-center gap-2">
           <span
-            className={`truncate text-[14px] leading-snug text-neutral-900 dark:text-neutral-100 ${
-              task.completed ? 'line-through decoration-neutral-400 dark:decoration-neutral-500' : ''
+            className={`truncate text-[14px] leading-snug text-ink ${
+              task.completed ? 'line-through decoration-faint' : ''
             }`}
           >
             {task.title}
           </span>
           {task.favorite && (
-            <Star
-              className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400"
-              aria-label="Favorite"
-            />
+            <Star className="h-3.5 w-3.5 shrink-0 fill-p-med text-p-med" aria-label="Favorite" />
           )}
         </div>
 
         {task.description && (
-          <p className="mt-0.5 truncate text-[13px] text-neutral-500 dark:text-neutral-400">
-            {task.description}
-          </p>
+          <p className="mt-0.5 truncate text-[13px] text-muted">{task.description}</p>
         )}
 
         {(due || list || task.tags.length > 0 || task.priority !== 'none') && (
-          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] tracking-tight">
             {due && (
               <span
-                className={`inline-flex items-center gap-1 text-[12px] ${
+                className={`inline-flex items-center gap-1 ${
                   task.completed
-                    ? 'text-neutral-400 dark:text-neutral-500'
+                    ? 'text-faint'
                     : due.tone === 'overdue'
-                      ? 'text-red-500 dark:text-red-400'
+                      ? 'text-danger'
                       : due.tone === 'today'
-                        ? 'text-indigo-500 dark:text-indigo-400'
-                        : 'text-neutral-400 dark:text-neutral-500'
+                        ? 'text-accent'
+                        : 'text-faint'
                 }`}
               >
                 <Calendar className="h-3 w-3" aria-hidden />
@@ -90,15 +85,13 @@ export function TaskItem({
               </span>
             )}
             {task.priority !== 'none' && (
-              <span
-                className={`inline-flex items-center gap-1 text-[12px] ${FLAG_COLOR[task.priority]}`}
-              >
+              <span className={`inline-flex items-center gap-1 ${FLAG_COLOR[task.priority]}`}>
                 <Flag className="h-3 w-3 fill-current" aria-hidden />
                 <span className="sr-only">{PRIORITY_LABEL[task.priority]} priority</span>
               </span>
             )}
             {list && (
-              <span className="inline-flex items-center gap-1.5 text-[12px] text-neutral-400 dark:text-neutral-500">
+              <span className="inline-flex items-center gap-1.5 text-faint">
                 <span
                   className="h-1.5 w-1.5 rounded-full"
                   style={{ backgroundColor: list.color }}
@@ -110,9 +103,8 @@ export function TaskItem({
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-0.5 rounded-md bg-neutral-100 px-1.5 py-px text-[11px] text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+                className="inline-flex items-center rounded border border-line px-1.5 py-px text-[10.5px] text-muted"
               >
-                <Tag className="h-2.5 w-2.5" aria-hidden />
                 {tag}
               </span>
             ))}
@@ -131,7 +123,7 @@ export function TaskItem({
               type="button"
               onClick={toggle}
               aria-label={`More actions for ${task.title}`}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>
@@ -140,7 +132,9 @@ export function TaskItem({
           {(close) => (
             <>
               <MenuItem
-                icon={<Star className={`h-4 w-4 ${task.favorite ? 'fill-amber-400 text-amber-400' : ''}`} />}
+                icon={
+                  <Star className={`h-4 w-4 ${task.favorite ? 'fill-p-med text-p-med' : ''}`} />
+                }
                 onClick={() => {
                   onToggleFavorite()
                   close()

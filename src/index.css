@@ -2,9 +2,96 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI",
+/*
+ * Futuristic minimalist: a cool near-monochrome shell, hairline structure
+ * instead of soft shadows, and a single luminous cyan that only appears where
+ * something is live, selected, or actionable.
+ *
+ * Colours are semantic tokens defined per theme below. Components reference
+ * them through Tailwind utilities (bg-surface, text-ink, border-line…), so a
+ * palette change happens here and nowhere else — and no `dark:` duplicate is
+ * needed for anything that is purely a colour swap.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hi: var(--accent-hi);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-p-high: var(--p-high);
+  --color-p-med: var(--p-med);
+  --color-p-low: var(--p-low);
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", Menlo,
+    "Cascadia Mono", monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+}
+
+/* ---- Light: cool paper, ink-dark type, deep cyan accent ---- */
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --raised: #ffffff;
+  --line: #e3e8ef;
+  --line-strong: #cdd5e0;
+  --ink: #0b1017;
+  --muted: #5d6875;
+  --faint: #666f7c;
+  --accent: #097589;
+  --accent-hi: #075e6e;
+  --accent-soft: rgb(9 117 137 / 0.10);
+  --accent-ink: #ffffff;
+  --danger: #c62741;
+  --danger-soft: rgb(198 39 65 / 0.08);
+  --p-high: #d31f3f;
+  --p-med: #8f5d00;
+  --p-low: #1f6fd0;
+
+  --grid-line: rgb(11 16 23 / 0.028);
+  --bloom: rgb(9 117 137 / 0.07);
+  --glow: rgb(9 117 137 / 0.22);
+  --scrim: rgb(11 16 23 / 0.28);
+}
+
+/* ---- Dark: near-black instrument panel, luminous cyan ---- */
+[data-theme="dark"] {
+  --bg: #070809;
+  --surface: #0c0e12;
+  --raised: #111419;
+  --line: #1c212b;
+  --line-strong: #2b323f;
+  --ink: #e8edf4;
+  --muted: #8d97a8;
+  --faint: #767f8e;
+  --accent: #3ddbf0;
+  --accent-hi: #6ce8f8;
+  --accent-soft: rgb(61 219 240 / 0.11);
+  --accent-ink: #04141a;
+  --danger: #ff5f70;
+  --danger-soft: rgb(255 95 112 / 0.11);
+  --p-high: #ff5f70;
+  --p-med: #f5b33c;
+  --p-low: #4aa8ff;
+
+  --grid-line: rgb(232 237 244 / 0.022);
+  --bloom: rgb(61 219 240 / 0.055);
+  --glow: rgb(61 219 240 / 0.32);
+  --scrim: rgb(0 0 0 / 0.6);
 }
 
 html,
@@ -14,9 +101,75 @@ body,
 }
 
 body {
+  background: var(--bg);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/*
+ * Faint engineering grid over the whole shell, with one soft accent bloom
+ * behind the top-left corner. Both sit under the content and never scroll.
+ */
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(52rem 34rem at 34% -12%, var(--bloom), transparent 70%),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 100%, 56px 56px, 56px 56px;
+}
+
+/*
+ * Sidebar: a translucent panel rather than an opaque block, so the grid runs
+ * unbroken beneath the whole shell, with a hairline that fades out at both
+ * ends instead of a hard rule.
+ */
+.panel-l {
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  position: relative;
+}
+.panel-l::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--line) 10%,
+    var(--line) 90%,
+    transparent
+  );
+}
+
+/* Accent glow, reserved for live/actionable surfaces. Declared as utilities so
+   variants (hover:, focus:) work on them like any other Tailwind class. */
+@utility glow {
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 24px -6px var(--glow);
+}
+@utility glow-sm {
+  box-shadow: 0 0 12px -3px var(--glow);
+}
+
+/* Micro-label: the uppercase, wide-tracked caption used for section headers. */
+.label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
 }
 
 /* Subtle entrance animations */
@@ -65,12 +218,15 @@ body {
 @keyframes check-pop {
   0% {
     transform: scale(0.6);
+    box-shadow: 0 0 0 0 var(--glow);
   }
   60% {
     transform: scale(1.15);
+    box-shadow: 0 0 0 6px transparent;
   }
   100% {
     transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
@@ -81,13 +237,13 @@ body {
   animation: fade-in 150ms ease-out both;
 }
 .anim-scale-in {
-  animation: scale-in 160ms ease-out both;
+  animation: scale-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .anim-toast-in {
   animation: toast-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .anim-check-pop {
-  animation: check-pop 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: check-pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -106,11 +262,8 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--line-strong);
   border-radius: 8px;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -118,7 +271,13 @@ body {
 
 /* Visible, consistent focus ring */
 :where(button, a, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-indigo-500, #6366f1);
+  outline: 1.5px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Native date/time pickers follow the theme */
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="datetime-local"] {
+  color-scheme: dark;
 }

@@ -132,7 +132,7 @@ function AppShell() {
   const filtered = isFilterActive(filters) || inlineQuery.trim() !== ''
 
   return (
-    <div className="flex h-dvh bg-[#fafafa] text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+ <div className="app-shell flex h-dvh bg-bg text-ink">
       <Sidebar
         view={view}
         tasks={tasks}
@@ -148,8 +148,8 @@ function AppShell() {
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-        <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 sm:px-6 sm:pb-16">
+ <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+ <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 sm:px-6 sm:pb-16">
           <Header
             title={viewTitle(view, lists)}
             subtitle={subtitle}
@@ -166,13 +166,13 @@ function AppShell() {
 
           {/* Inline search (visible when typing via palette is bypassed) */}
           {inlineQuery && (
-            <div className="anim-fade-in mb-3 flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-[13px] text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300">
-              <SearchX className="h-3.5 w-3.5" />
+ <div className="anim-fade-in mb-3 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-[13px] text-accent">
+ <SearchX className="h-3.5 w-3.5" />
               Filtering by “{inlineQuery}”
               <button
                 type="button"
                 onClick={() => setInlineQuery('')}
-                className="ml-auto cursor-pointer font-medium hover:underline"
+ className="ml-auto cursor-pointer font-medium hover:underline"
               >
                 Clear
               </button>
@@ -180,7 +180,7 @@ function AppShell() {
           )}
 
           {/* Quick add */}
-          <div className="mb-4">
+ <div className="mb-4">
             {view !== 'completed' && view !== 'trash' && (
               <TaskInput
                 key={`${view}-${quickAddOpen}`}
@@ -222,11 +222,11 @@ function AppShell() {
           )}
 
           {view === 'completed' && tasks.some((t) => t.completed && t.deletedAt === null) && (
-            <div className="mt-6 flex justify-center">
+ <div className="mt-6 flex justify-center">
               <button
                 type="button"
                 onClick={() => store.clearCompleted()}
-                className="cursor-pointer rounded-lg border border-neutral-200 px-3.5 py-2 text-[13px] font-medium text-neutral-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-red-900 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+ className="cursor-pointer rounded-md border border-line px-3.5 py-2 text-[13px] font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger"
               >
                 Clear completed tasks
               </button>
@@ -234,7 +234,7 @@ function AppShell() {
           )}
 
           {view === 'trash' && visibleTasks.length > 0 && (
-            <div className="mt-6 flex justify-center">
+ <div className="mt-6 flex justify-center">
               <button
                 type="button"
                 onClick={() => {
@@ -242,7 +242,7 @@ function AppShell() {
                     store.emptyTrash()
                   }
                 }}
-                className="cursor-pointer rounded-lg border border-neutral-200 px-3.5 py-2 text-[13px] font-medium text-neutral-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-red-900 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+ className="cursor-pointer rounded-md border border-line px-3.5 py-2 text-[13px] font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger"
               >
                 Empty Recycle Bin
               </button>
@@ -257,9 +257,9 @@ function AppShell() {
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}
           aria-label="Add task"
-          className="fixed right-5 bottom-5 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 transition-transform hover:scale-105 active:scale-95 sm:hidden dark:shadow-black/40"
+ className="fixed right-5 bottom-5 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
         >
-          <Plus className="h-6 w-6" strokeWidth={2.5} />
+ <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
       )}
 
@@ -308,7 +308,7 @@ function TaskRows({
   store: ReturnType<typeof useTaskStore>
 }) {
   return (
-    <ul className="space-y-0.5" role="list" aria-label="Tasks">
+ <ul className="space-y-0.5" role="list" aria-label="Tasks">
       {tasks.map((t) => (
         <li key={t.id}>
           <TaskItem
@@ -339,12 +339,12 @@ function UpcomingGroups({
 }) {
   const groups = groupByDate(tasks)
   return (
-    <div className="space-y-6">
+ <div className="space-y-6">
       {groups.map((g) => (
         <section key={g.date} aria-label={sectionLabel(g.date)}>
           <h2
-            className={`mb-1.5 px-3 text-[12px] font-semibold tracking-wide uppercase ${
-              isOverdue(g.date) ? 'text-red-500 dark:text-red-400' : 'text-neutral-400 dark:text-neutral-500'
+ className={`mb-1.5 px-3 text-[12px] font-semibold tracking-wide uppercase ${
+              isOverdue(g.date) ? 'text-danger' : 'text-faint'
             }`}
           >
             {isOverdue(g.date) ? 'Overdue · ' : ''}
@@ -368,26 +368,26 @@ function TrashRows({
   store: ReturnType<typeof useTaskStore>
 }) {
   return (
-    <ul className="space-y-0.5" role="list" aria-label="Deleted tasks">
+ <ul className="space-y-0.5" role="list" aria-label="Deleted tasks">
       {tasks.map((t) => {
         const due = formatDueDate(t.dueDate)
         const list = lists.find((l) => l.id === t.listId)
         return (
           <li key={t.id}>
-            <div className="group anim-fade-slide-in flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-neutral-200/70 hover:bg-white dark:hover:border-neutral-700/50 dark:hover:bg-neutral-900/60">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[14px] text-neutral-500 line-through decoration-neutral-300 dark:text-neutral-400 dark:decoration-neutral-600">
+ <div className="group anim-fade-slide-in flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-line hover:bg-surface">
+ <div className="min-w-0 flex-1">
+ <div className="truncate text-[14px] text-muted line-through decoration-line-strong">
                   {t.title}
                 </div>
-                <div className="mt-0.5 flex items-center gap-2.5 text-[12px] text-neutral-400 dark:text-neutral-500">
+ <div className="mt-0.5 flex items-center gap-2.5 text-[12px] text-faint">
                   {t.priority !== 'none' && (
                     <Flag
-                      className={`h-3 w-3 ${
+ className={`h-3 w-3 ${
                         t.priority === 'high'
-                          ? 'text-red-400'
+                          ? 'text-p-high'
                           : t.priority === 'medium'
-                            ? 'text-amber-400'
-                            : 'text-sky-400'
+                            ? 'text-p-med'
+                            : 'text-p-low'
                       }`}
                       aria-hidden
                     />
@@ -405,14 +405,14 @@ function TrashRows({
                   )}
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-1">
+ <div className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
                   onClick={() => store.restoreTask(t.id)}
                   aria-label={`Restore ${t.title}`}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-indigo-600 transition-colors hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+ className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-accent transition-colors hover:bg-accent-soft"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+ <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                   Restore
                 </button>
                 <button
@@ -423,10 +423,10 @@ function TrashRows({
                     }
                   }}
                   aria-label={`Permanently delete ${t.title}`}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+ className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-faint transition-colors hover:bg-danger-soft hover:text-danger"
                 >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                  <span className="hidden sm:inline">Delete forever</span>
+ <Trash2 className="h-3.5 w-3.5" aria-hidden />
+ <span className="hidden sm:inline">Delete forever</span>
                 </button>
               </div>
             </div>
@@ -468,15 +468,15 @@ function CompletedSection({
   if (completed.length === 0) return null
 
   return (
-    <div className="mt-6">
+ <div className="mt-6">
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
         aria-expanded={expanded}
-        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-semibold tracking-wide text-neutral-400 uppercase transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+ className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-semibold tracking-wide text-faint uppercase transition-colors hover:text-ink"
       >
         <span
-          className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}
+ className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}
           aria-hidden
         >
           ›
@@ -484,7 +484,7 @@ function CompletedSection({
         Completed · {completed.length}
       </button>
       {expanded && (
-        <div className="anim-fade-slide-in mt-1">
+ <div className="anim-fade-slide-in mt-1">
           <TaskRows tasks={completed} lists={lists} onEdit={onEdit} store={store} />
         </div>
       )}

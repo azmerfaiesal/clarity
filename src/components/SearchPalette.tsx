@@ -56,7 +56,7 @@ export function SearchPalette({
 
   return (
     <div
-      className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center bg-neutral-950/30 px-4 pt-[12vh] backdrop-blur-[2px] dark:bg-black/50"
+      className="anim-fade-in fixed inset-0 z-50 flex items-start justify-center bg-[var(--scrim)] px-4 pt-[12vh] backdrop-blur-[3px]"
       onClick={onClose}
       role="presentation"
     >
@@ -64,11 +64,11 @@ export function SearchPalette({
         role="dialog"
         aria-modal="true"
         aria-label="Search tasks"
-        className="anim-scale-in w-full max-w-xl overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="anim-scale-in glow w-full max-w-xl overflow-hidden rounded-xl border border-line bg-raised shadow-2xl shadow-black/20 dark:shadow-black/70"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 border-b border-neutral-100 px-4 dark:border-neutral-800">
-          <Search className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
+        <div className="flex items-center gap-3 border-b border-line px-4">
+          <Search className="h-4 w-4 shrink-0 text-accent" aria-hidden />
           <input
             ref={inputRef}
             value={query}
@@ -88,20 +88,20 @@ export function SearchPalette({
             }}
             placeholder="Search tasks, lists, tags…"
             aria-label="Search tasks"
-            className="w-full bg-transparent py-3.5 text-[15px] text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100"
+            className="w-full bg-transparent py-3.5 text-[15px] text-ink outline-none placeholder:text-faint"
           />
-          <kbd className="rounded-md border border-neutral-200 px-1.5 py-0.5 text-[10px] font-medium text-neutral-400 dark:border-neutral-700">
+          <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-faint">
             ESC
           </kbd>
         </div>
 
         <div className="max-h-80 overflow-y-auto p-1.5" role="listbox" aria-label="Search results">
           {query.trim() === '' ? (
-            <p className="px-3 py-8 text-center text-[13px] text-neutral-400 dark:text-neutral-500">
+            <p className="px-3 py-8 text-center text-[13px] text-muted">
               Type to search across all your tasks.
             </p>
           ) : results.length === 0 ? (
-            <p className="px-3 py-8 text-center text-[13px] text-neutral-400 dark:text-neutral-500">
+            <p className="px-3 py-8 text-center text-[13px] text-muted">
               No results for “{query}”.
             </p>
           ) : (
@@ -116,31 +116,29 @@ export function SearchPalette({
                   onSelect(t)
                   onClose()
                 }}
-                className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left ${
-                  i === activeIndex
-                    ? 'bg-neutral-100 dark:bg-neutral-800'
-                    : ''
+                className={`flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
+                  i === activeIndex ? 'bg-accent-soft' : ''
                 }`}
               >
                 <div className="min-w-0 flex-1">
                   <div
-                    className={`truncate text-[14px] text-neutral-900 dark:text-neutral-100 ${
-                      t.completed ? 'line-through opacity-60' : ''
+                    className={`truncate text-[14px] text-ink ${
+                      t.completed ? 'line-through opacity-55' : ''
                     }`}
                   >
                     {t.title}
                   </div>
                   {t.description && (
-                    <div className="truncate text-[12px] text-neutral-400 dark:text-neutral-500">
+                    <div className="truncate text-[12px] text-muted">
                       {t.description}
                     </div>
                   )}
                 </div>
-                <span className="shrink-0 rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                <span className="shrink-0 rounded border border-line px-2 py-0.5 font-mono text-[10.5px] text-muted">
                   {listName(t.listId)}
                 </span>
                 {i === activeIndex && (
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-hidden />
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
                 )}
               </button>
             ))

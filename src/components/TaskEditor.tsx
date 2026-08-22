@@ -7,10 +7,10 @@ import { PRIORITY_LABEL } from '../utils/taskUtils'
 const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high']
 
 const FLAG_STYLE: Record<Priority, string> = {
-  none: 'text-neutral-400 dark:text-neutral-500',
-  low: 'text-sky-500',
-  medium: 'text-amber-500',
-  high: 'text-red-500',
+  none: 'text-faint',
+  low: 'text-p-low',
+  medium: 'text-p-med',
+  high: 'text-p-high',
 }
 
 export function TaskEditor({
@@ -66,7 +66,7 @@ export function TaskEditor({
 
   return (
     <div
-      className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-neutral-950/30 p-0 backdrop-blur-[2px] sm:items-center sm:p-6 dark:bg-black/50"
+ className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] p-0 backdrop-blur-[3px] sm:items-center sm:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -74,23 +74,23 @@ export function TaskEditor({
         role="dialog"
         aria-modal="true"
         aria-label="Edit task"
-        className="anim-scale-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-y-auto rounded-t-2xl border border-neutral-200 bg-white shadow-2xl sm:rounded-2xl dark:border-neutral-700 dark:bg-neutral-900"
+ className="anim-scale-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
-          <span className="text-[13px] font-medium text-neutral-400 dark:text-neutral-500">
+ <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+ <span className="text-[13px] font-medium text-faint">
             Edit task
           </span>
-          <div className="flex items-center gap-1">
+ <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setFavorite((f) => !f)}
               aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
               aria-pressed={favorite}
-              className="cursor-pointer rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+ className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
               <Star
-                className={`h-4 w-4 ${favorite ? 'fill-amber-400 text-amber-400' : ''}`}
+ className={`h-4 w-4 ${favorite ? 'fill-p-med text-p-med' : ''}`}
               />
             </button>
             <button
@@ -100,22 +100,22 @@ export function TaskEditor({
                 onClose()
               }}
               aria-label="Delete task"
-              className="cursor-pointer rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40"
+ className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-danger-soft hover:text-danger"
             >
-              <Trash2 className="h-4 w-4" />
+ <Trash2 className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="cursor-pointer rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+ className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
-              <X className="h-4 w-4" />
+ <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+ <div className="space-y-4 px-5 py-4">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -128,7 +128,7 @@ export function TaskEditor({
             placeholder="Task name"
             aria-label="Task name"
             autoFocus
-            className="w-full bg-transparent text-[16px] font-medium text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100"
+ className="w-full bg-transparent text-[16px] font-medium text-ink outline-none placeholder:text-faint"
           />
           <textarea
             value={description}
@@ -136,23 +136,23 @@ export function TaskEditor({
             placeholder="Notes"
             aria-label="Notes"
             rows={3}
-            className="w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50/60 px-3 py-2.5 text-[14px] text-neutral-700 outline-none placeholder:text-neutral-400 focus:border-indigo-300 dark:border-neutral-700 dark:bg-neutral-800/40 dark:text-neutral-200 dark:focus:border-indigo-500/50"
+ className="w-full resize-none rounded-lg border border-line bg-surface px-3 py-2.5 text-[14px] text-ink outline-none placeholder:text-faint focus:border-accent"
           />
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Due date" icon={<Calendar className="h-3.5 w-3.5" />}>
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+ <Field label="Due date" icon={<Calendar className="h-3.5 w-3.5" />}>
               <input
                 type="date"
                 value={dueDate ?? ''}
                 onChange={(e) => setDueDate(e.target.value || null)}
-                className="w-full bg-transparent text-[13px] text-neutral-700 outline-none dark:text-neutral-200 dark:[color-scheme:dark]"
+ className="w-full bg-transparent text-[13px] text-ink outline-none"
               />
             </Field>
-            <Field label="List" icon={<Inbox className="h-3.5 w-3.5" />}>
+ <Field label="List" icon={<Inbox className="h-3.5 w-3.5" />}>
               <select
                 value={listId ?? ''}
                 onChange={(e) => setListId(e.target.value || null)}
-                className="w-full cursor-pointer bg-transparent text-[13px] text-neutral-700 outline-none dark:bg-neutral-900 dark:text-neutral-200"
+ className="w-full cursor-pointer bg-transparent text-[13px] text-ink outline-none"
               >
                 <option value="">Inbox</option>
                 {lists.map((l) => (
@@ -162,32 +162,32 @@ export function TaskEditor({
                 ))}
               </select>
             </Field>
-            <Field label="Tags" icon={<Tag className="h-3.5 w-3.5" />}>
+ <Field label="Tags" icon={<Tag className="h-3.5 w-3.5" />}>
               <input
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="comma, separated"
-                className="w-full bg-transparent text-[13px] text-neutral-700 outline-none placeholder:text-neutral-400 dark:text-neutral-200"
+ className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-faint"
               />
             </Field>
-            <Field label="Reminder" icon={<Calendar className="h-3.5 w-3.5" />}>
+ <Field label="Reminder" icon={<Calendar className="h-3.5 w-3.5" />}>
               <input
                 type="datetime-local"
                 value={reminder}
                 onChange={(e) => setReminder(e.target.value)}
-                className="w-full bg-transparent text-[13px] text-neutral-700 outline-none dark:text-neutral-200 dark:[color-scheme:dark]"
+ className="w-full bg-transparent text-[13px] text-ink outline-none"
               />
             </Field>
           </div>
 
           <div>
-            <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-neutral-400 dark:text-neutral-500">
-              <Flag className="h-3.5 w-3.5" /> Priority
+ <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-faint">
+ <Flag className="h-3.5 w-3.5" /> Priority
             </span>
             <div
               role="radiogroup"
               aria-label="Priority"
-              className="inline-flex overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700"
+ className="inline-flex overflow-hidden rounded-md border border-line"
             >
               {PRIORITIES.map((p) => (
                 <button
@@ -196,16 +196,16 @@ export function TaskEditor({
                   role="radio"
                   aria-checked={priority === p}
                   onClick={() => setPriority(p)}
-                  className={`cursor-pointer px-3 py-1.5 text-[12px] transition-colors ${
+ className={`cursor-pointer px-3 py-1.5 text-[12px] transition-colors ${
                     priority === p
-                      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-                      : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-800/60'
+                      ? 'bg-accent-soft font-medium text-ink'
+                      : 'text-muted hover:bg-surface'
                   }`}
                 >
-                  <span className="inline-flex items-center gap-1.5">
+ <span className="inline-flex items-center gap-1.5">
                     {p !== 'none' && (
                       <Flag
-                        className={`h-3 w-3 ${FLAG_STYLE[p]} ${priority === p ? 'fill-current' : ''}`}
+ className={`h-3 w-3 ${FLAG_STYLE[p]} ${priority === p ? 'fill-current' : ''}`}
                       />
                     )}
                     {PRIORITY_LABEL[p]}
@@ -215,17 +215,17 @@ export function TaskEditor({
             </div>
           </div>
 
-          <p className="text-[12px] text-neutral-400 dark:text-neutral-500">
+ <p className="text-[12px] text-faint">
             Created {formatTimestamp(task.createdAt)}
             {task.completedAt && ` · Completed ${formatTimestamp(task.completedAt)}`}
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-neutral-100 px-5 py-3 dark:border-neutral-800">
+ <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg px-3.5 py-2 text-[13px] font-medium text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+ className="cursor-pointer rounded-lg px-3.5 py-2 text-[13px] font-medium text-muted hover:bg-surface"
           >
             Cancel
           </button>
@@ -233,7 +233,7 @@ export function TaskEditor({
             type="button"
             onClick={save}
             disabled={!title.trim()}
-            className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+ className="cursor-pointer rounded-lg bg-accent px-4 py-2 text-[13px] font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
           >
             Save
           </button>
@@ -253,11 +253,11 @@ function Field({
   children: React.ReactNode
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-neutral-400 dark:text-neutral-500">
+ <label className="block">
+ <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-faint">
         {icon} {label}
       </span>
-      <div className="rounded-lg border border-neutral-200 px-2.5 py-2 dark:border-neutral-700">
+ <div className="rounded-md border border-line px-2.5 py-2">
         {children}
       </div>
     </label>

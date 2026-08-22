@@ -7,10 +7,10 @@ import { PRIORITY_LABEL } from '../utils/taskUtils'
 const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high']
 
 const FLAG_STYLE: Record<Priority, string> = {
-  none: 'text-neutral-400 dark:text-neutral-500',
-  low: 'text-sky-500',
-  medium: 'text-amber-500',
-  high: 'text-red-500',
+  none: 'text-faint',
+  low: 'text-p-low',
+  medium: 'text-p-med',
+  high: 'text-p-high',
 }
 
 /** Quick-add input that expands into a compact creation form. Enter creates the task. */
@@ -95,11 +95,11 @@ export function TaskInput({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-neutral-200 px-3.5 py-2.5 text-left text-[14px] text-neutral-400 transition-colors hover:border-indigo-300 hover:text-indigo-500 dark:border-neutral-700 dark:text-neutral-500 dark:hover:border-indigo-500/60 dark:hover:text-indigo-400"
+ className="group flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-2.5 text-left text-[14px] text-faint transition-colors hover:border-accent hover:text-accent"
       >
-        <Plus className="h-4 w-4" aria-hidden />
+ <Plus className="h-4 w-4" aria-hidden />
         Add a task
-        <kbd className="ml-auto hidden rounded-md border border-neutral-200 px-1.5 py-0.5 text-[10px] font-medium text-neutral-400 group-hover:border-indigo-200 sm:inline dark:border-neutral-700 dark:group-hover:border-indigo-500/40">
+ <kbd className="ml-auto hidden rounded-md border border-line px-1.5 py-0.5 font-mono text-[10px] text-faint group-hover:border-accent sm:inline">
           N
         </kbd>
       </button>
@@ -107,8 +107,8 @@ export function TaskInput({
   }
 
   return (
-    <div className="anim-scale-in rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-      <div className="p-3">
+ <div className="anim-scale-in rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40">
+ <div className="p-3">
         <input
           ref={titleRef}
           value={title}
@@ -124,7 +124,7 @@ export function TaskInput({
           }}
           placeholder="Task name"
           aria-label="Task name"
-          className="w-full bg-transparent text-[14px] font-medium text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+ className="w-full bg-transparent text-[14px] font-medium text-ink outline-none placeholder:text-faint"
         />
         <input
           value={description}
@@ -139,26 +139,26 @@ export function TaskInput({
           }}
           placeholder="Description (optional)"
           aria-label="Description"
-          className="mt-1 w-full bg-transparent text-[13px] text-neutral-600 outline-none placeholder:text-neutral-400 dark:text-neutral-400 dark:placeholder:text-neutral-500"
+ className="mt-1 w-full bg-transparent text-[13px] text-muted outline-none placeholder:text-faint"
         />
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+ <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           {/* Due date */}
           <label
-            className={`relative inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1 text-[12px] transition-colors ${
+ className={`relative inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-[12px] transition-colors ${
               dueDate
-                ? 'border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-400'
-                : 'border-neutral-200 text-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800'
+                ? 'border-accent/40 bg-accent-soft text-accent'
+                : 'border-line text-muted hover:bg-surface'
             }`}
           >
-            <Calendar className="h-3.5 w-3.5" aria-hidden />
+ <Calendar className="h-3.5 w-3.5" aria-hidden />
             {dueDate ?? 'Due date'}
             <input
               type="date"
               aria-label="Due date"
               value={dueDate ?? ''}
               onChange={(e) => setDueDate(e.target.value || null)}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+ className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             />
           </label>
           {dueDate && (
@@ -174,9 +174,9 @@ export function TaskInput({
                 type="button"
                 aria-label="Clear due date"
                 onClick={() => setDueDate(null)}
-                className="cursor-pointer rounded-md p-0.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+ className="cursor-pointer rounded-md p-0.5 text-faint hover:text-ink"
               >
-                <X className="h-3.5 w-3.5" />
+ <X className="h-3.5 w-3.5" />
               </button>
             </>
           )}
@@ -185,7 +185,7 @@ export function TaskInput({
           <div
             role="radiogroup"
             aria-label="Priority"
-            className="inline-flex items-center overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700"
+ className="inline-flex items-center overflow-hidden rounded-md border border-line"
           >
             {PRIORITIES.map((p) => (
               <button
@@ -195,17 +195,17 @@ export function TaskInput({
                 aria-checked={priority === p}
                 title={PRIORITY_LABEL[p]}
                 onClick={() => setPriority(p)}
-                className={`cursor-pointer px-2 py-1 text-[12px] transition-colors ${
+ className={`cursor-pointer px-2 py-1 text-[12px] transition-colors ${
                   priority === p
-                    ? 'bg-neutral-100 dark:bg-neutral-800'
-                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
+                    ? 'bg-accent-soft'
+                    : 'hover:bg-surface'
                 }`}
               >
                 {p === 'none' ? (
-                  <span className="text-neutral-400 dark:text-neutral-500">–</span>
+ <span className="text-faint">–</span>
                 ) : (
                   <Flag
-                    className={`h-3.5 w-3.5 ${FLAG_STYLE[p]} ${priority === p ? 'fill-current' : ''}`}
+ className={`h-3.5 w-3.5 ${FLAG_STYLE[p]} ${priority === p ? 'fill-current' : ''}`}
                   />
                 )}
               </button>
@@ -213,13 +213,13 @@ export function TaskInput({
           </div>
 
           {/* List */}
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1 text-[12px] text-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
-            <Inbox className="h-3.5 w-3.5" aria-hidden />
+ <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-2 py-1 text-[12px] text-muted hover:bg-surface">
+ <Inbox className="h-3.5 w-3.5" aria-hidden />
             <select
               aria-label="List"
               value={listId ?? ''}
               onChange={(e) => setListId(e.target.value || null)}
-              className="cursor-pointer bg-transparent outline-none dark:bg-neutral-900"
+ className="cursor-pointer bg-transparent outline-none"
             >
               <option value="">Inbox</option>
               {lists.map((l) => (
@@ -231,42 +231,42 @@ export function TaskInput({
           </label>
 
           {/* Tags */}
-          <label className="inline-flex min-w-24 flex-1 cursor-text items-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1 text-[12px] text-neutral-500 sm:flex-none dark:border-neutral-700 dark:text-neutral-400">
-            <Tag className="h-3.5 w-3.5 shrink-0" aria-hidden />
+ <label className="inline-flex min-w-24 flex-1 cursor-text items-center gap-1.5 rounded-md border border-line px-2 py-1 text-[12px] text-muted sm:flex-none">
+ <Tag className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <input
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="Tags, comma separated"
               aria-label="Tags"
-              className="w-full min-w-20 bg-transparent outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
+ className="w-full min-w-20 bg-transparent outline-none placeholder:text-faint"
             />
           </label>
 
           {/* Reminder */}
           <label
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1 text-[12px] ${
+ className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-[12px] ${
               reminder
-                ? 'border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-400'
-                : 'border-neutral-200 text-neutral-500 dark:border-neutral-700 dark:text-neutral-400'
+                ? 'border-accent/40 bg-accent-soft text-accent'
+                : 'border-line text-muted'
             }`}
           >
-            <Bell className="h-3.5 w-3.5" aria-hidden />
+ <Bell className="h-3.5 w-3.5" aria-hidden />
             <input
               type="datetime-local"
               aria-label="Reminder"
               value={reminder}
               onChange={(e) => setReminder(e.target.value)}
-              className="cursor-pointer bg-transparent text-[12px] outline-none dark:[color-scheme:dark]"
+ className="cursor-pointer bg-transparent text-[12px] outline-none dark:[color-scheme:dark]"
             />
           </label>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 border-t border-neutral-100 px-3 py-2 dark:border-neutral-800">
+ <div className="flex items-center justify-end gap-2 border-t border-line px-3 py-2">
         <button
           type="button"
           onClick={close}
-          className="cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-medium text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+ className="cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-medium text-muted hover:bg-surface"
         >
           Cancel
         </button>
@@ -274,7 +274,7 @@ export function TaskInput({
           type="button"
           onClick={submit}
           disabled={!title.trim()}
-          className="cursor-pointer rounded-lg bg-indigo-600 px-3.5 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+ className="cursor-pointer rounded-lg bg-accent px-3.5 py-1.5 text-[13px] font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
         >
           Add task
         </button>
@@ -298,10 +298,10 @@ function QuickDate({
     <button
       type="button"
       onClick={() => onPick(value)}
-      className={`cursor-pointer rounded-lg border px-2 py-1 text-[12px] transition-colors ${
+ className={`cursor-pointer rounded-md border px-2 py-1 text-[12px] transition-colors ${
         current === value
-          ? 'border-indigo-300 bg-indigo-50 text-indigo-600 dark:border-indigo-500/50 dark:bg-indigo-500/10 dark:text-indigo-400'
-          : 'border-neutral-200 text-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800'
+          ? 'border-accent/50 bg-accent-soft text-accent'
+          : 'border-line text-muted hover:bg-surface'
       }`}
     >
       {label}

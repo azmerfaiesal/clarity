@@ -25,10 +25,10 @@ export function SortMenu({
           type="button"
           onClick={toggle}
           aria-label="Sort tasks"
-          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors ${
+          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors ${
             sort !== 'manual'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300'
+              ? 'bg-accent-soft text-accent'
+              : 'text-faint hover:bg-accent-soft hover:text-accent'
           }`}
         >
           <ArrowDownWideNarrow className="h-4 w-4" />
@@ -50,7 +50,7 @@ export function SortMenu({
             >
               <span className="flex flex-1 items-center justify-between">
                 {o.label}
-                {sort === o.value && <Check className="h-3.5 w-3.5 text-indigo-500" />}
+                {sort === o.value && <Check className="h-3.5 w-3.5 text-accent" />}
               </span>
             </MenuItem>
           ))}

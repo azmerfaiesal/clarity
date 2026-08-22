@@ -12,11 +12,11 @@ export function EmptyState({
   const Display = Icon ?? CheckCircle2
   return (
     <div className="anim-fade-in flex flex-col items-center justify-center px-6 py-16 text-center sm:py-24">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/70">
-        <Display className="h-6 w-6 text-neutral-400 dark:text-neutral-500" strokeWidth={1.5} />
+      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-line bg-surface">
+        <Display className="h-6 w-6 text-accent" strokeWidth={1.25} />
       </div>
-      <h2 className="text-[15px] font-medium text-neutral-800 dark:text-neutral-200">{title}</h2>
-      <p className="mt-1 max-w-60 text-[13px] text-neutral-400 dark:text-neutral-500">{subtitle}</p>
+      <h2 className="text-[15px] font-medium tracking-[-0.01em] text-ink">{title}</h2>
+      <p className="mt-1.5 max-w-60 text-[13px] text-muted">{subtitle}</p>
     </div>
   )
 }

@@ -5,10 +5,10 @@ import { DEFAULT_FILTERS } from '../types'
 import { Dropdown, MenuDivider, MenuLabel } from './Dropdown'
 
 const FLAG_COLOR: Record<Priority, string> = {
-  none: 'text-neutral-400',
-  low: 'text-sky-500',
-  medium: 'text-amber-500',
-  high: 'text-red-500',
+  none: 'text-faint',
+  low: 'text-p-low',
+  medium: 'text-p-med',
+  high: 'text-p-high',
 }
 
 export function FilterMenu({
@@ -43,17 +43,13 @@ export function FilterMenu({
       role="menuitemcheckbox"
       aria-checked={selected}
       onClick={onClick}
-      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
-        selected
-          ? 'text-neutral-900 dark:text-neutral-100'
-          : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800'
+      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors ${
+        selected ? 'text-ink' : 'text-muted hover:bg-surface hover:text-ink'
       }`}
     >
       <span
-        className={`flex h-4 w-4 items-center justify-center rounded-md border ${
-          selected
-            ? 'border-indigo-500 bg-indigo-500 text-white'
-            : 'border-neutral-300 dark:border-neutral-600'
+        className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+          selected ? 'border-accent bg-accent text-accent-ink' : 'border-line-strong'
         }`}
       >
         {selected && <Check className="h-3 w-3" strokeWidth={3} />}
@@ -70,15 +66,15 @@ export function FilterMenu({
           type="button"
           onClick={toggle}
           aria-label="Filter tasks"
-          className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors ${
+          className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors ${
             activeCount > 0
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300'
+              ? 'bg-accent-soft text-accent'
+              : 'text-faint hover:bg-accent-soft hover:text-accent'
           }`}
         >
           <ListFilter className="h-4 w-4" />
           {activeCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[9px] font-semibold text-white">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent font-mono text-[9px] font-semibold text-accent-ink">
               {activeCount}
             </span>
           )}
@@ -143,7 +139,7 @@ export function FilterMenu({
             selected={filters.favoriteOnly}
             onClick={() => onChange({ ...filters, favoriteOnly: !filters.favoriteOnly })}
           >
-            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-amber-400 text-amber-400' : 'text-neutral-400'}`} />
+            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-p-med text-p-med' : 'text-faint'}`} />
             Favorites only
           </Row>
           {activeCount > 0 && (
@@ -152,7 +148,7 @@ export function FilterMenu({
               <button
                 type="button"
                 onClick={() => onChange(DEFAULT_FILTERS)}
-                className="w-full cursor-pointer rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+                className="w-full cursor-pointer rounded-md px-2.5 py-2 text-left text-[13px] font-medium text-accent transition-colors hover:bg-accent-soft"
               >
                 Clear all filters
               </button>

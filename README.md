@@ -15,9 +15,26 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 - **Filters** — status, priority, due date, list, favorites-only, with active-count badge and one-click clear.
 - **Sorting** — manual, due date, priority, date created, alphabetical.
 - **Settings** — appearance, account and sync status, task counts, bulk actions, and the keyboard-shortcut reference.
-- **Light and dark** — light by default; the sidebar toggle switches and remembers your choice.
+- **Light and dark** — light by default; the sidebar toggle switches and remembers your choice. Both are the same design, not two designs.
 - **Responsive** — desktop sidebar, mobile navigation drawer + floating Add button; no horizontal scrolling.
 - **Accessible** — semantic HTML, ARIA labels/roles, visible focus rings, keyboard navigable, `prefers-reduced-motion` support.
+
+## Design
+
+Futuristic minimalist: a cool near-monochrome shell, hairline structure instead
+of soft shadows, and a single luminous cyan reserved for whatever is live,
+selected, or actionable. Metadata — counts, dates, tags, shortcuts — is set in a
+monospace face so the list reads like an instrument panel rather than a document.
+
+Every colour is a semantic token (`--ink`, `--muted`, `--line`, `--accent`, …)
+declared once in `src/index.css` and re-declared under `[data-theme="dark"]`.
+Components use them through Tailwind utilities (`bg-surface`, `text-ink`,
+`border-line`), so theming happens purely in the cascade — there is no `dark:`
+variant anywhere except where elevation genuinely differs. Retuning the palette
+means editing two blocks of CSS.
+
+Every text token clears WCAG AA (4.5:1) against both the base and surface
+backgrounds, in both themes.
 
 ## Sync
 
