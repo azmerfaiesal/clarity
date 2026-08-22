@@ -1,53 +1,25 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>clarity</title>
+    <meta name="description" content="Clarity — a minimalist to-do list that syncs across your devices." />
+    <meta name="theme-color" content="#fafafa" />
+    <title>Clarity</title>
     <script>
-      // Theme sync with parent (Daily Dashboard) via postMessage
-      // Parent sends { type: 'theme', value: 'light'|'dark' }
-      // Also respects system preference as fallback
+      // Resolve the theme before first paint so the app never flashes the
+      // wrong background. Light is the default; dark is opt-in and remembered.
+      // A host page embedding Clarity can override later via postMessage.
       (function () {
-        var html = document.documentElement;
-        var current = html.getAttribute('data-theme') || 'dark';
-
-        function applyTheme(t) {
-          if (t === 'light' || t === 'dark') {
-            html.setAttribute('data-theme', t);
-            current = t;
-          }
+        try {
+          var saved = localStorage.getItem('clarity.theme.v1');
+          var theme = saved === 'dark' ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {
+          /* keep the light default */
         }
-
-        // Listen for parent messages
-        window.addEventListener('message', function (e) {
-          if (!e.data || e.data.type !== 'theme') return;
-          applyTheme(e.data.value);
-        });
-
-        // Request initial theme from parent (if embedded)
-        if (window.parent !== window) {
-          window.parent.postMessage({ type: 'clarity:ready' }, '*');
-        }
-
-        // Fallback: respect system preference changes when not controlled by parent
-        var media = window.matchMedia('(prefers-color-scheme: dark)');
-        var listener = function (m) {
-          // Only auto-switch if we haven't received a parent theme yet
-          // (parent will send theme on load and on changes)
-          if (!window._clarityThemeFromParent) {
-            applyTheme(m.matches ? 'dark' : 'light');
-          }
-        };
-        media.addEventListener ? media.addEventListener('change', listener) : media.addListener(listener);
-
-        // Track if parent has sent theme
-        window.addEventListener('message', function (e) {
-          if (e.data && e.data.type === 'theme') {
-            window._clarityThemeFromParent = true;
-          }
-        });
       })();
     </script>
   </head>

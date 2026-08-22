@@ -1,77 +1,83 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
+import { loadTheme, saveTheme } from './storage'
 
-type Theme = 'light' | 'dark'
+export type Theme = 'light' | 'dark'
 
-const ThemeContext = createContext<{ theme: Theme } | null>(null)
+interface ThemeState {
+  theme: Theme
+  setTheme: (t: Theme) => void
+  toggleTheme: () => void
+  /** True when a host page (the Daily Dashboard iframe) owns the theme. */
+  controlledByHost: boolean
+}
+
+const ThemeContext = createContext<ThemeState | null>(null)
+
+function applyToDocument(t: Theme) {
+  document.documentElement.setAttribute('data-theme', t)
+  document.documentElement.style.colorScheme = t
+}
 
 /**
- * Theme provider that syncs with the parent (Daily Dashboard) via postMessage.
- * The parent owns the theme and sends { type: 'theme', value: 'light'|'dark' }.
- * This provider listens and applies the theme to the document.
- * If not embedded, it falls back to system preference + localStorage.
+ * Light is the default look; dark is opt-in via the sidebar toggle and
+ * remembered. A host page embedding Clarity in an iframe can take over by
+ * posting `{ type: 'theme', value: 'light' | 'dark' }`.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setThemeState] = useState<Theme>(() => loadTheme() ?? 'light')
+  const [controlledByHost, setControlledByHost] = useState(false)
+  const hostControlled = useRef(false)
 
   useEffect(() => {
-    let themeFromParent = false
+    applyToDocument(theme)
+  }, [theme])
 
-    const apply = (t: Theme) => {
-      document.documentElement.setAttribute('data-theme', t)
-      setTheme(t)
-    }
-
-    // Listen for theme from parent
+  useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      if (e.data?.type === 'theme') {
-        themeFromParent = true
-        apply(e.data.value)
-      }
+      if (e.data?.type !== 'theme') return
+      const value = e.data.value
+      if (value !== 'light' && value !== 'dark') return
+      hostControlled.current = true
+      setControlledByHost(true)
+      setThemeState(value)
     }
     window.addEventListener('message', onMessage)
 
-    // If embedded, ask parent for theme
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'clarity:ready' }, '*')
     }
 
-    // Fallback: localStorage or system preference
-    const saved = localStorage.getItem('clarity.theme') as Theme | null
-    const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    apply(themeFromParent ? theme : (saved ?? system))
-
-    // Listen for system preference changes (only if not controlled by parent)
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => {
-      if (!themeFromParent) {
-        apply(media.matches ? 'dark' : 'light')
-      }
-    }
-    media.addEventListener('change', onChange)
-
-    // Track if parent has sent theme
-    const onParentTheme = (e: MessageEvent) => {
-      if (e.data?.type === 'theme') {
-        themeFromParent = true
-      }
-    }
-    window.addEventListener('message', onParentTheme)
-
-    return () => {
-      window.removeEventListener('message', onMessage)
-      window.removeEventListener('message', onParentTheme)
-      media.removeEventListener('change', onChange)
-    }
+    return () => window.removeEventListener('message', onMessage)
   }, [])
 
-  return (
-    <ThemeContext.Provider value={{ theme }}>
-      {children}
-    </ThemeContext.Provider>
+  const setTheme = useCallback((t: Theme) => {
+    saveTheme(t)
+    setThemeState(t)
+  }, [])
+
+  const value = useMemo<ThemeState>(
+    () => ({
+      theme,
+      setTheme,
+      toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
+      controlledByHost,
+    }),
+    [theme, setTheme, controlledByHost],
   )
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
-export function useTheme() {
+export function useTheme(): ThemeState {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider')
   return ctx

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EMPTY_PRESETS, EmptyState } from './components/EmptyState'
 import { Header } from './components/Header'
 import { SearchPalette } from './components/SearchPalette'
+import { Settings } from './components/Settings'
 import { Sidebar } from './components/Sidebar'
 import { TaskEditor } from './components/TaskEditor'
 import { TaskInput } from './components/TaskInput'
@@ -12,7 +13,14 @@ import { useTaskStore } from './store/taskStore'
 import AuthGate from './components/AuthGate'
 import { DEFAULT_FILTERS, type Filters, type SortMode, type Task, type ViewId } from './types'
 import { isOverdue, sectionLabel, todayStr, formatDueDate } from './utils/dateUtils'
-import { applyFilters, applySearch, groupByDate, sortTasks, tasksForView } from './utils/taskUtils'
+import {
+  applyFilters,
+  applySearch,
+  groupByDate,
+  isFilterActive,
+  sortTasks,
+  tasksForView,
+} from './utils/taskUtils'
 
 function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string {
   switch (view) {
@@ -45,6 +53,7 @@ function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [undoVisible, setUndoVisible] = useState(false)
   const undoTimer = useRef<number | null>(null)
 
@@ -120,7 +129,7 @@ function AppShell() {
 
   const presetKey = view.startsWith('list:') ? 'list' : (view as keyof typeof EMPTY_PRESETS)
   const preset = EMPTY_PRESETS[presetKey] ?? EMPTY_PRESETS.inbox
-  const filtered = filters !== DEFAULT_FILTERS || inlineQuery.trim() !== ''
+  const filtered = isFilterActive(filters) || inlineQuery.trim() !== ''
 
   return (
     <div className="flex h-dvh bg-[#fafafa] text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
@@ -136,6 +145,7 @@ function AppShell() {
         onCloseMobile={() => setMobileNavOpen(false)}
         onAddList={(name, color) => store.addList(name, color)}
         onDeleteList={(id) => store.deleteList(id)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
@@ -179,10 +189,9 @@ function AppShell() {
                 defaultDueDate={defaultDueDate}
                 autoFocus={quickAddOpen}
                 onCancel={() => setQuickAddOpen(false)}
-                onSubmit={(input) => {
-                  store.addTask(input)
-                  setQuickAddOpen(false)
-                }}
+                // The form stays open after Enter so several tasks can be
+                // captured in a row; Esc (or the close button) dismisses it.
+                onSubmit={(input) => store.addTask(input)}
               />
             )}
           </div>
@@ -208,7 +217,9 @@ function AppShell() {
           )}
 
           {/* Completed section (non-completed views) */}
-          {view !== 'completed' && <CompletedSection lists={lists} onEdit={setEditingTask} store={store} view={view} />}
+          {view !== 'completed' && view !== 'trash' && (
+            <CompletedSection lists={lists} onEdit={setEditingTask} store={store} view={view} />
+          )}
 
           {view === 'completed' && tasks.some((t) => t.completed && t.deletedAt === null) && (
             <div className="mt-6 flex justify-center">
@@ -269,6 +280,8 @@ function AppShell() {
           onClose={() => setEditingTask(null)}
         />
       )}
+
+      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
 
       {undoVisible && store.lastDeleted && (
         <UndoToast

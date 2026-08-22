@@ -36,6 +36,20 @@ export function SearchPalette({
 
   useEffect(() => setActiveIndex(0), [query])
 
+  // Escape closes the palette wherever focus happens to be, not only while the
+  // search input holds it.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [open, onClose])
+
   if (!open) return null
 
   const listName = (id: string | null) => lists.find((l) => l.id === id)?.name ?? 'Inbox'
@@ -69,8 +83,6 @@ export function SearchPalette({
               } else if (e.key === 'Enter' && results[activeIndex]) {
                 e.preventDefault()
                 onSelect(results[activeIndex])
-                onClose()
-              } else if (e.key === 'Escape') {
                 onClose()
               }
             }}

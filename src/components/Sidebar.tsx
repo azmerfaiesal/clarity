@@ -3,13 +3,17 @@ import {
   CheckCircle2,
   Inbox,
   ListPlus,
+  Moon,
+  Settings as SettingsIcon,
   Star,
+  Sun,
   Trash2,
   X,
 } from 'lucide-react'
 import { useState } from 'react'
 import type { Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
+import { useTheme } from '../store/theme'
 
 const LIST_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
@@ -59,6 +63,7 @@ export function Sidebar({
   onCloseMobile,
   onAddList,
   onDeleteList,
+  onOpenSettings,
 }: {
   view: ViewId
   tasks: Task[]
@@ -68,7 +73,9 @@ export function Sidebar({
   onCloseMobile: () => void
   onAddList: (name: string, color: string) => void
   onDeleteList: (id: string) => void
+  onOpenSettings: () => void
 }) {
+  const { theme, toggleTheme, controlledByHost } = useTheme()
   const [addingList, setAddingList] = useState(false)
   const [newListName, setNewListName] = useState('')
   const [newListColor, setNewListColor] = useState(LIST_COLORS[0])
@@ -256,7 +263,29 @@ export function Sidebar({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-neutral-200/70 p-2.5 dark:border-neutral-800">
+      <div className="flex items-center gap-1 border-t border-neutral-200/70 p-2.5 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={() => {
+            onOpenSettings()
+            onCloseMobile()
+          }}
+          className="flex flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13.5px] text-neutral-600 transition-colors hover:bg-neutral-200/40 dark:text-neutral-400 dark:hover:bg-neutral-800/50"
+        >
+          <SettingsIcon className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />
+          Settings
+        </button>
+        {!controlledByHost && (
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-200/60 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        )}
       </div>
     </div>
   )

@@ -50,3 +50,14 @@ create policy "clarity_tasks_owner" on public.clarity_tasks
   for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ---------- REALTIME ----------
+-- Cross-device sync listens on postgres_changes; without these the client
+-- subscribes successfully but never receives an event.
+alter publication supabase_realtime add table public.clarity_lists;
+alter publication supabase_realtime add table public.clarity_tasks;
+
+-- REPLICA IDENTITY FULL so DELETE events still carry user_id and the client's
+-- `user_id=eq.<uid>` filter matches them.
+alter table public.clarity_lists replica identity full;
+alter table public.clarity_tasks replica identity full;

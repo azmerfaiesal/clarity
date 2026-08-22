@@ -2,8 +2,15 @@ import { useState, type ReactNode } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { useAuth } from '../store/auth'
 
+/**
+ * Dev escape hatch: `VITE_LOCAL_ONLY=1` in .env.local skips the sign-in screen
+ * and runs the app against localStorage only, so the UI can be worked on
+ * without touching real account data. Dead code in production builds.
+ */
+const LOCAL_ONLY = import.meta.env.DEV && import.meta.env.VITE_LOCAL_ONLY === '1'
+
 function AuthGate({ children }: { children: ReactNode }) {
-  const { user, loading, signIn, signUp, signOut } = useAuth()
+  const { user, loading, signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,7 +26,7 @@ function AuthGate({ children }: { children: ReactNode }) {
     )
   }
 
-  if (!user) {
+  if (!user && !LOCAL_ONLY) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">
         <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-7 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
@@ -55,7 +62,7 @@ function AuthGate({ children }: { children: ReactNode }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="At least 6 characters"
-            autoComplete="current-password"
+            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
             className="mb-3 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:ring-indigo-900/40"
           />
@@ -91,30 +98,8 @@ function AuthGate({ children }: { children: ReactNode }) {
     )
   }
 
-  return (
-    <div className="relative min-h-screen">
-      <div className="fixed right-3 top-3 z-40 hidden sm:block">
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-xs text-neutral-500 backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800/80 dark:hover:bg-neutral-700"
-        >
-          Sign out
-        </button>
-      </div>
-      {children}
-      {/* Sign out also reachable from a small button below for mobile */}
-      <div className="fixed bottom-3 right-3 z-40 sm:hidden">
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="rounded-full border border-neutral-200 bg-white/80 px-3 py-1.5 text-xs text-neutral-500 backdrop-blur dark:border-neutral-700 dark:bg-neutral-800/80"
-        >
-          Sign out
-        </button>
-      </div>
-    </div>
-  )
+  // Signed in — the app takes over. Account controls live in Settings.
+  return <>{children}</>
 
   async function submit() {
     setError(null)

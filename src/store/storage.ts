@@ -2,65 +2,80 @@ import type { Task, TaskList } from '../types'
 import { addDays, todayStr } from '../utils/dateUtils'
 import { makeId } from '../utils/taskUtils'
 
-const TASKS_KEY = 'clarity.tasks.v1'
-const LISTS_KEY = 'clarity.lists.v1'
+/**
+ * Local persistence layer.
+ *
+ * Caches are namespaced per *scope* — the signed-in user's id, or `local` for
+ * the pre-auth session. Without this, signing out on a shared device would
+ * leave one account's tasks visible to the next person to sign in.
+ *
+ * Everything here is intentionally dumb key/value work: swapping localStorage
+ * for IndexedDB (or a different backend) only touches this file.
+ */
+
+export const LOCAL_SCOPE = 'local'
+
+const PREFIX = 'clarity.v2'
 const THEME_KEY = 'clarity.theme.v1'
-const SEEDED_KEY = 'clarity.seeded.v1'
 
-export function loadTasks(): Task[] | null {
+const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
+const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
+
+function read<T>(key: string): T | null {
   try {
-    const raw = localStorage.getItem(TASKS_KEY)
-    return raw ? (JSON.parse(raw) as Task[]) : null
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : null
   } catch {
     return null
   }
 }
 
-export function saveTasks(tasks: Task[]): void {
+function write(key: string, value: unknown): void {
   try {
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks))
+    localStorage.setItem(key, JSON.stringify(value))
   } catch {
-    /* storage full / unavailable — fail silently */
+    /* storage full / unavailable — the server copy is the source of truth */
   }
 }
 
-export function loadLists(): TaskList[] | null {
-  try {
-    const raw = localStorage.getItem(LISTS_KEY)
-    return raw ? (JSON.parse(raw) as TaskList[]) : null
-  } catch {
-    return null
-  }
+export function loadTasks(scope: string): Task[] | null {
+  return read<Task[]>(tasksKey(scope))
 }
 
-export function saveLists(lists: TaskList[]): void {
+export function saveTasks(scope: string, tasks: Task[]): void {
+  write(tasksKey(scope), tasks)
+}
+
+export function loadLists(scope: string): TaskList[] | null {
+  return read<TaskList[]>(listsKey(scope))
+}
+
+export function saveLists(scope: string, lists: TaskList[]): void {
+  write(listsKey(scope), lists)
+}
+
+/** Drop a scope's cache entirely (used on sign-out). */
+export function clearScope(scope: string): void {
   try {
-    localStorage.setItem(LISTS_KEY, JSON.stringify(lists))
+    localStorage.removeItem(tasksKey(scope))
+    localStorage.removeItem(listsKey(scope))
   } catch {
     /* ignore */
   }
 }
 
 export function loadTheme(): 'light' | 'dark' | null {
-  const v = localStorage.getItem(THEME_KEY)
-  return v === 'light' || v === 'dark' ? v : null
+  try {
+    const v = localStorage.getItem(THEME_KEY)
+    return v === 'light' || v === 'dark' ? v : null
+  } catch {
+    return null
+  }
 }
 
 export function saveTheme(theme: 'light' | 'dark'): void {
   try {
     localStorage.setItem(THEME_KEY, theme)
-  } catch {
-    /* ignore */
-  }
-}
-
-export function isSeeded(): boolean {
-  return localStorage.getItem(SEEDED_KEY) === '1'
-}
-
-export function markSeeded(): void {
-  try {
-    localStorage.setItem(SEEDED_KEY, '1')
   } catch {
     /* ignore */
   }
