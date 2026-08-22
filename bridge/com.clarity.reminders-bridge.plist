@@ -8,7 +8,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/usr/bin/python3</string>
-    <string>/Users/azmerfaiesal/Library/CloudStorage/GoogleDrive-azmerfaiesal@gmail.com/My Drive/Obsidian/The Second Brain/AI Playground/Hermes/clarity/bridge/clarity_reminders_bridge.py</string>
+    <string>/Users/azmerfaiesal/clarity-bridge/clarity_reminders_bridge.py</string>
     <string>--once</string>
   </array>
 
