@@ -10,7 +10,6 @@ import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
 import { useTaskStore } from './store/taskStore'
 import AuthGate from './components/AuthGate'
-import { useAuth } from './store/auth'
 import { DEFAULT_FILTERS, type Filters, type SortMode, type Task, type ViewId } from './types'
 import { isOverdue, sectionLabel, todayStr, formatDueDate } from './utils/dateUtils'
 import { applyFilters, applySearch, groupByDate, sortTasks, tasksForView } from './utils/taskUtils'
@@ -36,7 +35,6 @@ function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string 
 
 function AppShell() {
   const store = useTaskStore()
-  const { user: authUser } = useAuth()
   const { tasks, lists } = store
 
   const [view, setView] = useState<ViewId>('today')
@@ -138,7 +136,6 @@ function AppShell() {
         onCloseMobile={() => setMobileNavOpen(false)}
         onAddList={(name, color) => store.addList(name, color)}
         onDeleteList={(id) => store.deleteList(id)}
-        userId={authUser?.id}
       />
 
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">

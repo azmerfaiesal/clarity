@@ -6,7 +6,6 @@ import {
   useMemo,
   useReducer,
   useRef,
-  useState,
   type ReactNode,
 } from 'react'
 import type { Priority, Task, TaskList } from '../types'
@@ -220,14 +219,10 @@ function initState(): State {
   const tasks = loadTasks()
   const lists = loadLists()
   if (tasks !== null && lists !== null) {
-    // Migrate older records that predate the recycle bin / Reminders sync
+    // Migrate older records that predate the recycle bin
     const migrated = tasks.map((t) => ({
       ...t,
       deletedAt: (t.deletedAt ?? null) as string | null,
-      source: (t.source ?? 'local') as 'local' | 'reminders',
-      externalId: (t.externalId ?? null) as string | null,
-      sourceList: (t.sourceList ?? null) as string | null,
-      syncedAt: (t.syncedAt ?? null) as string | null,
     }))
     return { tasks: migrated, lists, lastDeleted: null }
   }
@@ -239,7 +234,6 @@ export interface TaskStore {
   tasks: Task[]
   lists: TaskList[]
   lastDeleted: State['lastDeleted']
-  syncing: boolean
   addTask: (input: {
     title: string
     description?: string
@@ -275,7 +269,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     (action: Action) => rawDispatch({ ...action, userId } as unknown as Action),
     [userId],
   )
-  const [syncing, setSyncing] = useState(false)
 
   // Local persistence (offline cache / pre-auth)
   useEffect(() => saveTasks(state.tasks), [state.tasks])
@@ -289,7 +282,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     didLoad.current = true
     let unsub: (() => void) | undefined
     ;(async () => {
-      setSyncing(true)
       const { tasks, lists, fromServer } = await loadFromServer(userId)
       if (fromServer && (tasks.length || lists.length)) {
         // Merge: server wins for existing ids, keep local-only rows too.
@@ -306,7 +298,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         (serverTasks) => dispatch({ type: 'REPLACE_TASKS', tasks: serverTasks }),
         (serverLists) => dispatch({ type: 'REPLACE_LISTS', lists: serverLists }),
       )
-      setSyncing(false)
     })()
     return () => unsub?.()
   }, [userId, state.tasks, state.lists])
@@ -342,10 +333,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       completedAt: null,
       updatedAt: new Date().toISOString(),
       deletedAt: null,
-      source: 'local',
-      externalId: null,
-      sourceList: null,
-      syncedAt: null,
     }
     dispatch({ type: 'ADD_TASK', task })
     return task
@@ -356,7 +343,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       tasks: state.tasks,
       lists: state.lists,
       lastDeleted: state.lastDeleted,
-      syncing,
       addTask,
       updateTask: (id, patch) => dispatch({ type: 'UPDATE_TASK', id, patch }),
       deleteTask: (id) => dispatch({ type: 'DELETE_TASK', id }),

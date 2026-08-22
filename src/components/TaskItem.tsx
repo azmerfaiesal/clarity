@@ -107,12 +107,6 @@ export function TaskItem({
                 {list.name}
               </span>
             )}
-            {task.source === 'reminders' && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-1.5 py-px text-[11px] text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                <Calendar className="h-2.5 w-2.5" aria-hidden />
-                {task.sourceList ? `${task.sourceList} · Reminders` : 'Reminders'}
-              </span>
-            )}
             {task.tags.map((tag) => (
               <span
                 key={tag}

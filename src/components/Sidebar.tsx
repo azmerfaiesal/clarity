@@ -10,7 +10,6 @@ import {
 import { useState } from 'react'
 import type { Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
-import { SyncButton } from './SyncButton'
 
 const LIST_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
@@ -60,7 +59,6 @@ export function Sidebar({
   onCloseMobile,
   onAddList,
   onDeleteList,
-  userId,
 }: {
   view: ViewId
   tasks: Task[]
@@ -70,7 +68,6 @@ export function Sidebar({
   onCloseMobile: () => void
   onAddList: (name: string, color: string) => void
   onDeleteList: (id: string) => void
-  userId: string | undefined
 }) {
   const [addingList, setAddingList] = useState(false)
   const [newListName, setNewListName] = useState('')
@@ -260,7 +257,6 @@ export function Sidebar({
 
       {/* Footer */}
       <div className="border-t border-neutral-200/70 p-2.5 dark:border-neutral-800">
-        {userId && <SyncButton userId={userId} />}
       </div>
     </div>
   )

@@ -89,10 +89,6 @@ export function seedTasks(): Task[] {
     deletedAt: null,
     favorite: false,
     tags: [] as string[],
-    source: 'local' as const,
-    externalId: null,
-    sourceList: null,
-    syncedAt: null,
   }
 
   const tasks: Task[] = [

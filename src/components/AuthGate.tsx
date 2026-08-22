@@ -1,11 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { useAuth } from '../store/auth'
-import { useTaskStore } from '../store/taskStore'
 
 function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading, signIn, signUp, signOut } = useAuth()
-  const { syncing } = useTaskStore()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -95,12 +93,6 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative min-h-screen">
-      {syncing && (
-        <div className="fixed right-3 top-3 z-50 flex items-center gap-1.5 rounded-full bg-neutral-900/90 px-3 py-1.5 text-xs text-white shadow-sm dark:bg-neutral-100/90 dark:text-neutral-900">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Syncing
-        </div>
-      )}
       <div className="fixed right-3 top-3 z-40 hidden sm:block">
         <button
           type="button"

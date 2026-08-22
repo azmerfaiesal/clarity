@@ -75,10 +75,6 @@ function rowToTask(r: Record<string, unknown>): Task {
     completedAt: (r.completed_at as string | null) ?? null,
     updatedAt: String(r.updated_at ?? new Date().toISOString()),
     deletedAt: (r.deleted_at as string | null) ?? null,
-    source: ((r.source as Task['source']) ?? 'local'),
-    externalId: (r.external_id as string | null) ?? null,
-    sourceList: (r.source_list as string | null) ?? null,
-    syncedAt: (r.synced_at as string | null) ?? null,
   }
 }
 
@@ -100,10 +96,6 @@ function taskToRow(t: Task, userId: string) {
     completed_at: t.completedAt,
     updated_at: t.updatedAt,
     deleted_at: t.deletedAt,
-    source: t.source,
-    external_id: t.externalId,
-    source_list: t.sourceList,
-    synced_at: t.syncedAt,
   }
 }
 
