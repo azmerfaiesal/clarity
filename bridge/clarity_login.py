@@ -21,6 +21,7 @@ import base64
 import urllib.request
 import urllib.error
 import webbrowser
+from typing import Optional
 
 SUPABASE_URL = "https://pakfyyvdfwxglcjkatqz.supabase.co"
 ANON_KEY = "sb_publishable_sC0C_y4pbJOUEANyk7o8Tg_u5PZpzVs"
@@ -61,7 +62,7 @@ def _save_session(session: dict) -> None:
     os.chmod(SESSION_PATH, 0o600)
 
 
-def _load_session() -> dict | None:
+def _load_session() -> Optional[dict]:
     try:
         with open(SESSION_PATH) as f:
             return json.load(f)
