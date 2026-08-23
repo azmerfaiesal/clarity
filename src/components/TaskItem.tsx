@@ -58,7 +58,7 @@ export function TaskItem({
             {task.title}
           </span>
           {task.favorite && (
-            <Star className="h-3.5 w-3.5 shrink-0 fill-p-med text-p-med" aria-label="Favorite" />
+            <Star className="h-3.5 w-3.5 shrink-0 fill-fav text-fav" aria-label="Favorite" />
           )}
         </div>
 
@@ -133,7 +133,7 @@ export function TaskItem({
             <>
               <MenuItem
                 icon={
-                  <Star className={`h-4 w-4 ${task.favorite ? 'fill-p-med text-p-med' : ''}`} />
+                  <Star className={`h-4 w-4 ${task.favorite ? 'fill-fav text-fav' : ''}`} />
                 }
                 onClick={() => {
                   onToggleFavorite()

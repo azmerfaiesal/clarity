@@ -18,6 +18,7 @@ export const LOCAL_SCOPE = 'local'
 const PREFIX = 'clarity.v2'
 const THEME_KEY = 'clarity.theme.v1'
 const FONT_KEY = 'clarity.fontsize.v1'
+const FONT_FAMILY_KEY = 'clarity.fontfamily.v1'
 
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
@@ -95,6 +96,23 @@ export function loadFontScale(): 'sm' | 'md' | 'lg' | 'xl' | null {
 export function saveFontScale(size: 'sm' | 'md' | 'lg' | 'xl'): void {
   try {
     localStorage.setItem(FONT_KEY, size)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** UI typeface preference. Validated by the caller against the font registry. */
+export function loadFontFamily(): string | null {
+  try {
+    return localStorage.getItem(FONT_FAMILY_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function saveFontFamily(key: string): void {
+  try {
+    localStorage.setItem(FONT_FAMILY_KEY, key)
   } catch {
     /* ignore */
   }

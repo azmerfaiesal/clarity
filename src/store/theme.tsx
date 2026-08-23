@@ -8,7 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { loadFontScale, loadTheme, saveFontScale, saveTheme } from './storage'
+import { loadFontFamily, loadFontScale, loadTheme, saveFontFamily, saveFontScale, saveTheme } from './storage'
+import { DEFAULT_FONT, FONTS, applyFont, type FontKey } from './fonts'
 
 export type Theme = 'light' | 'dark'
 export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -41,6 +42,8 @@ interface AppearanceState {
   controlledByHost: boolean
   fontSize: FontSize
   setFontSize: (f: FontSize) => void
+  fontFamily: FontKey
+  setFontFamily: (f: FontKey) => void
 }
 
 const ThemeContext = createContext<AppearanceState | null>(null)
@@ -62,6 +65,10 @@ function applyFontSize(f: FontSize) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => loadTheme() ?? 'light')
   const [fontSize, setFontSizeState] = useState<FontSize>(() => loadFontScale() ?? 'md')
+  const [fontFamily, setFontFamilyState] = useState<FontKey>(() => {
+    const saved = loadFontFamily()
+    return saved && saved in FONTS ? (saved as FontKey) : DEFAULT_FONT
+  })
   const [controlledByHost, setControlledByHost] = useState(false)
   const hostControlled = useRef(false)
 
@@ -72,6 +79,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     applyFontSize(fontSize)
   }, [fontSize])
+
+  useEffect(() => {
+    applyFont(fontFamily)
+  }, [fontFamily])
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -101,6 +112,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setFontSizeState(f)
   }, [])
 
+  const setFontFamily = useCallback((f: FontKey) => {
+    saveFontFamily(f)
+    setFontFamilyState(f)
+  }, [])
+
   const value = useMemo<AppearanceState>(
     () => ({
       theme,
@@ -109,8 +125,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       controlledByHost,
       fontSize,
       setFontSize,
+      fontFamily,
+      setFontFamily,
     }),
-    [theme, setTheme, controlledByHost, fontSize, setFontSize],
+    [theme, setTheme, controlledByHost, fontSize, setFontSize, fontFamily, setFontFamily],
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

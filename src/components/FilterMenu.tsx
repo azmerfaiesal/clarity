@@ -139,7 +139,7 @@ export function FilterMenu({
             selected={filters.favoriteOnly}
             onClick={() => onChange({ ...filters, favoriteOnly: !filters.favoriteOnly })}
           >
-            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-p-med text-p-med' : 'text-faint'}`} />
+            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-fav text-fav' : 'text-faint'}`} />
             Favorites only
           </Row>
           {activeCount > 0 && (

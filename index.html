@@ -28,6 +28,27 @@
           var scales = { sm: '0.9', md: '1', lg: '1.15', xl: '1.3' };
           var size = localStorage.getItem('clarity.fontsize.v1');
           if (scales[size]) document.documentElement.style.setProperty('--fs', scales[size]);
+
+          // Non-default UI faces are requested here rather than after hydration,
+          // so a chosen font is already downloading during first paint.
+          // Keep in sync with src/store/fonts.ts.
+          var fonts = {
+            chakra: ['Chakra+Petch:wght@400;500;600;700', '"Chakra Petch"'],
+            exo: ['Exo+2:wght@400;500;600;700', '"Exo 2"'],
+            plex: ['IBM+Plex+Sans:wght@400;500;600;700', '"IBM Plex Sans"'],
+            mono: ['JetBrains+Mono:wght@400;500;600;700', '"JetBrains Mono"']
+          };
+          var face = fonts[localStorage.getItem('clarity.fontfamily.v1')];
+          if (face) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/css2?family=' + face[0] + '&display=swap';
+            document.head.appendChild(link);
+            document.documentElement.style.setProperty(
+              '--ui-font',
+              face[1] + ', "Space Grotesk", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'
+            );
+          }
         } catch (e) {
           /* keep the light default */
         }

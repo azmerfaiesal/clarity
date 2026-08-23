@@ -90,7 +90,7 @@ export function TaskEditor({
  className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
               <Star
- className={`h-4 w-4 ${favorite ? 'fill-p-med text-p-med' : ''}`}
+ className={`h-4 w-4 ${favorite ? 'fill-fav text-fav' : ''}`}
               />
             </button>
             <button

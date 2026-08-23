@@ -31,11 +31,14 @@ each own exactly one job.
 | Fluorescent green | Done and healthy — completed tasks, sync OK, low urgency |
 | Amber | Medium urgency |
 | Red | High urgency, overdue, destructive |
+| Neon pink | Starred, and nothing else |
 
 Green / amber / red therefore double as the priority ramp, which is the reading
-most people already have. Nothing is coloured for decoration alone. In light
-mode each hue is a deepened version of the same colour so it can carry text at
-AA; in dark they run at full luminance.
+most people already have. Nothing is coloured for decoration alone — pink was
+added because the star used to borrow amber, so a favourite and a
+medium-priority task read as the same signal. In light mode each hue is a
+deepened version of the same colour so it can carry text at AA; in dark they
+run at full luminance.
 
 Every colour is a semantic token (`--ink`, `--accent`, `--success`, `--p-med`, …)
 declared once in `src/index.css` and re-declared under `[data-theme="dark"]`.
@@ -45,6 +48,28 @@ variant anywhere except where elevation genuinely differs.
 
 Every text token clears WCAG AA (4.5:1) against both the base and surface
 backgrounds, in both themes.
+
+### Typeface
+
+Settings → Appearance offers five UI faces, each row previewed in itself:
+
+| Face | Feel |
+| --- | --- |
+| **Space Grotesk** (default) | Geometric with odd details. Matches the Daily Dashboard. |
+| **Chakra Petch** | Angular and squared off — the most obviously sci-fi. |
+| **Exo 2** | Rounded technological. Softer, still forward-looking. |
+| **IBM Plex Sans** | Engineered and neutral. Easiest to read for long lists. |
+| **JetBrains Mono** | Everything monospaced — one instrument panel. |
+
+All five stay readable at 11–13px, which is where most of this app lives.
+Display faces that look the part at 40px but fall apart in a task list
+(Orbitron and similar) were left out on purpose. The metadata face stays
+JetBrains Mono regardless; only the UI face changes.
+
+Only the default pair is requested in `index.html`. Other faces load on demand
+— and when one is already chosen, the request is issued from the pre-paint
+script so it downloads during first paint rather than after hydration.
+Registry: `src/store/fonts.ts`.
 
 ### Text size
 

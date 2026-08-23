@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { ALargeSmall, Cloud, CloudOff, Moon, Sun, X } from 'lucide-react'
+import { ALargeSmall, Check, Cloud, CloudOff, Moon, Sun, Type, X } from 'lucide-react'
 import { useAuth } from '../store/auth'
 import { useTaskStore } from '../store/taskStore'
 import { FONT_SIZE_LABELS, useTheme, type FontSize } from '../store/theme'
+import { DEFAULT_FONT, FONTS, FONT_KEYS, ensureFontLoaded } from '../store/fonts'
 
 const SHORTCUTS: [string, string][] = [
   ['N', 'New task'],
@@ -24,9 +25,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function Settings({ onClose }: { onClose: () => void }) {
-  const { theme, setTheme, controlledByHost, fontSize, setFontSize } = useTheme()
+  const { theme, setTheme, controlledByHost, fontSize, setFontSize, fontFamily, setFontFamily } =
+    useTheme()
   const { user, signOut } = useAuth()
   const store = useTaskStore()
+
+  useEffect(() => {
+    FONT_KEYS.forEach(ensureFontLoaded)
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -132,6 +138,51 @@ export function Settings({ onClose }: { onClose: () => void }) {
             <p className="mt-2 text-xs text-faint">
               Scales every label in the app. Saved on this device.
             </p>
+          </div>
+
+          <div className="mt-4">
+            <div className="mb-2 flex items-center gap-1.5 text-xs text-muted">
+              <Type className="h-3.5 w-3.5 text-faint" aria-hidden />
+              Typeface
+            </div>
+            <div role="radiogroup" aria-label="Typeface" className="space-y-1">
+              {FONT_KEYS.map((key) => {
+                const font = FONTS[key]
+                const selected = fontFamily === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setFontFamily(key)}
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-left transition-colors ${
+                      selected
+                        ? 'border-accent/50 bg-accent-soft'
+                        : 'border-line hover:bg-surface'
+                    }`}
+                  >
+                    <span className="min-w-0 flex-1">
+                      {/* Each row is set in the face it offers. */}
+                      <span
+                        className="block truncate text-sm font-medium text-ink"
+                        style={{ fontFamily: font.stack }}
+                      >
+                        {font.label}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-faint">{font.note}</span>
+                    </span>
+                    {selected && <Check className="h-4 w-4 shrink-0 text-accent" aria-hidden />}
+                  </button>
+                )
+              })}
+            </div>
+            {fontFamily !== DEFAULT_FONT && (
+              <p className="mt-2 text-xs text-faint">
+                The Daily Dashboard embeds Clarity in {FONTS[DEFAULT_FONT].label}; this choice
+                applies here only.
+              </p>
+            )}
           </div>
         </Section>
 
