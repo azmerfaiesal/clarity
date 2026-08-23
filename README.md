@@ -6,7 +6,7 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 
 ## Features
 
-- **Quick capture** — click "Add a task" (or press `N`), type, hit `Enter`. The form stays open so you can add several in a row. Expand for description, due date, priority, list, tags, and reminders.
+- **Quick capture** — click "Add a task" (or press `N`), type, hit `Enter`. The form stays open so you can add several in a row. Expand for description, due date, priority, list, tags, and reminders. Only the title is required — a task can carry no due date and no reminder, and both are clearable after the fact.
 - **Views** — Inbox, Today, Upcoming (grouped by date), Completed, Favorites, Recycle Bin, and custom lists.
 - **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); deleting a list returns its tasks to Inbox.
 - **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes.

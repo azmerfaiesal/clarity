@@ -173,8 +173,9 @@ export function TaskInput({
               <button
                 type="button"
                 aria-label="Clear due date"
+                title="Clear due date"
                 onClick={() => setDueDate(null)}
- className="cursor-pointer rounded-md p-0.5 text-faint hover:text-ink"
+                className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
               >
  <X className="h-3.5 w-3.5" />
               </button>
@@ -242,23 +243,34 @@ export function TaskInput({
             />
           </label>
 
-          {/* Reminder */}
+          {/* Reminder — optional, and removable once set. */}
           <label
- className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
               reminder
                 ? 'border-accent/40 bg-accent-soft text-accent'
                 : 'border-line text-muted'
             }`}
           >
- <Bell className="h-3.5 w-3.5" aria-hidden />
+            <Bell className="h-3.5 w-3.5" aria-hidden />
             <input
               type="datetime-local"
               aria-label="Reminder"
               value={reminder}
               onChange={(e) => setReminder(e.target.value)}
- className="cursor-pointer bg-transparent text-xs outline-none dark:[color-scheme:dark]"
+              className="cursor-pointer bg-transparent text-xs outline-none dark:[color-scheme:dark]"
             />
           </label>
+          {reminder && (
+            <button
+              type="button"
+              aria-label="Clear reminder"
+              title="Clear reminder"
+              onClick={() => setReminder('')}
+              className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { Calendar, Flag, Inbox, Star, Tag, Trash2, X } from 'lucide-react'
+import { Bell, Calendar, Flag, Inbox, Star, Tag, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Priority, Task, TaskList } from '../types'
 import { formatTimestamp } from '../utils/dateUtils'
@@ -140,16 +140,22 @@ export function TaskEditor({
           />
 
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
- <Field label="Due date" icon={<Calendar className="h-3.5 w-3.5" />}>
+            <Field
+              label="Due date"
+              icon={<Calendar className="h-3.5 w-3.5" />}
+              onClear={dueDate ? () => setDueDate(null) : undefined}
+            >
               <input
                 type="date"
+                aria-label="Due date"
                 value={dueDate ?? ''}
                 onChange={(e) => setDueDate(e.target.value || null)}
- className="w-full bg-transparent text-sm text-ink outline-none"
+                className="w-full bg-transparent text-sm text-ink outline-none"
               />
             </Field>
- <Field label="List" icon={<Inbox className="h-3.5 w-3.5" />}>
+            <Field label="List" icon={<Inbox className="h-3.5 w-3.5" />}>
               <select
+                aria-label="List"
                 value={listId ?? ''}
                 onChange={(e) => setListId(e.target.value || null)}
  className="w-full cursor-pointer bg-transparent text-sm text-ink outline-none"
@@ -162,20 +168,26 @@ export function TaskEditor({
                 ))}
               </select>
             </Field>
- <Field label="Tags" icon={<Tag className="h-3.5 w-3.5" />}>
+            <Field label="Tags" icon={<Tag className="h-3.5 w-3.5" />}>
               <input
+                aria-label="Tags"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="comma, separated"
  className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
               />
             </Field>
- <Field label="Reminder" icon={<Calendar className="h-3.5 w-3.5" />}>
+            <Field
+              label="Reminder"
+              icon={<Bell className="h-3.5 w-3.5" />}
+              onClear={reminder ? () => setReminder('') : undefined}
+            >
               <input
                 type="datetime-local"
+                aria-label="Reminder"
                 value={reminder}
                 onChange={(e) => setReminder(e.target.value)}
- className="w-full bg-transparent text-sm text-ink outline-none"
+                className="w-full bg-transparent text-sm text-ink outline-none"
               />
             </Field>
           </div>
@@ -246,20 +258,34 @@ export function TaskEditor({
 function Field({
   label,
   icon,
+  onClear,
   children,
 }: {
   label: string
   icon: React.ReactNode
+  /** When given, a clear button appears — the field is optional and set. */
+  onClear?: () => void
   children: React.ReactNode
 }) {
   return (
- <label className="block">
- <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-faint">
+    <div className="block">
+      <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-faint">
         {icon} {label}
       </span>
- <div className="rounded-md border border-line px-2.5 py-2">
-        {children}
+      <div className="flex items-center gap-1 rounded-md border border-line px-2.5 py-2">
+        <div className="min-w-0 flex-1">{children}</div>
+        {onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label={`Clear ${label.toLowerCase()}`}
+            title={`Clear ${label.toLowerCase()}`}
+            className="-mr-1 shrink-0 cursor-pointer rounded p-0.5 text-faint transition-colors hover:bg-surface hover:text-danger"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
       </div>
-    </label>
+    </div>
   )
 }
