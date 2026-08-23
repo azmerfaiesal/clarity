@@ -1,6 +1,6 @@
-import { Calendar, Copy, Flag, MoreHorizontal, Star, Trash2 } from 'lucide-react'
+import { AlarmClock, Calendar, Copy, Flag, MoreHorizontal, Star, Trash2 } from 'lucide-react'
 import type { Task, TaskList } from '../types'
-import { formatDueDate } from '../utils/dateUtils'
+import { formatDateTime, formatDueDate, formatReminder } from '../utils/dateUtils'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { TaskCheckbox } from './TaskCheckbox'
@@ -29,6 +29,7 @@ export function TaskItem({
   onDuplicate: () => void
 }) {
   const due = formatDueDate(task.dueDate)
+  const reminder = formatReminder(task.reminder)
   const list = lists.find((l) => l.id === task.listId)
 
   return (
@@ -66,7 +67,7 @@ export function TaskItem({
           <p className="mt-0.5 truncate text-sm text-muted">{task.description}</p>
         )}
 
-        {(due || list || task.tags.length > 0 || task.priority !== 'none') && (
+        {(due || reminder || list || task.tags.length > 0 || task.priority !== 'none') && (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-2xs tracking-tight">
             {due && (
               <span
@@ -82,6 +83,16 @@ export function TaskItem({
               >
                 <Calendar className="h-3 w-3" aria-hidden />
                 {due.text}
+              </span>
+            )}
+            {reminder && (
+              <span
+                className="inline-flex items-center gap-1 text-faint"
+                title={`Reminder · ${formatDateTime(task.reminder!)}`}
+              >
+                <AlarmClock className="h-3 w-3" aria-hidden />
+                <span className="sr-only">Reminder set for </span>
+                {reminder}
               </span>
             )}
             {task.priority !== 'none' && (

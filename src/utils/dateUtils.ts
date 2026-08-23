@@ -122,3 +122,41 @@ export function formatRelative(iso: string): string {
   if (days < 7) return `${days}d ago`
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
+
+/**
+ * Reminders travel between three representations and every hop used to be lossy:
+ *
+ *   <input type="datetime-local">  "2026-08-25T09:00"        naive, local
+ *   the model / Postgres timestamptz "2026-08-25T01:00:00Z"  a real instant
+ *
+ * Handing the naive string straight to a UTC database made it read as 09:00 UTC
+ * — every reminder drifted by the local offset. Handing the instant back to the
+ * input made it render blank, because the control rejects a zone suffix, so the
+ * value silently vanished on the next save. These two convert explicitly.
+ */
+export function fromDateTimeLocal(value: string): string | null {
+  if (!value) return null
+  // `new Date("...T09:00")` is parsed in the local zone, which is what we want.
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+}
+
+export function toDateTimeLocal(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** Compact reminder label: "9:00 AM" today, "25 Aug 9:00 AM" otherwise. */
+export function formatReminder(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  const time = d
+    .toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+    .replace(/\b(am|pm)\b/i, (m) => m.toUpperCase())
+  if (toDateStr(d) === todayStr()) return time
+  return `${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} ${time}`
+}

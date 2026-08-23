@@ -1,7 +1,7 @@
 import { Bell, Calendar, Flag, Inbox, Plus, Tag, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Priority, TaskList } from '../types'
-import { addDays, todayStr } from '../utils/dateUtils'
+import { addDays, fromDateTimeLocal, todayStr } from '../utils/dateUtils'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
 
 const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high']
@@ -78,7 +78,7 @@ export function TaskInput({
         .split(',')
         .map((t) => t.trim().replace(/^#/, ''))
         .filter(Boolean),
-      reminder: reminder || null,
+      reminder: fromDateTimeLocal(reminder),
     })
     reset()
     titleRef.current?.focus()

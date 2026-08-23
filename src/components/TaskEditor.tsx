@@ -1,7 +1,7 @@
 import { Bell, Calendar, Flag, Inbox, Star, Tag, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Priority, Task, TaskList } from '../types'
-import { formatTimestamp } from '../utils/dateUtils'
+import { formatTimestamp, fromDateTimeLocal, toDateTimeLocal } from '../utils/dateUtils'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
 
 const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high']
@@ -33,7 +33,7 @@ export function TaskEditor({
   const [listId, setListId] = useState<string | null>(task.listId)
   const [tagsInput, setTagsInput] = useState(task.tags.join(', '))
   const [favorite, setFavorite] = useState(task.favorite)
-  const [reminder, setReminder] = useState(task.reminder ?? '')
+  const [reminder, setReminder] = useState(() => toDateTimeLocal(task.reminder))
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -59,7 +59,7 @@ export function TaskEditor({
         .map((t) => t.trim().replace(/^#/, ''))
         .filter(Boolean),
       favorite,
-      reminder: reminder || null,
+      reminder: fromDateTimeLocal(reminder),
     })
     onClose()
   }
