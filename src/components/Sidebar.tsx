@@ -158,13 +158,6 @@ export function Sidebar({
           onClick={() => nav('favorites')}
         />
         <NavItem
-          icon={<NotebookPen className="h-4 w-4" />}
-          label="Brain Dump"
-          count={noteCount}
-          active={view === 'braindump'}
-          onClick={() => nav('braindump')}
-        />
-        <NavItem
           icon={<Trash2 className="h-4 w-4" />}
           label="Recycle Bin"
           count={tasks.filter((t) => t.deletedAt !== null).length}
@@ -278,6 +271,18 @@ export function Sidebar({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Brain Dump is not a task view, so it sits apart from them and from the
+          lists that filter them. */}
+      <div className="border-t border-line px-2.5 py-2">
+        <NavItem
+          icon={<NotebookPen className="h-4 w-4" />}
+          label="Brain Dump"
+          count={noteCount}
+          active={view === 'braindump'}
+          onClick={() => nav('braindump')}
+        />
       </div>
 
       {/* Footer */}
