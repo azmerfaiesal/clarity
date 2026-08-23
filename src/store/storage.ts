@@ -84,10 +84,10 @@ export function saveTheme(theme: 'light' | 'dark'): void {
 export function seedLists(): TaskList[] {
   const now = new Date().toISOString()
   return [
-    { id: 'list-personal', name: 'Personal', color: '#3ddbf0', createdAt: now },
-    { id: 'list-work', name: 'Work', color: '#4aa8ff', createdAt: now },
-    { id: 'list-shopping', name: 'Shopping', color: '#5eead4', createdAt: now },
-    { id: 'list-projects', name: 'Projects', color: '#f5b33c', createdAt: now },
+    { id: 'list-personal', name: 'Personal', color: '#1a1a1a', createdAt: now },
+    { id: 'list-work', name: 'Work', color: '#4d4d4d', createdAt: now },
+    { id: 'list-shopping', name: 'Shopping', color: '#808080', createdAt: now },
+    { id: 'list-projects', name: 'Projects', color: '#a6a6a6', createdAt: now },
   ]
 }
 

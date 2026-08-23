@@ -5,6 +5,8 @@ import { PRIORITY_LABEL } from '../utils/taskUtils'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { TaskCheckbox } from './TaskCheckbox'
 
+// Priority reads as value plus fill: high is solid ink, medium a solid mid
+// grey, low an outline. No hue involved.
 const FLAG_COLOR: Record<string, string> = {
   low: 'text-p-low',
   medium: 'text-p-med',
@@ -58,7 +60,7 @@ export function TaskItem({
             {task.title}
           </span>
           {task.favorite && (
-            <Star className="h-3.5 w-3.5 shrink-0 fill-p-med text-p-med" aria-label="Favorite" />
+            <Star className="h-3.5 w-3.5 shrink-0 fill-ink text-ink" aria-label="Favorite" />
           )}
         </div>
 
@@ -74,9 +76,9 @@ export function TaskItem({
                   task.completed
                     ? 'text-faint'
                     : due.tone === 'overdue'
-                      ? 'text-danger'
+                      ? 'font-semibold text-ink'
                       : due.tone === 'today'
-                        ? 'text-accent'
+                        ? 'text-ink'
                         : 'text-faint'
                 }`}
               >
@@ -86,14 +88,17 @@ export function TaskItem({
             )}
             {task.priority !== 'none' && (
               <span className={`inline-flex items-center gap-1 ${FLAG_COLOR[task.priority]}`}>
-                <Flag className="h-3 w-3 fill-current" aria-hidden />
+                <Flag
+                  className={`h-3 w-3 ${task.priority === 'low' ? '' : 'fill-current'}`}
+                  aria-hidden
+                />
                 <span className="sr-only">{PRIORITY_LABEL[task.priority]} priority</span>
               </span>
             )}
             {list && (
               <span className="inline-flex items-center gap-1.5 text-faint">
                 <span
-                  className="h-1.5 w-1.5 rounded-full"
+                  className="h-1.5 w-1.5 rounded-full swatch"
                   style={{ backgroundColor: list.color }}
                   aria-hidden
                 />
@@ -133,7 +138,7 @@ export function TaskItem({
             <>
               <MenuItem
                 icon={
-                  <Star className={`h-4 w-4 ${task.favorite ? 'fill-p-med text-p-med' : ''}`} />
+                  <Star className={`h-4 w-4 ${task.favorite ? 'fill-ink text-ink' : ''}`} />
                 }
                 onClick={() => {
                   onToggleFavorite()

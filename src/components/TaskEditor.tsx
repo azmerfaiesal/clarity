@@ -13,6 +13,9 @@ const FLAG_STYLE: Record<Priority, string> = {
   high: 'text-p-high',
 }
 
+/** Low priority stays an outline so the three levels differ by fill as well as value. */
+const flagFill = (p: Priority, active: boolean) => (active && p !== 'none' && p !== 'low' ? 'fill-current' : '')
+
 export function TaskEditor({
   task,
   lists,
@@ -90,7 +93,7 @@ export function TaskEditor({
  className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
               <Star
- className={`h-4 w-4 ${favorite ? 'fill-p-med text-p-med' : ''}`}
+ className={`h-4 w-4 ${favorite ? 'fill-ink text-ink' : ''}`}
               />
             </button>
             <button
@@ -205,7 +208,7 @@ export function TaskEditor({
  <span className="inline-flex items-center gap-1.5">
                     {p !== 'none' && (
                       <Flag
- className={`h-3 w-3 ${FLAG_STYLE[p]} ${priority === p ? 'fill-current' : ''}`}
+ className={`h-3 w-3 ${FLAG_STYLE[p]} ${flagFill(p, priority === p)}`}
                       />
                     )}
                     {PRIORITY_LABEL[p]}

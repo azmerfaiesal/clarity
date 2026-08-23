@@ -15,7 +15,8 @@ import type { Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
 import { useTheme } from '../store/theme'
 
-const LIST_COLORS = ['#3ddbf0', '#4aa8ff', '#5eead4', '#f5b33c', '#ff5f70', '#a78bfa', '#f472b6']
+// A value ramp, not a hue wheel — lists stay distinguishable in monochrome.
+const LIST_COLORS = ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#a6a6a6']
 
 function NavItem({
   icon,
@@ -44,7 +45,7 @@ function NavItem({
       {/* Active rail — the one place the accent reads as "you are here". */}
       {active && (
         <span
-          className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent glow-sm"
+          className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent"
           aria-hidden
         />
       )}
@@ -103,7 +104,7 @@ export function Sidebar({
     <div className="flex h-full flex-col">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 pt-5 pb-5">
-        <div className="glow flex h-7 w-7 items-center justify-center rounded-md bg-accent">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent">
           <CheckCircle2 className="h-4 w-4 text-accent-ink" strokeWidth={2.5} />
         </div>
         <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">Clarity</span>
@@ -195,13 +196,13 @@ export function Sidebar({
                 >
                   {active && (
                     <span
-                      className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent glow-sm"
+                      className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent"
                       aria-hidden
                     />
                   )}
                   <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: l.color, boxShadow: `0 0 8px -1px ${l.color}` }}
+                    className="h-1.5 w-1.5 shrink-0 rounded-full swatch"
+                    style={{ backgroundColor: l.color }}
                     aria-hidden
                   />
                   <span className="flex-1 truncate">{l.name}</span>
@@ -248,7 +249,7 @@ export function Sidebar({
                     aria-checked={newListColor === c}
                     aria-label={`Color ${c}`}
                     onClick={() => setNewListColor(c)}
-                    className={`h-3.5 w-3.5 cursor-pointer rounded-full transition-transform ${
+                    className={`h-3.5 w-3.5 cursor-pointer rounded-full swatch border border-line transition-transform ${
                       newListColor === c
                         ? 'ring-2 ring-accent ring-offset-2 ring-offset-raised'
                         : 'hover:scale-110'

@@ -13,6 +13,9 @@ const FLAG_STYLE: Record<Priority, string> = {
   high: 'text-p-high',
 }
 
+/** Low priority stays an outline so the three levels differ by fill as well as value. */
+const flagFill = (p: Priority, active: boolean) => (active && p !== 'none' && p !== 'low' ? 'fill-current' : '')
+
 /** Quick-add input that expands into a compact creation form. Enter creates the task. */
 export function TaskInput({
   lists,
@@ -205,7 +208,7 @@ export function TaskInput({
  <span className="text-faint">–</span>
                 ) : (
                   <Flag
- className={`h-3.5 w-3.5 ${FLAG_STYLE[p]} ${priority === p ? 'fill-current' : ''}`}
+ className={`h-3.5 w-3.5 ${FLAG_STYLE[p]} ${flagFill(p, priority === p)}`}
                   />
                 )}
               </button>

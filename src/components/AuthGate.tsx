@@ -29,9 +29,9 @@ function AuthGate({ children }: { children: ReactNode }) {
   if (!user && !LOCAL_ONLY) {
     return (
  <div className="flex min-h-screen items-center justify-center bg-bg px-4">
- <div className="w-full max-w-sm glow rounded-xl border border-line bg-raised p-7">
+ <div className="w-full max-w-sm lift rounded-xl border border-line bg-raised p-7">
  <div className="mb-5 flex items-center gap-2.5">
- <div className="flex h-8 w-8 items-center justify-center glow rounded-md bg-accent">
+ <div className="flex h-8 w-8 items-center justify-center lift rounded-md bg-accent">
  <CheckCircle2 className="h-5 w-5 text-accent-ink" strokeWidth={2.5} />
             </div>
             <div>

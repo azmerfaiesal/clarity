@@ -97,7 +97,7 @@ export function FilterMenu({
           <MenuLabel>Priority</MenuLabel>
           {(['high', 'medium', 'low', 'none'] as Priority[]).map((p) => (
             <Row key={p} selected={filters.priorities.includes(p)} onClick={() => togglePriority(p)}>
-              <Flag className={`h-3.5 w-3.5 ${FLAG_COLOR[p]} ${filters.priorities.includes(p) ? 'fill-current' : ''}`} />
+              <Flag className={`h-3.5 w-3.5 ${FLAG_COLOR[p]} ${filters.priorities.includes(p) && p !== 'low' ? 'fill-current' : ''}`} />
               {PRIORITY_LABEL[p]}
             </Row>
           ))}
@@ -130,7 +130,7 @@ export function FilterMenu({
               selected={filters.listId === l.id}
               onClick={() => onChange({ ...filters, listId: l.id })}
             >
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+              <span className="h-2 w-2 rounded-full swatch" style={{ backgroundColor: l.color }} />
               {l.name}
             </Row>
           ))}
@@ -139,7 +139,7 @@ export function FilterMenu({
             selected={filters.favoriteOnly}
             onClick={() => onChange({ ...filters, favoriteOnly: !filters.favoriteOnly })}
           >
-            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-p-med text-p-med' : 'text-faint'}`} />
+            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-ink text-ink' : 'text-faint'}`} />
             Favorites only
           </Row>
           {activeCount > 0 && (

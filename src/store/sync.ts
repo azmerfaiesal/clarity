@@ -103,7 +103,7 @@ function rowToList(r: Record<string, unknown>): TaskList {
   return {
     id: String(r.id),
     name: String(r.name ?? ''),
-    color: String(r.color ?? '#3ddbf0'),
+    color: String(r.color ?? '#4d4d4d'),
     createdAt: String(r.created_at ?? new Date().toISOString()),
   }
 }

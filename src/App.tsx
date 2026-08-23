@@ -132,7 +132,7 @@ function AppShell() {
   const filtered = isFilterActive(filters) || inlineQuery.trim() !== ''
 
   return (
- <div className="app-shell flex h-dvh bg-bg text-ink">
+ <div className="flex h-dvh bg-bg text-ink">
       <Sidebar
         view={view}
         tasks={tasks}
@@ -257,7 +257,7 @@ function AppShell() {
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}
           aria-label="Add task"
- className="fixed right-5 bottom-5 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
+ className="fixed right-5 bottom-5 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full lift bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
         >
  <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
@@ -344,7 +344,7 @@ function UpcomingGroups({
         <section key={g.date} aria-label={sectionLabel(g.date)}>
           <h2
  className={`mb-1.5 px-3 text-[12px] font-semibold tracking-wide uppercase ${
-              isOverdue(g.date) ? 'text-danger' : 'text-faint'
+              isOverdue(g.date) ? 'text-ink' : 'text-faint'
             }`}
           >
             {isOverdue(g.date) ? 'Overdue · ' : ''}

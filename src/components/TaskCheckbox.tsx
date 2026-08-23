@@ -36,7 +36,7 @@ export function TaskCheckbox({
       }}
       className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.5px] transition-all duration-150 ${
         completed
-          ? 'border-accent bg-accent glow-sm'
+          ? 'border-accent bg-accent lift-sm'
           : `${RING[priority]} bg-transparent hover:bg-accent-soft`
       } ${popping ? 'anim-check-pop' : ''}`}
     >

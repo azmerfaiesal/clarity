@@ -3,14 +3,18 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /*
- * Futuristic minimalist: a cool near-monochrome shell, hairline structure
- * instead of soft shadows, and a single luminous cyan that only appears where
- * something is live, selected, or actionable.
+ * Minimalist monochrome: no hue anywhere. Everything — emphasis, state,
+ * priority, destructiveness — is carried by value, weight and fill, on a
+ * neutral greyscale ramp. Structure is hairlines and whitespace.
  *
  * Colours are semantic tokens defined per theme below. Components reference
  * them through Tailwind utilities (bg-surface, text-ink, border-line…), so a
  * palette change happens here and nowhere else — and no `dark:` duplicate is
  * needed for anything that is purely a colour swap.
+ *
+ * `accent` is simply maximum contrast against the page: near-black on light,
+ * near-white on dark. Priority is a three-step value ramp (ink -> muted ->
+ * faint), reinforced by whether the flag is filled.
  */
 @theme inline {
   --color-bg: var(--bg);
@@ -43,56 +47,55 @@
   --radius-xl: 14px;
 }
 
-/* ---- Light: cool paper, ink-dark type, deep cyan accent ---- */
+/* ---- Light: paper white, near-black ink ---- */
 :root {
-  --bg: #f5f7fa;
+  --bg: #fafafa;
   --surface: #ffffff;
   --raised: #ffffff;
-  --line: #e3e8ef;
-  --line-strong: #cdd5e0;
-  --ink: #0b1017;
-  --muted: #5d6875;
-  --faint: #666f7c;
-  --accent: #097589;
-  --accent-hi: #075e6e;
-  --accent-soft: rgb(9 117 137 / 0.10);
+  --line: #e6e6e6;
+  --line-strong: #cfcfcf;
+  --ink: #0a0a0a;
+  --muted: #5c5c5c;
+  --faint: #707070;
+  --accent: #0a0a0a;
+  --accent-hi: #333333;
+  --accent-soft: rgb(10 10 10 / 0.06);
   --accent-ink: #ffffff;
-  --danger: #c62741;
-  --danger-soft: rgb(198 39 65 / 0.08);
-  --p-high: #d31f3f;
-  --p-med: #8f5d00;
-  --p-low: #1f6fd0;
+  /* Destructive is not a hue here — it is full ink plus an inverting hover. */
+  --danger: #0a0a0a;
+  --danger-soft: rgb(10 10 10 / 0.07);
+  --p-high: #0a0a0a;
+  --p-med: #5c5c5c;
+  --p-low: #707070;
 
-  --grid-line: rgb(11 16 23 / 0.028);
-  --bloom: rgb(9 117 137 / 0.07);
-  --glow: rgb(9 117 137 / 0.22);
-  --scrim: rgb(11 16 23 / 0.28);
+  --shadow-1: rgb(0 0 0 / 0.07);
+  --shadow-2: rgb(0 0 0 / 0.13);
+  --scrim: rgb(10 10 10 / 0.24);
 }
 
-/* ---- Dark: near-black instrument panel, luminous cyan ---- */
+/* ---- Dark: near-black ground, near-white ink ---- */
 [data-theme="dark"] {
-  --bg: #070809;
-  --surface: #0c0e12;
-  --raised: #111419;
-  --line: #1c212b;
-  --line-strong: #2b323f;
-  --ink: #e8edf4;
-  --muted: #8d97a8;
-  --faint: #767f8e;
-  --accent: #3ddbf0;
-  --accent-hi: #6ce8f8;
-  --accent-soft: rgb(61 219 240 / 0.11);
-  --accent-ink: #04141a;
-  --danger: #ff5f70;
-  --danger-soft: rgb(255 95 112 / 0.11);
-  --p-high: #ff5f70;
-  --p-med: #f5b33c;
-  --p-low: #4aa8ff;
+  --bg: #0a0a0a;
+  --surface: #151515;
+  --raised: #1a1a1a;
+  --line: #272727;
+  --line-strong: #3c3c3c;
+  --ink: #f0f0f0;
+  --muted: #a1a1a1;
+  --faint: #858585;
+  --accent: #f0f0f0;
+  --accent-hi: #ffffff;
+  --accent-soft: rgb(240 240 240 / 0.10);
+  --accent-ink: #0a0a0a;
+  --danger: #f0f0f0;
+  --danger-soft: rgb(240 240 240 / 0.12);
+  --p-high: #f0f0f0;
+  --p-med: #a1a1a1;
+  --p-low: #858585;
 
-  --grid-line: rgb(232 237 244 / 0.022);
-  --bloom: rgb(61 219 240 / 0.055);
-  --glow: rgb(61 219 240 / 0.32);
-  --scrim: rgb(0 0 0 / 0.6);
+  --shadow-1: rgb(0 0 0 / 0.5);
+  --shadow-2: rgb(0 0 0 / 0.7);
+  --scrim: rgb(0 0 0 / 0.62);
 }
 
 html,
@@ -109,26 +112,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/*
- * Faint engineering grid over the whole shell, with one soft accent bloom
- * behind the top-left corner. Both sit under the content and never scroll.
- */
-.app-shell {
-  position: relative;
-  isolation: isolate;
-}
-.app-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(52rem 34rem at 34% -12%, var(--bloom), transparent 70%),
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: 100% 100%, 56px 56px, 56px 56px;
-}
 
 /*
  * Sidebar: a translucent panel rather than an opaque block, so the grid runs
@@ -155,13 +138,26 @@ body {
   );
 }
 
-/* Accent glow, reserved for live/actionable surfaces. Declared as utilities so
-   variants (hover:, focus:) work on them like any other Tailwind class. */
-@utility glow {
-  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 24px -6px var(--glow);
+/* Neutral elevation. Declared as utilities so variants (hover:, focus:) work
+   on them like any other Tailwind class. */
+@utility lift {
+  box-shadow: 0 1px 2px var(--shadow-1), 0 12px 32px -14px var(--shadow-2);
 }
-@utility glow-sm {
-  box-shadow: 0 0 12px -3px var(--glow);
+@utility lift-sm {
+  box-shadow: 0 1px 2px var(--shadow-1);
+}
+
+/*
+ * List swatches. Lists store an arbitrary colour, so strip the hue and — on
+ * dark — invert the value too. A swatch that is dark ink on paper becomes
+ * light on the near-black ground, which keeps every list legible in both
+ * themes instead of one end of the ramp vanishing into the background.
+ */
+.swatch {
+  filter: grayscale(1);
+}
+[data-theme="dark"] .swatch {
+  filter: grayscale(1) invert(1);
 }
 
 /* Micro-label: the uppercase, wide-tracked caption used for section headers. */
@@ -217,17 +213,14 @@ body {
 }
 
 @keyframes check-pop {
-  0% {
+  from {
     transform: scale(0.6);
-    box-shadow: 0 0 0 0 var(--glow);
   }
   60% {
     transform: scale(1.15);
-    box-shadow: 0 0 0 6px transparent;
   }
-  100% {
+  to {
     transform: scale(1);
-    box-shadow: 0 0 0 0 transparent;
   }
 }
 

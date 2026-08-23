@@ -21,10 +21,23 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 
 ## Design
 
-Futuristic minimalist: a cool near-monochrome shell, hairline structure instead
-of soft shadows, and a single luminous cyan reserved for whatever is live,
-selected, or actionable. Metadata — counts, dates, tags, shortcuts — is set in a
-monospace face so the list reads like an instrument panel rather than a document.
+Minimalist monochrome — no hue anywhere. Emphasis, state, priority and
+destructiveness are all carried by value, weight and fill on a neutral
+greyscale ramp, with hairlines and whitespace doing the structural work.
+Metadata (counts, dates, tags, shortcut keys) is set in monospace.
+
+How the colourless signals work:
+
+- **Priority** is a three-step value ramp — high is solid ink, medium a solid
+  mid grey, low an outline flag. Fill and value together, so the levels stay
+  distinct at a glance.
+- **Due dates** are an emphasis ramp rather than a traffic light: overdue is
+  bold ink, today is ink, everything later is faint.
+- **Destructive actions** are full ink and invert on hover (dark fill, light
+  text) instead of turning red.
+- **List swatches** strip the hue from whatever colour a list stores, and
+  invert that value on dark, so a list reading as dark ink on paper reads
+  light on the near-black ground. Neither end of the ramp disappears.
 
 Every colour is a semantic token (`--ink`, `--muted`, `--line`, `--accent`, …)
 declared once in `src/index.css` and re-declared under `[data-theme="dark"]`.

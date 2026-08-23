@@ -64,7 +64,7 @@ export function SearchPalette({
         role="dialog"
         aria-modal="true"
         aria-label="Search tasks"
-        className="anim-scale-in glow w-full max-w-xl overflow-hidden rounded-xl border border-line bg-raised shadow-2xl shadow-black/20 dark:shadow-black/70"
+        className="anim-scale-in lift w-full max-w-xl overflow-hidden rounded-xl border border-line bg-raised shadow-2xl shadow-black/20 dark:shadow-black/70"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-line px-4">

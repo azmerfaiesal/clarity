@@ -67,7 +67,7 @@ export function Header({
         <button
           type="button"
           onClick={onAddTask}
-          className="ml-2 hidden cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-[13px] font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm sm:inline-flex"
+          className="ml-2 hidden cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-[13px] font-medium text-accent-ink transition-all hover:bg-accent-hi hover:lift-sm sm:inline-flex"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
           Add Task
