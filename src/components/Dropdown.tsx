@@ -124,10 +124,9 @@ export function MenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors ${
+      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
         danger
-          ? // No red available — destructive reads as full ink that inverts on hover.
-            'font-medium text-ink hover:bg-ink hover:text-bg'
+          ? 'text-danger hover:bg-danger-soft'
           : active
             ? 'bg-accent-soft text-ink'
             : 'text-muted hover:bg-surface hover:text-ink'

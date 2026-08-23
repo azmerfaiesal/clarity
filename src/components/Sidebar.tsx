@@ -15,8 +15,7 @@ import type { Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
 import { useTheme } from '../store/theme'
 
-// A value ramp, not a hue wheel — lists stay distinguishable in monochrome.
-const LIST_COLORS = ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#a6a6a6']
+const LIST_COLORS = ['#3ddbf0', '#3bff9e', '#ffb020', '#ff4d5e', '#4aa8ff', '#a78bfa', '#f472b6']
 
 function NavItem({
   icon,
@@ -36,7 +35,7 @@ function NavItem({
       type="button"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13.5px] transition-colors ${
+      className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
         active
           ? 'bg-accent-soft font-medium text-ink'
           : 'text-muted hover:bg-surface hover:text-ink'
@@ -45,14 +44,14 @@ function NavItem({
       {/* Active rail — the one place the accent reads as "you are here". */}
       {active && (
         <span
-          className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent"
+          className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent glow-sm"
           aria-hidden
         />
       )}
       <span className={active ? 'text-accent' : 'text-faint'}>{icon}</span>
       <span className="flex-1 truncate">{label}</span>
       {count !== undefined && count > 0 && (
-        <span className="font-mono text-[11px] text-faint tabular-nums">{count}</span>
+        <span className="font-mono text-2xs text-faint tabular-nums">{count}</span>
       )}
     </button>
   )
@@ -104,10 +103,10 @@ export function Sidebar({
     <div className="flex h-full flex-col">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 pt-5 pb-5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent">
+        <div className="glow flex h-7 w-7 items-center justify-center rounded-md bg-accent">
           <CheckCircle2 className="h-4 w-4 text-accent-ink" strokeWidth={2.5} />
         </div>
-        <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">Clarity</span>
+        <span className="text-md font-semibold tracking-[-0.01em] text-ink">Clarity</span>
         <button
           type="button"
           onClick={onCloseMobile}
@@ -188,7 +187,7 @@ export function Sidebar({
                   type="button"
                   onClick={() => nav(id)}
                   aria-current={active ? 'page' : undefined}
-                  className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13.5px] transition-colors ${
+                  className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
                     active
                       ? 'bg-accent-soft font-medium text-ink'
                       : 'text-muted hover:bg-surface hover:text-ink'
@@ -196,18 +195,18 @@ export function Sidebar({
                 >
                   {active && (
                     <span
-                      className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent"
+                      className="absolute top-1 bottom-1 -left-1.5 w-[2px] rounded-full bg-accent glow-sm"
                       aria-hidden
                     />
                   )}
                   <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full swatch"
-                    style={{ backgroundColor: l.color }}
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: l.color, boxShadow: `0 0 8px -1px ${l.color}` }}
                     aria-hidden
                   />
                   <span className="flex-1 truncate">{l.name}</span>
                   {count(id) > 0 && (
-                    <span className="font-mono text-[11px] text-faint tabular-nums group-hover:opacity-0">
+                    <span className="font-mono text-2xs text-faint tabular-nums group-hover:opacity-0">
                       {count(id)}
                     </span>
                   )}
@@ -237,7 +236,7 @@ export function Sidebar({
               }}
               placeholder="List name"
               aria-label="New list name"
-              className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-faint"
+              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
             />
             <div className="mt-2.5 flex items-center justify-between">
               <div className="flex gap-1.5" role="radiogroup" aria-label="List color">
@@ -249,7 +248,7 @@ export function Sidebar({
                     aria-checked={newListColor === c}
                     aria-label={`Color ${c}`}
                     onClick={() => setNewListColor(c)}
-                    className={`h-3.5 w-3.5 cursor-pointer rounded-full swatch border border-line transition-transform ${
+                    className={`h-3.5 w-3.5 cursor-pointer rounded-full transition-transform ${
                       newListColor === c
                         ? 'ring-2 ring-accent ring-offset-2 ring-offset-raised'
                         : 'hover:scale-110'
@@ -262,7 +261,7 @@ export function Sidebar({
                 type="button"
                 onClick={submitList}
                 disabled={!newListName.trim()}
-                className="cursor-pointer rounded bg-accent px-2 py-1 text-[11px] font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
+                className="cursor-pointer rounded bg-accent px-2 py-1 text-2xs font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 Add
               </button>
@@ -279,7 +278,7 @@ export function Sidebar({
             onOpenSettings()
             onCloseMobile()
           }}
-          className="flex flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13.5px] text-muted transition-colors hover:bg-surface hover:text-ink"
+          className="flex flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-muted transition-colors hover:bg-surface hover:text-ink"
         >
           <SettingsIcon className="h-4 w-4 text-faint" />
           Settings

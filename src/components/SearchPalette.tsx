@@ -64,7 +64,7 @@ export function SearchPalette({
         role="dialog"
         aria-modal="true"
         aria-label="Search tasks"
-        className="anim-scale-in lift w-full max-w-xl overflow-hidden rounded-xl border border-line bg-raised shadow-2xl shadow-black/20 dark:shadow-black/70"
+        className="anim-scale-in glow w-full max-w-xl overflow-hidden rounded-xl border border-line bg-raised shadow-2xl shadow-black/20 dark:shadow-black/70"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-line px-4">
@@ -88,20 +88,20 @@ export function SearchPalette({
             }}
             placeholder="Search tasks, lists, tags…"
             aria-label="Search tasks"
-            className="w-full bg-transparent py-3.5 text-[15px] text-ink outline-none placeholder:text-faint"
+            className="w-full bg-transparent py-3.5 text-md text-ink outline-none placeholder:text-faint"
           />
-          <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-faint">
+          <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-faint">
             ESC
           </kbd>
         </div>
 
         <div className="max-h-80 overflow-y-auto p-1.5" role="listbox" aria-label="Search results">
           {query.trim() === '' ? (
-            <p className="px-3 py-8 text-center text-[13px] text-muted">
+            <p className="px-3 py-8 text-center text-sm text-muted">
               Type to search across all your tasks.
             </p>
           ) : results.length === 0 ? (
-            <p className="px-3 py-8 text-center text-[13px] text-muted">
+            <p className="px-3 py-8 text-center text-sm text-muted">
               No results for “{query}”.
             </p>
           ) : (
@@ -122,19 +122,19 @@ export function SearchPalette({
               >
                 <div className="min-w-0 flex-1">
                   <div
-                    className={`truncate text-[14px] text-ink ${
+                    className={`truncate text-base text-ink ${
                       t.completed ? 'line-through opacity-55' : ''
                     }`}
                   >
                     {t.title}
                   </div>
                   {t.description && (
-                    <div className="truncate text-[12px] text-muted">
+                    <div className="truncate text-xs text-muted">
                       {t.description}
                     </div>
                   )}
                 </div>
-                <span className="shrink-0 rounded border border-line px-2 py-0.5 font-mono text-[10.5px] text-muted">
+                <span className="shrink-0 rounded border border-line px-2 py-0.5 font-mono text-3xs text-muted">
                   {listName(t.listId)}
                 </span>
                 {i === activeIndex && (

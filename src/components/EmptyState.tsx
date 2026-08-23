@@ -15,8 +15,8 @@ export function EmptyState({
       <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-line bg-surface">
         <Display className="h-6 w-6 text-accent" strokeWidth={1.25} />
       </div>
-      <h2 className="text-[15px] font-medium tracking-[-0.01em] text-ink">{title}</h2>
-      <p className="mt-1.5 max-w-60 text-[13px] text-muted">{subtitle}</p>
+      <h2 className="text-md font-medium tracking-[-0.01em] text-ink">{title}</h2>
+      <p className="mt-1.5 max-w-60 text-sm text-muted">{subtitle}</p>
     </div>
   )
 }

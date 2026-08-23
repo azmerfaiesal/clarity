@@ -13,9 +13,6 @@ const FLAG_STYLE: Record<Priority, string> = {
   high: 'text-p-high',
 }
 
-/** Low priority stays an outline so the three levels differ by fill as well as value. */
-const flagFill = (p: Priority, active: boolean) => (active && p !== 'none' && p !== 'low' ? 'fill-current' : '')
-
 export function TaskEditor({
   task,
   lists,
@@ -81,7 +78,7 @@ export function TaskEditor({
         onClick={(e) => e.stopPropagation()}
       >
  <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
- <span className="text-[13px] font-medium text-faint">
+ <span className="text-sm font-medium text-faint">
             Edit task
           </span>
  <div className="flex items-center gap-1">
@@ -93,7 +90,7 @@ export function TaskEditor({
  className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
               <Star
- className={`h-4 w-4 ${favorite ? 'fill-ink text-ink' : ''}`}
+ className={`h-4 w-4 ${favorite ? 'fill-p-med text-p-med' : ''}`}
               />
             </button>
             <button
@@ -131,7 +128,7 @@ export function TaskEditor({
             placeholder="Task name"
             aria-label="Task name"
             autoFocus
- className="w-full bg-transparent text-[16px] font-medium text-ink outline-none placeholder:text-faint"
+ className="w-full bg-transparent text-md font-medium text-ink outline-none placeholder:text-faint"
           />
           <textarea
             value={description}
@@ -139,7 +136,7 @@ export function TaskEditor({
             placeholder="Notes"
             aria-label="Notes"
             rows={3}
- className="w-full resize-none rounded-lg border border-line bg-surface px-3 py-2.5 text-[14px] text-ink outline-none placeholder:text-faint focus:border-accent"
+ className="w-full resize-none rounded-lg border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none placeholder:text-faint focus:border-accent"
           />
 
  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -148,14 +145,14 @@ export function TaskEditor({
                 type="date"
                 value={dueDate ?? ''}
                 onChange={(e) => setDueDate(e.target.value || null)}
- className="w-full bg-transparent text-[13px] text-ink outline-none"
+ className="w-full bg-transparent text-sm text-ink outline-none"
               />
             </Field>
  <Field label="List" icon={<Inbox className="h-3.5 w-3.5" />}>
               <select
                 value={listId ?? ''}
                 onChange={(e) => setListId(e.target.value || null)}
- className="w-full cursor-pointer bg-transparent text-[13px] text-ink outline-none"
+ className="w-full cursor-pointer bg-transparent text-sm text-ink outline-none"
               >
                 <option value="">Inbox</option>
                 {lists.map((l) => (
@@ -170,7 +167,7 @@ export function TaskEditor({
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="comma, separated"
- className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-faint"
+ className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
               />
             </Field>
  <Field label="Reminder" icon={<Calendar className="h-3.5 w-3.5" />}>
@@ -178,13 +175,13 @@ export function TaskEditor({
                 type="datetime-local"
                 value={reminder}
                 onChange={(e) => setReminder(e.target.value)}
- className="w-full bg-transparent text-[13px] text-ink outline-none"
+ className="w-full bg-transparent text-sm text-ink outline-none"
               />
             </Field>
           </div>
 
           <div>
- <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-faint">
+ <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-faint">
  <Flag className="h-3.5 w-3.5" /> Priority
             </span>
             <div
@@ -199,7 +196,7 @@ export function TaskEditor({
                   role="radio"
                   aria-checked={priority === p}
                   onClick={() => setPriority(p)}
- className={`cursor-pointer px-3 py-1.5 text-[12px] transition-colors ${
+ className={`cursor-pointer px-3 py-1.5 text-xs transition-colors ${
                     priority === p
                       ? 'bg-accent-soft font-medium text-ink'
                       : 'text-muted hover:bg-surface'
@@ -208,7 +205,7 @@ export function TaskEditor({
  <span className="inline-flex items-center gap-1.5">
                     {p !== 'none' && (
                       <Flag
- className={`h-3 w-3 ${FLAG_STYLE[p]} ${flagFill(p, priority === p)}`}
+ className={`h-3 w-3 ${FLAG_STYLE[p]} ${priority === p ? 'fill-current' : ''}`}
                       />
                     )}
                     {PRIORITY_LABEL[p]}
@@ -218,7 +215,7 @@ export function TaskEditor({
             </div>
           </div>
 
- <p className="text-[12px] text-faint">
+ <p className="text-xs text-faint">
             Created {formatTimestamp(task.createdAt)}
             {task.completedAt && ` · Completed ${formatTimestamp(task.completedAt)}`}
           </p>
@@ -228,7 +225,7 @@ export function TaskEditor({
           <button
             type="button"
             onClick={onClose}
- className="cursor-pointer rounded-lg px-3.5 py-2 text-[13px] font-medium text-muted hover:bg-surface"
+ className="cursor-pointer rounded-lg px-3.5 py-2 text-sm font-medium text-muted hover:bg-surface"
           >
             Cancel
           </button>
@@ -236,7 +233,7 @@ export function TaskEditor({
             type="button"
             onClick={save}
             disabled={!title.trim()}
- className="cursor-pointer rounded-lg bg-accent px-4 py-2 text-[13px] font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
+ className="cursor-pointer rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
           >
             Save
           </button>
@@ -257,7 +254,7 @@ function Field({
 }) {
   return (
  <label className="block">
- <span className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-faint">
+ <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-faint">
         {icon} {label}
       </span>
  <div className="rounded-md border border-line px-2.5 py-2">

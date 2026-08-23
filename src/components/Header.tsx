@@ -40,15 +40,15 @@ export function Header({
       </button>
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-[22px] font-semibold tracking-[-0.02em] text-ink sm:text-[26px]">
+        <h1 className="truncate text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">
           {title}
           {subtitle && (
-            <span className="ml-3 font-mono text-[12px] font-normal tracking-normal text-faint">
+            <span className="ml-3 font-mono text-xs font-normal tracking-normal text-faint">
               {subtitle}
             </span>
           )}
         </h1>
-        <p className="mt-1 font-mono text-[11px] tracking-[0.06em] text-faint uppercase">
+        <p className="mt-1 font-mono text-2xs tracking-[0.06em] text-faint uppercase">
           {count} {count === 1 ? 'task' : 'tasks'}
         </p>
       </div>
@@ -67,7 +67,7 @@ export function Header({
         <button
           type="button"
           onClick={onAddTask}
-          className="ml-2 hidden cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-[13px] font-medium text-accent-ink transition-all hover:bg-accent-hi hover:lift-sm sm:inline-flex"
+          className="ml-2 hidden cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm sm:inline-flex"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
           Add Task

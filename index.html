@@ -5,8 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Clarity — a minimalist to-do list that syncs across your devices." />
-    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#070809" media="(prefers-color-scheme: dark)" />
     <title>Clarity</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,6 +24,10 @@
           var theme = saved === 'dark' ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', theme);
           document.documentElement.style.colorScheme = theme;
+
+          var scales = { sm: '0.9', md: '1', lg: '1.15', xl: '1.3' };
+          var size = localStorage.getItem('clarity.fontsize.v1');
+          if (scales[size]) document.documentElement.style.setProperty('--fs', scales[size]);
         } catch (e) {
           /* keep the light default */
         }

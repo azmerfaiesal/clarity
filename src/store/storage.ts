@@ -17,6 +17,7 @@ export const LOCAL_SCOPE = 'local'
 
 const PREFIX = 'clarity.v2'
 const THEME_KEY = 'clarity.theme.v1'
+const FONT_KEY = 'clarity.fontsize.v1'
 
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
@@ -81,13 +82,31 @@ export function saveTheme(theme: 'light' | 'dark'): void {
   }
 }
 
+/** Text-size preference. Kept as a token, not a number, so the scale can be retuned. */
+export function loadFontScale(): 'sm' | 'md' | 'lg' | 'xl' | null {
+  try {
+    const v = localStorage.getItem(FONT_KEY)
+    return v === 'sm' || v === 'md' || v === 'lg' || v === 'xl' ? v : null
+  } catch {
+    return null
+  }
+}
+
+export function saveFontScale(size: 'sm' | 'md' | 'lg' | 'xl'): void {
+  try {
+    localStorage.setItem(FONT_KEY, size)
+  } catch {
+    /* ignore */
+  }
+}
+
 export function seedLists(): TaskList[] {
   const now = new Date().toISOString()
   return [
-    { id: 'list-personal', name: 'Personal', color: '#1a1a1a', createdAt: now },
-    { id: 'list-work', name: 'Work', color: '#4d4d4d', createdAt: now },
-    { id: 'list-shopping', name: 'Shopping', color: '#808080', createdAt: now },
-    { id: 'list-projects', name: 'Projects', color: '#a6a6a6', createdAt: now },
+    { id: 'list-personal', name: 'Personal', color: '#3ddbf0', createdAt: now },
+    { id: 'list-work', name: 'Work', color: '#3bff9e', createdAt: now },
+    { id: 'list-shopping', name: 'Shopping', color: '#ffb020', createdAt: now },
+    { id: 'list-projects', name: 'Projects', color: '#ff4d5e', createdAt: now },
   ]
 }
 

@@ -43,7 +43,7 @@ export function FilterMenu({
       role="menuitemcheckbox"
       aria-checked={selected}
       onClick={onClick}
-      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors ${
+      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
         selected ? 'text-ink' : 'text-muted hover:bg-surface hover:text-ink'
       }`}
     >
@@ -74,7 +74,7 @@ export function FilterMenu({
         >
           <ListFilter className="h-4 w-4" />
           {activeCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent font-mono text-[9px] font-semibold text-accent-ink">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent font-mono text-3xs font-semibold text-accent-ink">
               {activeCount}
             </span>
           )}
@@ -97,7 +97,7 @@ export function FilterMenu({
           <MenuLabel>Priority</MenuLabel>
           {(['high', 'medium', 'low', 'none'] as Priority[]).map((p) => (
             <Row key={p} selected={filters.priorities.includes(p)} onClick={() => togglePriority(p)}>
-              <Flag className={`h-3.5 w-3.5 ${FLAG_COLOR[p]} ${filters.priorities.includes(p) && p !== 'low' ? 'fill-current' : ''}`} />
+              <Flag className={`h-3.5 w-3.5 ${FLAG_COLOR[p]} ${filters.priorities.includes(p) ? 'fill-current' : ''}`} />
               {PRIORITY_LABEL[p]}
             </Row>
           ))}
@@ -130,7 +130,7 @@ export function FilterMenu({
               selected={filters.listId === l.id}
               onClick={() => onChange({ ...filters, listId: l.id })}
             >
-              <span className="h-2 w-2 rounded-full swatch" style={{ backgroundColor: l.color }} />
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
               {l.name}
             </Row>
           ))}
@@ -139,7 +139,7 @@ export function FilterMenu({
             selected={filters.favoriteOnly}
             onClick={() => onChange({ ...filters, favoriteOnly: !filters.favoriteOnly })}
           >
-            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-ink text-ink' : 'text-faint'}`} />
+            <Star className={`h-3.5 w-3.5 ${filters.favoriteOnly ? 'fill-p-med text-p-med' : 'text-faint'}`} />
             Favorites only
           </Row>
           {activeCount > 0 && (
@@ -148,7 +148,7 @@ export function FilterMenu({
               <button
                 type="button"
                 onClick={() => onChange(DEFAULT_FILTERS)}
-                className="w-full cursor-pointer rounded-md px-2.5 py-2 text-left text-[13px] font-medium text-accent transition-colors hover:bg-accent-soft"
+                className="w-full cursor-pointer rounded-md px-2.5 py-2 text-left text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
               >
                 Clear all filters
               </button>

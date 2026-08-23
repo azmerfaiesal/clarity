@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
-import { Cloud, CloudOff, Moon, Sun, X } from 'lucide-react'
+import { ALargeSmall, Cloud, CloudOff, Moon, Sun, X } from 'lucide-react'
 import { useAuth } from '../store/auth'
 import { useTaskStore } from '../store/taskStore'
-import { useTheme } from '../store/theme'
+import { FONT_SIZE_LABELS, useTheme, type FontSize } from '../store/theme'
 
 const SHORTCUTS: [string, string][] = [
   ['N', 'New task'],
@@ -15,7 +15,7 @@ const SHORTCUTS: [string, string][] = [
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
  <section className="border-t border-line px-5 py-4 first:border-t-0">
- <h3 className="mb-2.5 text-[11px] font-semibold tracking-wider text-faint uppercase">
+ <h3 className="mb-2.5 text-2xs font-semibold tracking-wider text-faint uppercase">
         {title}
       </h3>
       {children}
@@ -24,7 +24,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function Settings({ onClose }: { onClose: () => void }) {
-  const { theme, setTheme, controlledByHost } = useTheme()
+  const { theme, setTheme, controlledByHost, fontSize, setFontSize } = useTheme()
   const { user, signOut } = useAuth()
   const store = useTaskStore()
 
@@ -57,7 +57,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
  className="anim-scale-in max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
  <div className="flex items-center justify-between px-5 pt-5 pb-1">
- <h2 className="text-[16px] font-semibold tracking-tight text-ink">
+ <h2 className="text-md font-semibold tracking-tight text-ink">
             Settings
           </h2>
           <button
@@ -84,7 +84,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 aria-checked={theme === t}
                 disabled={controlledByHost}
                 onClick={() => setTheme(t)}
- className={`flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+ className={`flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   theme === t
                     ? 'bg-accent-soft text-ink'
                     : 'text-muted hover:text-ink'
@@ -96,24 +96,57 @@ export function Settings({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           {controlledByHost && (
- <p className="mt-2 text-[12px] text-faint">
+            <p className="mt-2 text-xs text-faint">
               The theme is being set by the dashboard this is embedded in.
             </p>
           )}
+
+          <div className="mt-4">
+            <div className="mb-2 flex items-center gap-1.5 text-xs text-muted">
+              <ALargeSmall className="h-4 w-4 text-faint" aria-hidden />
+              Text size
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="Text size"
+              className="inline-flex rounded-md border border-line p-0.5"
+            >
+              {(['sm', 'md', 'lg', 'xl'] as FontSize[]).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  role="radio"
+                  aria-checked={fontSize === f}
+                  onClick={() => setFontSize(f)}
+                  className={`cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors ${
+                    fontSize === f ? 'bg-accent-soft text-ink' : 'text-muted hover:text-ink'
+                  }`}
+                  // Each option previews its own scale, so the choice is legible
+                  // before it is made. Fixed px on purpose: these must not scale.
+                  style={{ fontSize: `${11 + (['sm', 'md', 'lg', 'xl'].indexOf(f) * 1.5)}px` }}
+                >
+                  {FONT_SIZE_LABELS[f]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-faint">
+              Scales every label in the app. Saved on this device.
+            </p>
+          </div>
         </Section>
 
         <Section title="Account">
           {user ? (
             <>
- <div className="flex items-center gap-2 text-[13px] text-ink">
+ <div className="flex items-center gap-2 text-sm text-ink">
                 {store.ready ? (
- <Cloud className="h-4 w-4 text-accent" aria-hidden />
+ <Cloud className="h-4 w-4 text-success" aria-hidden />
                 ) : (
  <CloudOff className="h-4 w-4 text-faint" aria-hidden />
                 )}
  <span className="truncate">{user.email}</span>
               </div>
- <p className="mt-1 text-[12px] text-faint">
+ <p className="mt-1 text-xs text-faint">
                 {store.ready
                   ? 'Tasks sync automatically across your devices.'
                   : 'Connecting…'}
@@ -124,13 +157,13 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   onClose()
                   void signOut()
                 }}
- className="mt-3 cursor-pointer rounded-md border border-line px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-surface"
+ className="mt-3 cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface"
               >
                 Sign out
               </button>
             </>
           ) : (
- <p className="text-[13px] text-muted">
+ <p className="text-sm text-muted">
               Not signed in — tasks are stored on this device only.
             </p>
           )}
@@ -147,10 +180,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 key={label as string}
  className="rounded-md border border-line py-2.5"
               >
- <dd className="text-[18px] font-semibold tabular-nums text-ink">
+ <dd className="text-lg font-semibold tabular-nums text-ink">
                   {value}
                 </dd>
- <dt className="text-[11px] text-faint">{label}</dt>
+ <dt className="text-2xs text-faint">{label}</dt>
               </div>
             ))}
           </dl>
@@ -160,7 +193,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
               type="button"
               disabled={completed === 0}
               onClick={() => store.clearCompleted()}
- className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+ className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
             >
               Clear completed
             </button>
@@ -176,7 +209,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   store.emptyTrash()
                 }
               }}
- className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
+ className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
             >
               Empty recycle bin
             </button>
@@ -187,9 +220,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
  <dl className="space-y-1.5">
             {SHORTCUTS.map(([key, action]) => (
  <div key={key} className="flex items-center justify-between">
- <dt className="text-[13px] text-muted">{action}</dt>
+ <dt className="text-sm text-muted">{action}</dt>
                 <dd>
- <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-[11px] text-muted">
+ <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-2xs text-muted">
                     {key}
                   </kbd>
                 </dd>

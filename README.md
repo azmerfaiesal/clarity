@@ -21,33 +21,42 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 
 ## Design
 
-Minimalist monochrome — no hue anywhere. Emphasis, state, priority and
-destructiveness are all carried by value, weight and fill on a neutral
-greyscale ramp, with hairlines and whitespace doing the structural work.
-Metadata (counts, dates, tags, shortcut keys) is set in monospace.
+Futuristic: a cool near-black (or cool paper) shell under a faint engineering
+grid, hairline structure instead of soft shadows, and four luminous hues that
+each own exactly one job.
 
-How the colourless signals work:
+| Hue | Meaning |
+| --- | --- |
+| Cyan | Interactive — active view, focus ring, primary button, due today |
+| Fluorescent green | Done and healthy — completed tasks, sync OK, low urgency |
+| Amber | Medium urgency |
+| Red | High urgency, overdue, destructive |
 
-- **Priority** is a three-step value ramp — high is solid ink, medium a solid
-  mid grey, low an outline flag. Fill and value together, so the levels stay
-  distinct at a glance.
-- **Due dates** are an emphasis ramp rather than a traffic light: overdue is
-  bold ink, today is ink, everything later is faint.
-- **Destructive actions** are full ink and invert on hover (dark fill, light
-  text) instead of turning red.
-- **List swatches** strip the hue from whatever colour a list stores, and
-  invert that value on dark, so a list reading as dark ink on paper reads
-  light on the near-black ground. Neither end of the ramp disappears.
+Green / amber / red therefore double as the priority ramp, which is the reading
+most people already have. Nothing is coloured for decoration alone. In light
+mode each hue is a deepened version of the same colour so it can carry text at
+AA; in dark they run at full luminance.
 
-Every colour is a semantic token (`--ink`, `--muted`, `--line`, `--accent`, …)
+Every colour is a semantic token (`--ink`, `--accent`, `--success`, `--p-med`, …)
 declared once in `src/index.css` and re-declared under `[data-theme="dark"]`.
 Components use them through Tailwind utilities (`bg-surface`, `text-ink`,
 `border-line`), so theming happens purely in the cascade — there is no `dark:`
-variant anywhere except where elevation genuinely differs. Retuning the palette
-means editing two blocks of CSS.
+variant anywhere except where elevation genuinely differs.
 
 Every text token clears WCAG AA (4.5:1) against both the base and surface
 backgrounds, in both themes.
+
+### Text size
+
+Settings → Appearance offers Small / Default / Large / Larger. The whole type
+scale is declared as `calc(<px> * var(--fs))`, so one variable rescales every
+label in the app; padding and icons stay put, which grows the text *within* the
+layout rather than zooming the page. The choice is stored per device and
+applied before first paint, so there is no reflow on load.
+
+This is why the codebase uses named sizes (`text-sm`) rather than arbitrary
+ones (`text-[13px]`) — an arbitrary px size cannot respond to the preference.
+Adding one silently opts that element out of the setting.
 
 ## Sync
 

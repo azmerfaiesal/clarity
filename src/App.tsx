@@ -132,7 +132,7 @@ function AppShell() {
   const filtered = isFilterActive(filters) || inlineQuery.trim() !== ''
 
   return (
- <div className="flex h-dvh bg-bg text-ink">
+ <div className="app-shell flex h-dvh bg-bg text-ink">
       <Sidebar
         view={view}
         tasks={tasks}
@@ -166,7 +166,7 @@ function AppShell() {
 
           {/* Inline search (visible when typing via palette is bypassed) */}
           {inlineQuery && (
- <div className="anim-fade-in mb-3 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-[13px] text-accent">
+ <div className="anim-fade-in mb-3 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-sm text-accent">
  <SearchX className="h-3.5 w-3.5" />
               Filtering by “{inlineQuery}”
               <button
@@ -226,7 +226,7 @@ function AppShell() {
               <button
                 type="button"
                 onClick={() => store.clearCompleted()}
- className="cursor-pointer rounded-md border border-line px-3.5 py-2 text-[13px] font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger"
+ className="cursor-pointer rounded-md border border-line px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger"
               >
                 Clear completed tasks
               </button>
@@ -242,7 +242,7 @@ function AppShell() {
                     store.emptyTrash()
                   }
                 }}
- className="cursor-pointer rounded-md border border-line px-3.5 py-2 text-[13px] font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger"
+ className="cursor-pointer rounded-md border border-line px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger"
               >
                 Empty Recycle Bin
               </button>
@@ -257,7 +257,7 @@ function AppShell() {
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}
           aria-label="Add task"
- className="fixed right-5 bottom-5 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full lift bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
+ className="fixed right-5 bottom-5 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
         >
  <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
@@ -343,8 +343,8 @@ function UpcomingGroups({
       {groups.map((g) => (
         <section key={g.date} aria-label={sectionLabel(g.date)}>
           <h2
- className={`mb-1.5 px-3 text-[12px] font-semibold tracking-wide uppercase ${
-              isOverdue(g.date) ? 'text-ink' : 'text-faint'
+ className={`mb-1.5 px-3 text-xs font-semibold tracking-wide uppercase ${
+              isOverdue(g.date) ? 'text-danger' : 'text-faint'
             }`}
           >
             {isOverdue(g.date) ? 'Overdue · ' : ''}
@@ -376,10 +376,10 @@ function TrashRows({
           <li key={t.id}>
  <div className="group anim-fade-slide-in flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-line hover:bg-surface">
  <div className="min-w-0 flex-1">
- <div className="truncate text-[14px] text-muted line-through decoration-line-strong">
+ <div className="truncate text-base text-muted line-through decoration-line-strong">
                   {t.title}
                 </div>
- <div className="mt-0.5 flex items-center gap-2.5 text-[12px] text-faint">
+ <div className="mt-0.5 flex items-center gap-2.5 text-xs text-faint">
                   {t.priority !== 'none' && (
                     <Flag
  className={`h-3 w-3 ${
@@ -410,7 +410,7 @@ function TrashRows({
                   type="button"
                   onClick={() => store.restoreTask(t.id)}
                   aria-label={`Restore ${t.title}`}
- className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-accent transition-colors hover:bg-accent-soft"
+ className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent-soft"
                 >
  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                   Restore
@@ -423,7 +423,7 @@ function TrashRows({
                     }
                   }}
                   aria-label={`Permanently delete ${t.title}`}
- className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-faint transition-colors hover:bg-danger-soft hover:text-danger"
+ className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-faint transition-colors hover:bg-danger-soft hover:text-danger"
                 >
  <Trash2 className="h-3.5 w-3.5" aria-hidden />
  <span className="hidden sm:inline">Delete forever</span>
@@ -473,7 +473,7 @@ function CompletedSection({
         type="button"
         onClick={() => setExpanded((e) => !e)}
         aria-expanded={expanded}
- className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-semibold tracking-wide text-faint uppercase transition-colors hover:text-ink"
+ className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide text-faint uppercase transition-colors hover:text-ink"
       >
         <span
  className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}
