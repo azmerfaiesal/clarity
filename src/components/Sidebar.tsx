@@ -4,6 +4,7 @@ import {
   Inbox,
   ListPlus,
   Moon,
+  NotebookPen,
   Settings as SettingsIcon,
   Star,
   Sun,
@@ -67,6 +68,7 @@ export function Sidebar({
   onAddList,
   onDeleteList,
   onOpenSettings,
+  noteCount,
 }: {
   view: ViewId
   tasks: Task[]
@@ -77,6 +79,7 @@ export function Sidebar({
   onAddList: (name: string, color: string) => void
   onDeleteList: (id: string) => void
   onOpenSettings: () => void
+  noteCount: number
 }) {
   const { theme, toggleTheme, controlledByHost } = useTheme()
   const [addingList, setAddingList] = useState(false)
@@ -153,6 +156,13 @@ export function Sidebar({
           count={tasks.filter((t) => t.favorite && !t.completed && t.deletedAt === null).length}
           active={view === 'favorites'}
           onClick={() => nav('favorites')}
+        />
+        <NavItem
+          icon={<NotebookPen className="h-4 w-4" />}
+          label="Brain Dump"
+          count={noteCount}
+          active={view === 'braindump'}
+          onClick={() => nav('braindump')}
         />
         <NavItem
           icon={<Trash2 className="h-4 w-4" />}

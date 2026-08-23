@@ -1,4 +1,4 @@
-import type { Task, TaskList } from '../types'
+import type { BrainDump, Task, TaskList } from '../types'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase'
 
 const TASKS_TABLE = 'clarity_tasks'
 const LISTS_TABLE = 'clarity_lists'
+const NOTES_TABLE = 'clarity_notes'
 
 export interface LoadedData {
   tasks: Task[]
@@ -54,6 +55,76 @@ export async function upsertList(list: TaskList, userId: string): Promise<void> 
 
 export async function deleteListRow(id: string): Promise<void> {
   await supabase.from(LISTS_TABLE).delete().eq('id', id)
+}
+
+// ---- brain dump notes ----
+
+export async function loadNotesFromServer(
+  userId: string,
+): Promise<{ notes: BrainDump[]; fromServer: boolean }> {
+  const { data, error } = await supabase
+    .from(NOTES_TABLE)
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) return { notes: [], fromServer: false }
+  return { notes: (data ?? []).map(rowToNote), fromServer: true }
+}
+
+export async function upsertNote(note: BrainDump, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from(NOTES_TABLE)
+    .upsert(noteToRow(note, userId), { onConflict: 'id' })
+  if (error) throw error
+}
+
+export async function deleteNoteRow(id: string): Promise<void> {
+  const { error } = await supabase.from(NOTES_TABLE).delete().eq('id', id)
+  if (error) throw error
+}
+
+export function subscribeToNotes(userId: string, onNotes: (notes: BrainDump[]) => void) {
+  const channel = supabase
+    .channel(`clarity-notes-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: NOTES_TABLE, filter: `user_id=eq.${userId}` },
+      async () => {
+        const { data } = await supabase
+          .from(NOTES_TABLE)
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+        if (data) onNotes(data.map(rowToNote))
+      },
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}
+
+function rowToNote(r: Record<string, unknown>): BrainDump {
+  return {
+    id: String(r.id),
+    content: String(r.content ?? ''),
+    tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
+    createdAt: String(r.created_at ?? new Date().toISOString()),
+    updatedAt: String(r.updated_at ?? new Date().toISOString()),
+  }
+}
+
+function noteToRow(n: BrainDump, userId: string) {
+  return {
+    id: n.id,
+    user_id: userId,
+    content: n.content,
+    tags: n.tags,
+    created_at: n.createdAt,
+    updated_at: n.updatedAt,
+  }
 }
 
 // ---- row <-> model mapping ----

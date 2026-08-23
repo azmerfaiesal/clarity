@@ -1,4 +1,4 @@
-import type { Task, TaskList } from '../types'
+import type { BrainDump, Task, TaskList } from '../types'
 import { addDays, todayStr } from '../utils/dateUtils'
 import { makeId } from '../utils/taskUtils'
 
@@ -22,6 +22,8 @@ const FONT_FAMILY_KEY = 'clarity.fontfamily.v1'
 
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
+const notesKey = (scope: string) => `${PREFIX}.notes:${scope}`
+const draftKey = (scope: string) => `${PREFIX}.draft:${scope}`
 
 function read<T>(key: string): T | null {
   try {
@@ -56,11 +58,41 @@ export function saveLists(scope: string, lists: TaskList[]): void {
   write(listsKey(scope), lists)
 }
 
+export function loadNotes(scope: string): BrainDump[] | null {
+  return read<BrainDump[]>(notesKey(scope))
+}
+
+export function saveNotes(scope: string, notes: BrainDump[]): void {
+  write(notesKey(scope), notes)
+}
+
+/**
+ * The unsaved Brain Dump composer text, kept so a refresh mid-thought does not
+ * throw away what was typed. Cleared once the note is saved or discarded.
+ */
+export function loadDraft(scope: string): { content: string; tags: string[] } | null {
+  return read<{ content: string; tags: string[] }>(draftKey(scope))
+}
+
+export function saveDraft(scope: string, draft: { content: string; tags: string[] }): void {
+  write(draftKey(scope), draft)
+}
+
+export function clearDraft(scope: string): void {
+  try {
+    localStorage.removeItem(draftKey(scope))
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Drop a scope's cache entirely (used on sign-out). */
 export function clearScope(scope: string): void {
   try {
     localStorage.removeItem(tasksKey(scope))
     localStorage.removeItem(listsKey(scope))
+    localStorage.removeItem(notesKey(scope))
+    localStorage.removeItem(draftKey(scope))
   } catch {
     /* ignore */
   }

@@ -7,10 +7,11 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 ## Features
 
 - **Quick capture** — click "Add a task" (or press `N`), type, hit `Enter`. The form stays open so you can add several in a row. Expand for description, due date, priority, list, tags, and reminders. Only the title is required — a task can carry no due date and no reminder, and both are clearable after the fact.
-- **Views** — Inbox, Today, Upcoming (grouped by date), Completed, Favorites, Recycle Bin, and custom lists.
+- **Views** — Inbox, Today, Upcoming (grouped by date), Completed, Favorites, Brain Dump, Recycle Bin, and custom lists.
 - **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); deleting a list returns its tasks to Inbox.
 - **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes.
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
+- **Brain Dump** — a blank sheet for whatever is on your mind: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history with two-line previews, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. Unsaved text survives a refresh.
 - **Search** — global palette (`Cmd/Ctrl + K` or `/`) matching title, description, list, and tags, with keyboard navigation.
 - **Filters** — status, priority, due date, list, favorites-only, with active-count badge and one-click clear.
 - **Sorting** — manual, due date, priority, date created, alphabetical.
@@ -85,7 +86,7 @@ Adding one silently opts that element out of the setting.
 
 ## Sync
 
-Sign in with email + password (Supabase Auth). Everything then lives in two Postgres tables, `clarity_tasks` and `clarity_lists`, behind row-level security that scopes every row to `auth.uid()`.
+Sign in with email + password (Supabase Auth). Everything then lives in three Postgres tables — `clarity_tasks`, `clarity_lists` and `clarity_notes` — behind row-level security that scopes every row to `auth.uid()`.
 
 - **Local first** — every edit hits React state immediately and is cached in `localStorage`, so the UI never waits on the network.
 - **Push** — changed rows only are upserted 400ms after an edit settles; rows removed locally are deleted server-side by the same pass.
@@ -139,11 +140,12 @@ Pushing to `main` runs `.github/workflows/deploy.yml`, which builds and publishe
 src/
   components/    Sidebar, Header, TaskItem, TaskInput (quick add),
                  TaskEditor (modal), SearchPalette, FilterMenu, SortMenu,
-                 Settings, EmptyState, UndoToast, Dropdown, TaskCheckbox,
-                 AuthGate
-  store/         taskStore.tsx (reducer + sync orchestration), sync.ts
-                 (Supabase read/write/realtime), storage.ts (scoped
-                 localStorage + sample data), auth.tsx, theme.tsx
+                 Settings, BrainDump, EmptyState, UndoToast, Dropdown,
+                 TaskCheckbox, AuthGate
+  store/         taskStore.tsx (reducer + sync orchestration), noteStore.tsx
+                 (Brain Dump notes), sync.ts (Supabase read/write/realtime),
+                 storage.ts (scoped localStorage + sample data), auth.tsx,
+                 theme.tsx, fonts.ts
   lib/           supabase.ts (client)
   utils/         dateUtils.ts, taskUtils.ts (view/search/filter/sort logic)
   types.ts       Task, TaskList, ViewId, Filters, SortMode

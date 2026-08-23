@@ -32,7 +32,17 @@ export type ViewId =
   | 'completed'
   | 'favorites'
   | 'trash'
+  | 'braindump'
   | `list:${string}`
+
+/** A Brain Dump note: free-form text, optional tags, nothing required but the body. */
+export interface BrainDump {
+  id: string
+  content: string
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
 
 export type SortMode = 'manual' | 'dueDate' | 'priority' | 'created' | 'alpha'
 

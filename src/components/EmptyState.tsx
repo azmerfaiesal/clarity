@@ -1,4 +1,4 @@
-import { CheckCircle2, Inbox, SearchX, Trash2, type LucideIcon } from 'lucide-react'
+import { CheckCircle2, Inbox, NotebookPen, SearchX, Trash2, type LucideIcon } from 'lucide-react'
 
 export function EmptyState({
   icon: Icon,
@@ -28,6 +28,7 @@ export const EMPTY_PRESETS = {
   completed: { icon: CheckCircle2, title: 'No completed tasks yet.', subtitle: 'Finished tasks will land here.' },
   favorites: { icon: CheckCircle2, title: 'No favorites yet.', subtitle: 'Star a task to keep it close at hand.' },
   list: { icon: Inbox, title: 'This list is empty.', subtitle: 'Add a task to get started.' },
+  braindump: { icon: NotebookPen, title: 'Nothing here yet.', subtitle: 'Empty your mind — start writing above.' },
   trash: { icon: Trash2, title: 'Recycle bin is empty.', subtitle: 'Deleted tasks will appear here.' },
   search: { icon: SearchX, title: 'No results found.', subtitle: 'Try a different search term.' },
 } as const

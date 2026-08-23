@@ -93,3 +93,32 @@ export function formatTimestamp(iso: string | null): string {
     year: 'numeric',
   })
 }
+
+/** Human-readable stamp for a note, e.g. "23 Aug 2026 · 6:42 PM". */
+export function formatDateTime(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const date = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  // hour12 is pinned rather than left to the locale so the stamp always reads
+  // like "6:42 PM", which is the format the app presents everywhere.
+  // Some locales render the meridiem lower-case ("6:42 pm"); normalise it so the
+  // stamp reads the same everywhere.
+  const time = d
+    .toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+    .replace(/\b(am|pm)\b/i, (m) => m.toUpperCase())
+  return `${date} \u00b7 ${time}`
+}
+
+/** Compact relative stamp for "edited" markers: "2m ago", "3h ago", "5 Aug". */
+export function formatRelative(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const mins = Math.round((Date.now() - d.getTime()) / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+}
