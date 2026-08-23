@@ -88,13 +88,17 @@ export function Sidebar({
 
   const count = (v: ViewId) => tasksForView(tasks, v).filter((t) => !t.completed).length
 
+  const closeListForm = () => {
+    setNewListName('')
+    setNewListColor(LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)])
+    setAddingList(false)
+  }
+
   const submitList = () => {
     const name = newListName.trim()
     if (!name) return
     onAddList(name, newListColor)
-    setNewListName('')
-    setNewListColor(LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)])
-    setAddingList(false)
+    closeListForm()
   }
 
   const nav = (v: ViewId) => {
@@ -172,8 +176,8 @@ export function Sidebar({
           <span className="label">Lists</span>
           <button
             type="button"
-            onClick={() => setAddingList((a) => !a)}
-            aria-label="Create list"
+            onClick={() => (addingList ? closeListForm() : setAddingList(true))}
+            aria-label={addingList ? 'Close new list form' : 'Create list'}
             className="cursor-pointer rounded p-1 text-faint transition-colors hover:bg-accent-soft hover:text-accent"
           >
             <ListPlus className="h-4 w-4" />
@@ -228,21 +232,29 @@ export function Sidebar({
         </div>
 
         {addingList && (
-          <div className="anim-fade-slide-in mt-1.5 rounded-lg border border-line bg-raised p-2.5">
+          <div
+            className="anim-fade-slide-in mt-1.5 rounded-lg border border-line bg-raised p-2.5"
+            // Escape bubbles from the swatches too, not just the name field.
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.stopPropagation()
+                closeListForm()
+              }
+            }}
+          >
             <input
               autoFocus
               value={newListName}
               onChange={(e) => setNewListName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submitList()
-                if (e.key === 'Escape') setAddingList(false)
               }}
               placeholder="List name"
               aria-label="New list name"
               className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
             />
-            <div className="mt-2.5 flex items-center justify-between">
-              <div className="flex gap-1.5" role="radiogroup" aria-label="List color">
+            <div className="mt-2.5">
+              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="List color">
                 {LIST_COLORS.map((c) => (
                   <button
                     key={c}
@@ -260,14 +272,23 @@ export function Sidebar({
                   />
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={submitList}
-                disabled={!newListName.trim()}
-                className="cursor-pointer rounded bg-accent px-2 py-1 text-2xs font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
-              >
-                Add
-              </button>
+              <div className="mt-2.5 flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={closeListForm}
+                  className="cursor-pointer rounded px-2 py-1 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitList}
+                  disabled={!newListName.trim()}
+                  className="cursor-pointer rounded bg-accent px-2 py-1 text-2xs font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         )}
