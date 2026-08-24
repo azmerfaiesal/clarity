@@ -8,7 +8,7 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 
 - **Quick capture** — click "Add a task" (or press `N`), type, hit `Enter`. The form stays open so you can add several in a row. Expand for description, due date, priority, list, tags, and reminders. Only the title is required — a task can carry no due date and no reminder, and both are clearable after the fact.
 - **Views** — Inbox, Today, Upcoming (grouped by date), Completed, Favorites, Brain Dump, Recycle Bin, and custom lists.
-- **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); deleting a list returns its tasks to Inbox.
+- **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); rename or recolor one from the pencil that appears on hover; deleting a list returns its tasks to Inbox.
 - **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes, and reminders (shown on the row as a clock).
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
 - **Brain Dump** — a blank sheet for whatever is on your mind: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history with two-line previews, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. Unsaved text survives a refresh.

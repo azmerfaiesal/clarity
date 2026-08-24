@@ -5,6 +5,7 @@ import {
   ListPlus,
   Moon,
   NotebookPen,
+  Pencil,
   Settings as SettingsIcon,
   Star,
   Sun,
@@ -58,6 +59,105 @@ function NavItem({
   )
 }
 
+
+/**
+ * Name + colour editor, shared by "new list" and "edit list" so both behave the
+ * same way — Enter submits, Escape cancels from anywhere in the form, and the
+ * actions sit on their own row (seven swatches plus two buttons will not fit on
+ * one line in a 256px sidebar).
+ */
+function ListForm({
+  initialName,
+  initialColor,
+  submitLabel,
+  nameLabel,
+  onSubmit,
+  onCancel,
+}: {
+  initialName: string
+  initialColor: string
+  submitLabel: string
+  nameLabel: string
+  onSubmit: (name: string, color: string) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState(initialName)
+  const [color, setColor] = useState(initialColor)
+
+  // A list created before the current palette keeps a colour that is not in it.
+  // Show that colour as an option so editing does not misrepresent the list as
+  // having no colour selected.
+  const swatches = LIST_COLORS.includes(initialColor)
+    ? LIST_COLORS
+    : [initialColor, ...LIST_COLORS]
+
+  const submit = () => {
+    if (!name.trim()) return
+    onSubmit(name.trim(), color)
+  }
+
+  return (
+    <div
+      className="anim-fade-slide-in rounded-lg border border-line bg-raised p-2.5"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation()
+          onCancel()
+        }
+      }}
+    >
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+        }}
+        placeholder="List name"
+        aria-label={nameLabel}
+        className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+      />
+      <div className="mt-2.5">
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="List color">
+          {swatches.map((c) => (
+            <button
+              key={c}
+              type="button"
+              role="radio"
+              aria-checked={color === c}
+              aria-label={`Color ${c}`}
+              onClick={() => setColor(c)}
+              className={`h-3.5 w-3.5 cursor-pointer rounded-full transition-transform ${
+                color === c
+                  ? 'ring-2 ring-accent ring-offset-2 ring-offset-raised'
+                  : 'hover:scale-110'
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+        </div>
+        <div className="mt-2.5 flex items-center justify-end gap-1.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="cursor-pointer rounded px-2 py-1 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!name.trim()}
+            className="cursor-pointer rounded bg-accent px-2 py-1 text-2xs font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Sidebar({
   view,
   tasks,
@@ -66,6 +166,7 @@ export function Sidebar({
   onNavigate,
   onCloseMobile,
   onAddList,
+  onUpdateList,
   onDeleteList,
   onOpenSettings,
   noteCount,
@@ -77,28 +178,29 @@ export function Sidebar({
   onNavigate: (v: ViewId) => void
   onCloseMobile: () => void
   onAddList: (name: string, color: string) => void
+  onUpdateList: (id: string, patch: { name?: string; color?: string }) => void
   onDeleteList: (id: string) => void
   onOpenSettings: () => void
   noteCount: number
 }) {
   const { theme, toggleTheme, controlledByHost } = useTheme()
   const [addingList, setAddingList] = useState(false)
-  const [newListName, setNewListName] = useState('')
-  const [newListColor, setNewListColor] = useState(LIST_COLORS[0])
+  const [editingListId, setEditingListId] = useState<string | null>(null)
 
   const count = (v: ViewId) => tasksForView(tasks, v).filter((t) => !t.completed).length
 
-  const closeListForm = () => {
-    setNewListName('')
-    setNewListColor(LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)])
-    setAddingList(false)
+  const closeListForm = () => setAddingList(false)
+
+  // Opening one form closes the other; two open editors in a narrow column is
+  // confusing and the second would steal autofocus from the first.
+  const openAddForm = () => {
+    setEditingListId(null)
+    setAddingList(true)
   }
 
-  const submitList = () => {
-    const name = newListName.trim()
-    if (!name) return
-    onAddList(name, newListColor)
-    closeListForm()
+  const openEditForm = (id: string) => {
+    setAddingList(false)
+    setEditingListId(id)
   }
 
   const nav = (v: ViewId) => {
@@ -176,7 +278,7 @@ export function Sidebar({
           <span className="label">Lists</span>
           <button
             type="button"
-            onClick={() => (addingList ? closeListForm() : setAddingList(true))}
+            onClick={() => (addingList ? closeListForm() : openAddForm())}
             aria-label={addingList ? 'Close new list form' : 'Create list'}
             className="cursor-pointer rounded p-1 text-faint transition-colors hover:bg-accent-soft hover:text-accent"
           >
@@ -190,6 +292,20 @@ export function Sidebar({
             const active = view === id
             return (
               <div key={l.id} className="group relative">
+                {editingListId === l.id ? (
+                  <ListForm
+                    initialName={l.name}
+                    initialColor={l.color}
+                    submitLabel="Save"
+                    nameLabel={`Rename list ${l.name}`}
+                    onSubmit={(name, color) => {
+                      onUpdateList(l.id, { name, color })
+                      setEditingListId(null)
+                    }}
+                    onCancel={() => setEditingListId(null)}
+                  />
+                ) : (
+                  <>
                 <button
                   type="button"
                   onClick={() => nav(id)}
@@ -218,78 +334,46 @@ export function Sidebar({
                     </span>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onDeleteList(l.id)}
-                  aria-label={`Delete list ${l.name}`}
-                  className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded p-1 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <div className="absolute top-1/2 right-1.5 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => openEditForm(l.id)}
+                    aria-label={`Edit list ${l.name}`}
+                    title="Rename or recolour"
+                    className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-accent"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteList(l.id)}
+                    aria-label={`Delete list ${l.name}`}
+                    title="Delete list"
+                    className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                  </>
+                )}
               </div>
             )
           })}
         </div>
 
         {addingList && (
-          <div
-            className="anim-fade-slide-in mt-1.5 rounded-lg border border-line bg-raised p-2.5"
-            // Escape bubbles from the swatches too, not just the name field.
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.stopPropagation()
-                closeListForm()
-              }
-            }}
-          >
-            <input
-              autoFocus
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitList()
+          <div className="mt-1.5">
+            <ListForm
+              initialName=""
+              initialColor={LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)]}
+              submitLabel="Add"
+              nameLabel="New list name"
+              onSubmit={(name, color) => {
+                onAddList(name, color)
+                setAddingList(false)
               }}
-              placeholder="List name"
-              aria-label="New list name"
-              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+              onCancel={closeListForm}
             />
-            <div className="mt-2.5">
-              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="List color">
-                {LIST_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    role="radio"
-                    aria-checked={newListColor === c}
-                    aria-label={`Color ${c}`}
-                    onClick={() => setNewListColor(c)}
-                    className={`h-3.5 w-3.5 cursor-pointer rounded-full transition-transform ${
-                      newListColor === c
-                        ? 'ring-2 ring-accent ring-offset-2 ring-offset-raised'
-                        : 'hover:scale-110'
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-              <div className="mt-2.5 flex items-center justify-end gap-1.5">
-                <button
-                  type="button"
-                  onClick={closeListForm}
-                  className="cursor-pointer rounded px-2 py-1 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={submitList}
-                  disabled={!newListName.trim()}
-                  className="cursor-pointer rounded bg-accent px-2 py-1 text-2xs font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </div>

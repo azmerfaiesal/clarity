@@ -156,6 +156,7 @@ function AppShell() {
         }}
         onCloseMobile={() => setMobileNavOpen(false)}
         onAddList={(name, color) => store.addList(name, color)}
+        onUpdateList={(id, patch) => store.updateList(id, patch)}
         onDeleteList={(id) => store.deleteList(id)}
         onOpenSettings={() => setSettingsOpen(true)}
         noteCount={notes.length}

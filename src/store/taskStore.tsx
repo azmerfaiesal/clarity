@@ -76,7 +76,7 @@ type Action =
   | { type: 'CLEAR_COMPLETED' }
   | { type: 'ADD_LIST'; list: TaskList }
   | { type: 'DELETE_LIST'; id: string }
-  | { type: 'RENAME_LIST'; id: string; name: string }
+  | { type: 'UPDATE_LIST'; id: string; patch: { name?: string; color?: string } }
 
 /** Server rows win per id; rows only we know about (created offline) survive. */
 function mergeById<T extends { id: string }>(server: T[], local: T[]): T[] {
@@ -257,11 +257,15 @@ function reducer(state: State, action: Action): State {
         ),
       }
 
-    case 'RENAME_LIST':
+    case 'UPDATE_LIST': {
+      const patch = { ...action.patch }
+      if (patch.name !== undefined) patch.name = patch.name.trim()
+      if (!patch.name) delete patch.name
       return {
         ...state,
-        lists: state.lists.map((l) => (l.id === action.id ? { ...l, name: action.name } : l)),
+        lists: state.lists.map((l) => (l.id === action.id ? { ...l, ...patch } : l)),
       }
+    }
 
     default:
       return state
@@ -306,7 +310,7 @@ export interface TaskStore {
   clearCompleted: () => void
   addList: (name: string, color: string) => TaskList
   deleteList: (id: string) => void
-  renameList: (id: string, name: string) => void
+  updateList: (id: string, patch: { name?: string; color?: string }) => void
 }
 
 const TaskContext = createContext<TaskStore | null>(null)
@@ -487,7 +491,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       duplicateTask: (id) => dispatch({ type: 'DUPLICATE_TASK', id }),
       clearCompleted: () => dispatch({ type: 'CLEAR_COMPLETED' }),
       deleteList: (id) => dispatch({ type: 'DELETE_LIST', id }),
-      renameList: (id, name) => dispatch({ type: 'RENAME_LIST', id, name }),
+      updateList: (id, patch) => dispatch({ type: 'UPDATE_LIST', id, patch }),
     }),
     [state, addTask, addList],
   )
