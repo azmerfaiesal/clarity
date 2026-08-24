@@ -282,6 +282,36 @@ body {
   }
 }
 
+/*
+ * List swatches breathe rather than sit static — a slow bloom out and back on
+ * the list's own colour, which is passed in as --dot.
+ *
+ * The base box-shadow lives on the class, not only in the keyframes, so that
+ * under prefers-reduced-motion (where the rule below collapses the animation to
+ * a single 0.01ms pass) the dot still shows its steady glow instead of losing
+ * it. Sidebar only: a pulsing dot on every row of a long task list would be
+ * restless, and these are meant to read as ambient, not as alerts.
+ */
+@keyframes dot-beam {
+  0%,
+  100% {
+    box-shadow:
+      0 0 5px -1px color-mix(in srgb, var(--dot) 65%, transparent),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 9px 0 var(--dot),
+      0 0 18px 3px color-mix(in srgb, var(--dot) 28%, transparent);
+  }
+}
+
+.dot-beam {
+  box-shadow: 0 0 8px -1px var(--dot);
+  animation: dot-beam 3.4s ease-in-out infinite;
+  animation-delay: var(--beam-delay, 0s);
+}
+
 @keyframes check-pop {
   0% {
     transform: scale(0.6);

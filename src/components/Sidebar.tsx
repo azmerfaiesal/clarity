@@ -287,7 +287,7 @@ export function Sidebar({
         </div>
 
         <div className="space-y-0.5">
-          {lists.map((l) => {
+          {lists.map((l, i) => {
             const id: ViewId = `list:${l.id}`
             const active = view === id
             return (
@@ -323,8 +323,16 @@ export function Sidebar({
                     />
                   )}
                   <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: l.color, boxShadow: `0 0 8px -1px ${l.color}` }}
+                    className="dot-beam h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={
+                      {
+                        backgroundColor: l.color,
+                        '--dot': l.color,
+                        // Offset each row so the column breathes in a drift
+                        // rather than throbbing in unison, which reads mechanical.
+                        '--beam-delay': `${(i % 5) * 0.55}s`,
+                      } as React.CSSProperties
+                    }
                     aria-hidden
                   />
                   <span className="flex-1 truncate">{l.name}</span>
