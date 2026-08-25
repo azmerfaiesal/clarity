@@ -7,6 +7,7 @@ import { currentStreak, habitStats, isCompletedOn, requiredPerDay } from '../uti
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
 import { HabitCard } from './HabitCard'
 import { HabitIcon } from './HabitIcon'
+import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
 
 /** One-tap starting points so the empty state is not a blank wall. */
@@ -40,6 +41,7 @@ export function HabitTracker({
     addWritingHabit,
   } = useHabits()
   const [dragId, setDragId] = useState<string | null>(null)
+  const [summary, setSummary] = useState<Habit | null>(null)
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Habit | null>(null)
@@ -181,6 +183,7 @@ export function HabitTracker({
       color: s.color,
       icon: s.icon,
       targetStreak: null,
+      reminderTime: null,
       timesPerWeek: null,
       trackBy: 'checkoff',
       dailyTarget: null,
@@ -296,6 +299,7 @@ export function HabitTracker({
                 onAdjust={(delta, date) => handleAdjust(h, delta, date)}
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
+                onOpenSummary={() => setSummary(h)}
                 onEdit={() => {
                   setEditing(h)
                   setFormOpen(true)
@@ -321,6 +325,7 @@ export function HabitTracker({
                 onAdjust={(delta, date) => handleAdjust(h, delta, date)}
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
+                onOpenSummary={() => setSummary(h)}
                 onEdit={() => {
                   setEditing(h)
                   setFormOpen(true)
@@ -331,6 +336,13 @@ export function HabitTracker({
             ))}
           </div>
         </div>
+      )}
+
+      {summary && (
+        <HabitSummary
+          habit={habits.find((h) => h.id === summary.id) ?? summary}
+          onClose={() => setSummary(null)}
+        />
       )}
 
       {formOpen && (

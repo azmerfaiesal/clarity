@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ALargeSmall, Check, Cloud, CloudOff, Moon, Sun, Type, X } from 'lucide-react'
 import { useAuth } from '../store/auth'
 import { useTaskStore } from '../store/taskStore'
 import { FONT_SIZE_LABELS, useTheme, type FontSize } from '../store/theme'
+import { permissionState, requestPermission, type PermissionState } from '../store/notifications'
 import { DEFAULT_FONT, FONTS, FONT_KEYS, ensureFontLoaded } from '../store/fonts'
 
 const SHORTCUTS: [string, string][] = [
@@ -27,6 +28,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function Settings({ onClose }: { onClose: () => void }) {
   const { theme, setTheme, controlledByHost, fontSize, setFontSize, fontFamily, setFontFamily } =
     useTheme()
+  const [notifyState, setNotifyState] = useState<PermissionState>(() => permissionState())
   const { user, signOut } = useAuth()
   const store = useTaskStore()
 
@@ -184,6 +186,40 @@ export function Settings({ onClose }: { onClose: () => void }) {
               </p>
             )}
           </div>
+        </Section>
+
+        <Section title="Reminders">
+          {notifyState === 'unsupported' ? (
+            <p className="text-sm text-muted">This browser does not support notifications.</p>
+          ) : notifyState === 'granted' ? (
+            <p className="text-sm text-muted">
+              Notifications are on. Task reminders and habit nudges will appear here.
+            </p>
+          ) : notifyState === 'denied' ? (
+            <p className="text-sm text-muted">
+              Notifications are blocked for this site. Re-allow them in your browser's site
+              settings, then reopen this panel.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-muted">
+                Get a notification when a task reminder comes due, or when a habit is still open at
+                its reminder time.
+              </p>
+              <button
+                type="button"
+                onClick={async () => setNotifyState(await requestPermission())}
+                className="mt-3 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi"
+              >
+                Enable notifications
+              </button>
+            </>
+          )}
+          <p className="mt-2 text-xs text-faint">
+            Reminders fire while a Clarity tab is open, in the foreground or the background. They
+            cannot reach you with the browser closed — that needs a push server this app does not
+            have.
+          </p>
         </Section>
 
         <Section title="Account">

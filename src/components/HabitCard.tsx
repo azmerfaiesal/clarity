@@ -33,6 +33,7 @@ export function HabitCard({
   justCompleted,
   onSetAmount,
   onSaveTemplate,
+  onOpenSummary,
   dragHandleProps,
   dragging,
 }: {
@@ -46,6 +47,7 @@ export function HabitCard({
   justCompleted: boolean
   onSetAmount: (amount: number, date?: string) => void
   onSaveTemplate: () => void
+  onOpenSummary: () => void
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>
   dragging?: boolean
 }) {
@@ -188,8 +190,13 @@ export function HabitCard({
           )}
         </div>
 
-        {/* Title + meta */}
-        <div className="min-w-0 flex-1">
+        {/* Title + meta. Clicking opens the read-only record. */}
+        <button
+          type="button"
+          onClick={onOpenSummary}
+          aria-label={`Open ${habit.name} summary`}
+          className="min-w-0 flex-1 cursor-pointer text-left"
+        >
           <h3 className="flex items-center gap-1.5 truncate text-md font-semibold text-ink">
             {habit.icon && s.doneToday && (
               <span style={{ color: habit.color }}>
@@ -215,7 +222,7 @@ export function HabitCard({
             {habit.description}
             {archived && <span className="text-faint"> · Paused</span>}
           </p>
-        </div>
+        </button>
 
         {/* Streak + total + menu */}
         <div className="flex shrink-0 items-center gap-2.5">

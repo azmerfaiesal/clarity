@@ -13,6 +13,7 @@ import { TaskInput } from './components/TaskInput'
 import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
 import { useHabits } from './store/habitStore'
+import { checkReminders } from './store/notifications'
 import { useNotes } from './store/noteStore'
 import { useTaskStore } from './store/taskStore'
 import AuthGate from './components/AuthGate'
@@ -102,6 +103,23 @@ function AppShell() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.lastDeleted])
+
+  // Reminder sweep. A minute is fine granularity for a wall-clock nudge, and
+  // the sweep itself is cheap and deduplicated.
+  useEffect(() => {
+    const tick = () => checkReminders(tasks, habits)
+    tick()
+    const id = window.setInterval(tick, 60_000)
+    // Coming back to the tab should catch anything that came due while hidden.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [tasks, habits])
 
   // The global key handler is bound once; read the live view through a ref.
   const viewRef = useRef(view)

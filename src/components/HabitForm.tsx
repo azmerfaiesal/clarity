@@ -55,6 +55,7 @@ export function HabitForm({
   const [targetStreak, setTargetStreak] = useState(
     habit?.targetStreak ? String(habit.targetStreak) : '',
   )
+  const [reminderTime, setReminderTime] = useState(habit?.reminderTime ?? '')
   const [showErrors, setShowErrors] = useState(false)
   const [pickingIcon, setPickingIcon] = useState(false)
   const [browsing, setBrowsing] = useState(false)
@@ -122,6 +123,7 @@ export function HabitForm({
       color,
       icon,
       targetStreak: Number.isFinite(parsedTarget) && parsedTarget > 0 ? parsedTarget : null,
+      reminderTime: reminderTime || null,
       source: habit?.source ?? 'manual',
     }
   }
@@ -502,6 +504,39 @@ export function HabitForm({
               className="w-full resize-none rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-faint focus:border-accent"
             />
           </label>
+
+          {/* Remind */}
+          <div>
+            <span className="mb-1.5 block text-xs font-medium text-faint">Remind</span>
+            {reminderTime ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  aria-label="Reminder time"
+                  className="rounded-md border border-line bg-surface px-2.5 py-1.5 font-mono text-sm text-ink outline-none focus:border-accent"
+                />
+                <span className="text-3xs text-faint">every day it is due</span>
+                <button
+                  type="button"
+                  onClick={() => setReminderTime('')}
+                  aria-label="Clear reminder"
+                  className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setReminderTime('09:00')}
+                className="cursor-pointer rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-solid hover:text-ink"
+              >
+                + Add reminder
+              </button>
+            )}
+          </div>
 
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-faint">

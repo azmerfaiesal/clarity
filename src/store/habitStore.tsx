@@ -329,6 +329,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       color: '#c084fc',
       icon: 'lucide:pen',
       targetStreak: null,
+      reminderTime: null,
       createdAt: now,
       logs: {},
       lastCompleted: null,

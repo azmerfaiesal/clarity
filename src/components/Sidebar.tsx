@@ -277,7 +277,7 @@ export function Sidebar({
       </div>
 
       {/* Top level: the four things this app tracks. */}
-      <nav aria-label="Sections" className="space-y-0.5 px-2.5">
+      <nav aria-label="Sections" className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-2">
         <NavItem
           icon={<House className="h-4 w-4" />}
           label="Home"
@@ -343,65 +343,9 @@ export function Sidebar({
                 active={view === 'trash'}
                 onClick={() => nav('trash')}
               />
-            </div>
-          </div>
-        </div>
-        <NavItem
-          icon={<Target className="h-4 w-4" />}
-          label="Habits"
-          count={habitCount}
-          active={view === 'habits'}
-          expanded={habitsOpen}
-          onToggle={() => setHabitsOpen((v) => !v)}
-          onClick={() => {
-            setHabitsOpen(true)
-            nav('habits')
-          }}
-        />
-        {/* Filter the habit list by how often it repeats. */}
-        <div className="disclosure" data-open={habitsOpen}>
-          <div>
-            <div className="space-y-0.5 pt-0.5 pl-3.5">
-              {(
-                [
-                  ['all', 'All'],
-                  ['daily', 'Daily'],
-                  ['weekly', 'Weekly'],
-                  ['monthly', 'Monthly'],
-                ] as [HabitFilter, string][]
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={view === 'habits' && habitFilter === value}
-                  onClick={() => {
-                    onHabitFilter(value)
-                    nav('habits')
-                  }}
-                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
-                    view === 'habits' && habitFilter === value
-                      ? 'bg-accent-soft font-medium text-ink'
-                      : 'text-muted hover:bg-surface hover:text-ink'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <NavItem
-          icon={<NotebookPen className="h-4 w-4" />}
-          label="Notes"
-          count={noteCount}
-          active={view === 'notes'}
-          onClick={() => nav('notes')}
-        />
-      </nav>
 
-      {/* Lists — part of Tasks, so they follow its disclosure. */}
-      <div className="disclosure mt-1 flex-1 overflow-y-auto px-2.5" data-open={tasksOpen}>
-       <div>
+              {/* Lists filter tasks, so they belong to this section. */}
+              <div className="mt-3">
         <div className="mb-1.5 flex items-center justify-between px-2.5">
           <span className="label">Lists</span>
           <button
@@ -512,8 +456,63 @@ export function Sidebar({
             />
           </div>
         )}
-       </div>
-      </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        <NavItem
+          icon={<Target className="h-4 w-4" />}
+          label="Habits"
+          count={habitCount}
+          active={view === 'habits'}
+          expanded={habitsOpen}
+          onToggle={() => setHabitsOpen((v) => !v)}
+          onClick={() => {
+            setHabitsOpen(true)
+            nav('habits')
+          }}
+        />
+        {/* Filter the habit list by how often it repeats. */}
+        <div className="disclosure" data-open={habitsOpen}>
+          <div>
+            <div className="space-y-0.5 pt-0.5 pl-3.5">
+              {(
+                [
+                  ['all', 'All'],
+                  ['daily', 'Daily'],
+                  ['weekly', 'Weekly'],
+                  ['monthly', 'Monthly'],
+                ] as [HabitFilter, string][]
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={view === 'habits' && habitFilter === value}
+                  onClick={() => {
+                    onHabitFilter(value)
+                    nav('habits')
+                  }}
+                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                    view === 'habits' && habitFilter === value
+                      ? 'bg-accent-soft font-medium text-ink'
+                      : 'text-muted hover:bg-surface hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <NavItem
+          icon={<NotebookPen className="h-4 w-4" />}
+          label="Notes"
+          count={noteCount}
+          active={view === 'notes'}
+          onClick={() => nav('notes')}
+        />
+      </nav>
 
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-line p-2.5">

@@ -38,6 +38,7 @@ function habit(over: Partial<Habit> = {}): Habit {
     color: '#3ddbf0',
     icon: '',
     targetStreak: null,
+    reminderTime: null,
     createdAt: '2026-01-01T08:00:00.000Z',
     logs: {},
     lastCompleted: null,

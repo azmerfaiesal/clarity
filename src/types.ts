@@ -77,6 +77,8 @@ export interface Habit {
   /** A `lucide:name` reference, a raw emoji, or empty. */
   icon: string
   targetStreak: number | null
+  /** Local 'HH:MM' for a daily nudge, or null. Recurs, so not an instant. */
+  reminderTime: string | null
   createdAt: string
   /**
    * Completion log, local 'YYYY-MM-DD' to amount. Checkoff stores 1, count

@@ -12,7 +12,7 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 - **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes, and reminders (shown on the row as a clock).
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
 - **Home** — today at a glance: habits due (tickable in place), tasks due, recent notes, each linking through to the section that owns it.
-- **Habits** — daily, weekdays, weekends, picked days, X-per-week or monthly habits, each with a 365-day contribution heatmap, a colour, emoji and optional target streak. One tap logs today. Track by a tick, a **target count** (eight glasses of water) or a **target duration** (thirty minutes reading); the heatmap ramps in four steps as the day fills. Tap the button to add a step, hold it for a slider to set an exact amount. Habits can be reordered by dragging, saved as reusable **templates**, and a **Writing** habit ticks itself on any day you add a note. Each card shows current streak, lifetime total, best streak, completion rate and progress through the current period. Habits can be paused (keeping their history) or deleted.
+- **Habits** — daily, weekdays, weekends, picked days, X-per-week or monthly habits, each with a 365-day contribution heatmap, a colour, emoji and optional target streak. One tap logs today. Track by a tick, a **target count** (eight glasses of water) or a **target duration** (thirty minutes reading); the heatmap ramps in four steps as the day fills. Tap the button to add a step, hold it for a slider to set an exact amount. Habits can be reordered by dragging, saved as reusable **templates**, given a daily reminder, and a **Writing** habit ticks itself on any day you add a note. Clicking a habit opens a read-only summary of its record. Each card shows current streak, lifetime total, best streak, completion rate and progress through the current period. Habits can be paused (keeping their history) or deleted.
 - **Notes** — a blank sheet for whatever is on your mind: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history with two-line previews, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. Unsaved text survives a refresh.
 - **Search** — global palette (`Cmd/Ctrl + K` or `/`) matching title, description, list, and tags, with keyboard navigation.
 - **Filters** — status, priority, due date, list, favorites-only, with active-count badge and one-click clear.
@@ -86,9 +86,17 @@ This is why the codebase uses named sizes (`text-sm`) rather than arbitrary
 ones (`text-[13px]`) — an arbitrary px size cannot respond to the preference.
 Adding one silently opts that element out of the setting.
 
-> **Reminders are stored, not delivered.** Setting one records the instant and
-> marks the task with a clock; nothing notifies you when it arrives. Firing them
-> needs a notification path the app does not have yet — see the note below.
+### Reminders
+
+Tasks carry a reminder instant; habits carry a local `HH:MM` that recurs on the
+days they are due. Enable notifications in Settings and Clarity raises a browser
+notification when a task reminder comes due, or when a habit is still open at
+its time. Firing is deduplicated in `localStorage`, so a reload does not
+re-announce and a habit nags once a day rather than every sweep.
+
+> **They fire while a Clarity tab is open** — foreground or background — and not
+> when the browser is closed. That would need a service worker with a push
+> subscription and a server to send from, which this app does not have.
 
 ## Sync
 

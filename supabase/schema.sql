@@ -88,6 +88,9 @@ create table if not exists public.clarity_habits (
   color           text not null default '#3ddbf0',
   icon            text not null default '',
   target_streak   integer,
+  -- Local 'HH:MM' for a daily nudge. Not a timestamptz: it recurs, and 8am
+  -- means 8am wherever the person is.
+  reminder_time   text,
   -- How the habit is measured: a tick, a count, or minutes. daily_target is the
   -- amount that finishes a day for the latter two.
   track_by        text not null default 'checkoff'
