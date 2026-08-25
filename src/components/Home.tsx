@@ -5,6 +5,7 @@ import { useHabits } from '../store/habitStore'
 import { useNotes } from '../store/noteStore'
 import { formatRelative, todayStr } from '../utils/dateUtils'
 import { formatAmount, habitStats, isCompletedOn } from '../utils/habitUtils'
+import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { TaskItem } from './TaskItem'
 
@@ -237,7 +238,14 @@ function HomeHabitRow({
       <span className={`min-w-0 flex-1 truncate text-sm ${done ? 'text-muted line-through' : 'text-ink'}`}>
         {habit.name}
       </span>
-      <span className="shrink-0 font-mono text-3xs text-faint tabular-nums">🔥 {s.current}</span>
+      <span className="flex shrink-0 items-center gap-1 font-mono text-3xs text-faint tabular-nums">
+        <FlameIcon
+          className="h-3 w-3"
+          beaming={s.current > 0}
+          color={s.current > 0 ? habit.color : undefined}
+        />
+        {s.current}
+      </span>
     </li>
   )
 }

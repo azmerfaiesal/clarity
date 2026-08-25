@@ -252,6 +252,24 @@ body {
   min-height: 0;
 }
 
+/*
+ * Streak flame. The glow is the habit's own colour, passed in as --flame, and
+ * breathes on the same slow cycle as the list swatches so the two read as one
+ * family rather than two separate effects.
+ */
+@keyframes flame-beam {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--flame, currentColor) 45%, transparent));
+  }
+  50% {
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--flame, currentColor) 85%, transparent));
+  }
+}
+.flame-beam {
+  animation: flame-beam 2.6s ease-in-out infinite;
+}
+
 /* Micro-label: the uppercase, wide-tracked caption used for section headers. */
 .label {
   font-size: calc(10.5px * var(--fs));

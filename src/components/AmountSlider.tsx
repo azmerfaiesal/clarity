@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Habit } from '../types'
 import { formatAmount, requiredPerDay } from '../utils/habitUtils'
+import { LogNotes } from './LogNotes'
 
 /**
  * Press-and-hold surface for logging an exact amount.
@@ -12,11 +13,15 @@ import { formatAmount, requiredPerDay } from '../utils/habitUtils'
 export function AmountSlider({
   habit,
   initial,
+  notes,
+  onSetNotes,
   onCommit,
   onClose,
 }: {
   habit: Habit
   initial: number
+  notes: string[]
+  onSetNotes: (notes: string[]) => void
   onCommit: (value: number) => void
   onClose: () => void
 }) {
@@ -52,7 +57,7 @@ export function AmountSlider({
       ref={ref}
       role="dialog"
       aria-label={`Set amount for ${habit.name}`}
-      className="anim-scale-in absolute top-full left-0 z-40 mt-2 w-56 rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
+      className="anim-scale-in absolute top-full left-0 z-40 mt-2 w-64 rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
     >
       <div className="mb-2 flex items-baseline justify-between">
         <span
@@ -89,6 +94,12 @@ export function AmountSlider({
           style={{ left: `${pct}%`, backgroundColor: habit.color }}
           aria-hidden
         />
+      </div>
+
+      {/* What the day's logs actually were. */}
+      <div className="mt-3 border-t border-line pt-2">
+        <span className="label mb-1 block">Notes</span>
+        <LogNotes notes={notes} onChange={onSetNotes} />
       </div>
 
       <div className="mt-3 flex items-center gap-1.5">

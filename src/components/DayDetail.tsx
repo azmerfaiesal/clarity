@@ -1,8 +1,9 @@
-import { Check, Plus, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Habit } from '../types'
 import { parseDate } from '../utils/dateUtils'
 import { amountOn, formatAmount, isCompletedOn, isScheduled, runContaining } from '../utils/habitUtils'
+import { LogNotes } from './LogNotes'
 
 /**
  * One day's record, opened from a heatmap cell: what happened, where it sits in
@@ -31,8 +32,6 @@ export function DayDetail({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
-  const [adding, setAdding] = useState(false)
-  const [draft, setDraft] = useState('')
 
   const amount = amountOn(habit, date)
   const done = isCompletedOn(habit, date)
@@ -70,13 +69,6 @@ export function DayDetail({
       document.removeEventListener('keydown', onKey, true)
     }
   }, [onClose])
-
-  const commit = () => {
-    const v = draft.trim()
-    if (v) onSetNotes([...notes, v])
-    setDraft('')
-    setAdding(false)
-  }
 
   const heading = parseDate(date).toLocaleDateString(undefined, {
     weekday: 'short',
@@ -154,54 +146,7 @@ export function DayDetail({
       {(notes.length > 0 || (editable && amount > 0)) && (
         <div className="mt-2 border-t border-line pt-2">
           <span className="label mb-1 block">Notes</span>
-          <ul className="space-y-0.5" role="list">
-            {notes.map((n, i) => (
-              <li key={i} className="group flex items-start gap-1.5 text-xs text-ink">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-faint" aria-hidden />
-                <span className="min-w-0 flex-1 break-words">{n}</span>
-                {editable && (
-                  <button
-                    type="button"
-                    onClick={() => onSetNotes(notes.filter((_, j) => j !== i))}
-                    aria-label={`Remove note ${n}`}
-                    className="shrink-0 cursor-pointer rounded p-0.5 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          {editable &&
-            (adding ? (
-              <input
-                autoFocus
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') commit()
-                  if (e.key === 'Escape') {
-                    e.stopPropagation()
-                    setAdding(false)
-                    setDraft('')
-                  }
-                }}
-                onBlur={commit}
-                placeholder="e.g. Strength training"
-                aria-label="Add a note for this day"
-                maxLength={60}
-                className="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink outline-none placeholder:text-faint focus:border-accent"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="mt-1 inline-flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-3xs text-faint transition-colors hover:text-accent"
-              >
-                <Plus className="h-3 w-3" /> Add note
-              </button>
-            ))}
+          <LogNotes notes={notes} onChange={onSetNotes} editable={editable} />
         </div>
       )}
     </div>

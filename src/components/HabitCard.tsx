@@ -13,8 +13,10 @@ import {
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import type { Habit } from '../types'
+import { todayStr } from '../utils/dateUtils'
 import { formatAmount, habitStats, repetitionLabel, totalAmount } from '../utils/habitUtils'
 import { AmountSlider } from './AmountSlider'
+import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { HabitHeatmap, HeatmapLegend } from './HabitHeatmap'
@@ -35,6 +37,7 @@ export function HabitCard({
   onSaveTemplate,
   onOpenSummary,
   onPickDay,
+  onSetNotes,
   dragHandleProps,
   dragging,
 }: {
@@ -50,13 +53,15 @@ export function HabitCard({
   onSaveTemplate: () => void
   onOpenSummary: () => void
   onPickDay: (date: string, anchor: { x: number; y: number }) => void
+  onSetNotes: (date: string, notes: string[]) => void
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>
   dragging?: boolean
 }) {
   const [sliderOpen, setSliderOpen] = useState(false)
   const holdTimer = useRef<number | null>(null)
   const heldRef = useRef(false)
-  const s = habitStats(habit)
+  const today = todayStr()
+  const s = habitStats(habit, today)
   const archived = habit.archivedAt !== null
   const canTick = s.dueToday && !archived
   const counted = habit.trackBy !== 'checkoff'
@@ -186,6 +191,8 @@ export function HabitCard({
             <AmountSlider
               habit={habit}
               initial={s.amountToday}
+              notes={habit.logNotes[today] ?? []}
+              onSetNotes={(n) => onSetNotes(today, n)}
               onCommit={(v) => onSetAmount(v)}
               onClose={() => setSliderOpen(false)}
             />
@@ -233,7 +240,7 @@ export function HabitCard({
             style={{ backgroundColor: `${habit.color}1f` }}
             title={`Current streak${habit.targetStreak ? ` · target ${habit.targetStreak}` : ''}`}
           >
-            <span aria-hidden>🔥</span>
+            <FlameIcon className="h-3.5 w-3.5" beaming={s.current > 0} color={habit.color} />
             <span className="font-mono text-sm font-semibold tabular-nums" style={{ color: habit.color }}>
               {s.current}
             </span>

@@ -104,7 +104,7 @@ export function HabitTracker({
       setFlashId(habit.id)
       setToast(
         habit.targetStreak !== null && streak === habit.targetStreak
-          ? `${habit.name} · ${streak}-day target reached 🎉`
+          ? `${habit.name} · ${streak}-day target reached`
           : streak > 1
             ? `Nice — ${streak} in a row`
             : 'Logged. Day one.',
@@ -129,7 +129,7 @@ export function HabitTracker({
       setFlashId(habit.id)
       setToast(
         habit.targetStreak !== null && streak === habit.targetStreak
-          ? `${habit.name} · ${streak}-day target reached 🎉`
+          ? `${habit.name} · ${streak}-day target reached`
           : streak > 1
             ? `Nice — ${streak} in a row`
             : 'Logged. Day one.',
@@ -306,6 +306,7 @@ export function HabitTracker({
                 onSaveTemplate={() => saveAsTemplate(h)}
                 onOpenSummary={() => setSummary(h)}
                 onPickDay={(date, anchor) => setDay({ habitId: h.id, date, anchor })}
+                onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
                   setEditing(h)
                   setFormOpen(true)
@@ -333,6 +334,7 @@ export function HabitTracker({
                 onSaveTemplate={() => saveAsTemplate(h)}
                 onOpenSummary={() => setSummary(h)}
                 onPickDay={(date, anchor) => setDay({ habitId: h.id, date, anchor })}
+                onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
                   setEditing(h)
                   setFormOpen(true)

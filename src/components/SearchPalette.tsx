@@ -67,8 +67,8 @@ export function SearchPalette({
         className="anim-scale-in glow w-full max-w-xl overflow-hidden rounded-xl border border-line bg-raised shadow-2xl shadow-black/20 dark:shadow-black/70"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 border-b border-line px-4">
-          <Search className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+        <div className="flex items-center gap-2.5 border-b border-line px-3.5">
+          <Search className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden />
           <input
             ref={inputRef}
             value={query}
@@ -88,20 +88,20 @@ export function SearchPalette({
             }}
             placeholder="Search tasks, lists, tags…"
             aria-label="Search tasks"
-            className="w-full bg-transparent py-3.5 text-md text-ink outline-none placeholder:text-faint"
+            className="w-full bg-transparent py-2.5 text-sm text-ink outline-none placeholder:text-faint"
           />
-          <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-faint">
+          <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-[9px] text-faint">
             ESC
           </kbd>
         </div>
 
-        <div className="max-h-80 overflow-y-auto p-1.5" role="listbox" aria-label="Search results">
+        <div className="max-h-80 overflow-y-auto p-1" role="listbox" aria-label="Search results">
           {query.trim() === '' ? (
-            <p className="px-3 py-8 text-center text-sm text-muted">
+            <p className="px-3 py-6 text-center text-xs text-muted">
               Type to search across all your tasks.
             </p>
           ) : results.length === 0 ? (
-            <p className="px-3 py-8 text-center text-sm text-muted">
+            <p className="px-3 py-6 text-center text-xs text-muted">
               No results for “{query}”.
             </p>
           ) : (
@@ -116,7 +116,7 @@ export function SearchPalette({
                   onSelect(t)
                   onClose()
                 }}
-                className={`flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
+                className={`flex w-full cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-left transition-colors ${
                   i === activeIndex ? 'bg-accent-soft' : ''
                 }`}
               >
