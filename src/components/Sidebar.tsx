@@ -6,6 +6,7 @@ import {
   Moon,
   NotebookPen,
   Pencil,
+  Target,
   Settings as SettingsIcon,
   Star,
   Sun,
@@ -170,6 +171,7 @@ export function Sidebar({
   onDeleteList,
   onOpenSettings,
   noteCount,
+  habitCount,
 }: {
   view: ViewId
   tasks: Task[]
@@ -182,6 +184,7 @@ export function Sidebar({
   onDeleteList: (id: string) => void
   onOpenSettings: () => void
   noteCount: number
+  habitCount: number
 }) {
   const { theme, toggleTheme, controlledByHost } = useTheme()
   const [addingList, setAddingList] = useState(false)
@@ -388,7 +391,14 @@ export function Sidebar({
 
       {/* Brain Dump is not a task view, so it sits apart from them and from the
           lists that filter them. */}
-      <div className="border-t border-line px-2.5 py-2">
+      <div className="space-y-0.5 border-t border-line px-2.5 py-2">
+        <NavItem
+          icon={<Target className="h-4 w-4" />}
+          label="Habits"
+          count={habitCount}
+          active={view === 'habits'}
+          onClick={() => nav('habits')}
+        />
         <NavItem
           icon={<NotebookPen className="h-4 w-4" />}
           label="Brain Dump"

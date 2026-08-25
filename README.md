@@ -7,10 +7,11 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 ## Features
 
 - **Quick capture** — click "Add a task" (or press `N`), type, hit `Enter`. The form stays open so you can add several in a row. Expand for description, due date, priority, list, tags, and reminders. Only the title is required — a task can carry no due date and no reminder, and both are clearable after the fact.
-- **Views** — Inbox, Today, Upcoming (grouped by date), Completed, Favorites, Brain Dump, Recycle Bin, and custom lists.
+- **Views** — Inbox, Today, Upcoming (grouped by date), Completed, Favorites, Habits, Brain Dump, Recycle Bin, and custom lists.
 - **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); rename or recolor one from the pencil that appears on hover; deleting a list returns its tasks to Inbox.
 - **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes, and reminders (shown on the row as a clock).
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
+- **Habits** — daily, weekly (pick weekdays) or monthly (pick dates) habits with a colour, emoji and optional target streak. One tap logs today; weekly and monthly habits also expose their scheduled days so a missed one can be filled in. Each card shows current and best streak, completion rate, and progress through the current week or month. Habits can be paused (keeping their history) or deleted.
 - **Brain Dump** — a blank sheet for whatever is on your mind: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history with two-line previews, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. Unsaved text survives a refresh.
 - **Search** — global palette (`Cmd/Ctrl + K` or `/`) matching title, description, list, and tags, with keyboard navigation.
 - **Filters** — status, priority, due date, list, favorites-only, with active-count badge and one-click clear.
@@ -90,7 +91,7 @@ Adding one silently opts that element out of the setting.
 
 ## Sync
 
-Sign in with email + password (Supabase Auth). Everything then lives in three Postgres tables — `clarity_tasks`, `clarity_lists` and `clarity_notes` — behind row-level security that scopes every row to `auth.uid()`.
+Sign in with email + password (Supabase Auth). Everything then lives in four Postgres tables — `clarity_tasks`, `clarity_lists`, `clarity_notes` and `clarity_habits` — behind row-level security that scopes every row to `auth.uid()`.
 
 - **Local first** — every edit hits React state immediately and is cached in `localStorage`, so the UI never waits on the network.
 - **Push** — changed rows only are upserted 400ms after an edit settles; rows removed locally are deleted server-side by the same pass.
@@ -115,6 +116,7 @@ Sign in with email + password (Supabase Auth). Everything then lives in three Po
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # production build in dist/
+npm run test     # unit tests (streak/scheduling logic)
 npm run preview  # serve the production build
 ```
 
@@ -151,7 +153,8 @@ src/
                  storage.ts (scoped localStorage + sample data), auth.tsx,
                  theme.tsx, fonts.ts
   lib/           supabase.ts (client)
-  utils/         dateUtils.ts, taskUtils.ts (view/search/filter/sort logic)
+  utils/         dateUtils.ts, taskUtils.ts (view/search/filter/sort logic),
+                 habitUtils.ts (scheduling + streak maths, unit-tested)
   types.ts       Task, TaskList, ViewId, Filters, SortMode
 supabase/
   schema.sql     tables, RLS policies, realtime publication

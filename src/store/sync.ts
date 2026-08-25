@@ -1,4 +1,4 @@
-import type { BrainDump, Task, TaskList } from '../types'
+import type { BrainDump, Habit, Task, TaskList } from '../types'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase'
 const TASKS_TABLE = 'clarity_tasks'
 const LISTS_TABLE = 'clarity_lists'
 const NOTES_TABLE = 'clarity_notes'
+const HABITS_TABLE = 'clarity_habits'
 
 export interface LoadedData {
   tasks: Task[]
@@ -55,6 +56,97 @@ export async function upsertList(list: TaskList, userId: string): Promise<void> 
 
 export async function deleteListRow(id: string): Promise<void> {
   await supabase.from(LISTS_TABLE).delete().eq('id', id)
+}
+
+// ---- habits ----
+
+export async function loadHabitsFromServer(
+  userId: string,
+): Promise<{ habits: Habit[]; fromServer: boolean }> {
+  const { data, error } = await supabase
+    .from(HABITS_TABLE)
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+
+  if (error) return { habits: [], fromServer: false }
+  return { habits: (data ?? []).map(rowToHabit), fromServer: true }
+}
+
+export async function upsertHabit(habit: Habit, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from(HABITS_TABLE)
+    .upsert(habitToRow(habit, userId), { onConflict: 'id' })
+  if (error) throw error
+}
+
+export async function deleteHabitRow(id: string): Promise<void> {
+  const { error } = await supabase.from(HABITS_TABLE).delete().eq('id', id)
+  if (error) throw error
+}
+
+export function subscribeToHabits(userId: string, onHabits: (habits: Habit[]) => void) {
+  const channel = supabase
+    .channel(`clarity-habits-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: HABITS_TABLE, filter: `user_id=eq.${userId}` },
+      async () => {
+        const { data } = await supabase
+          .from(HABITS_TABLE)
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true })
+        if (data) onHabits(data.map(rowToHabit))
+      },
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}
+
+function numberArray(v: unknown): number[] {
+  return Array.isArray(v) ? v.filter((n): n is number => typeof n === 'number') : []
+}
+
+function rowToHabit(r: Record<string, unknown>): Habit {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ''),
+    description: String(r.description ?? ''),
+    repetitionType: (r.repetition_type as Habit['repetitionType']) ?? 'daily',
+    daysOfWeek: numberArray(r.days_of_week),
+    datesOfMonth: numberArray(r.dates_of_month),
+    color: String(r.color ?? '#3ddbf0'),
+    icon: String(r.icon ?? ''),
+    targetStreak: typeof r.target_streak === 'number' ? r.target_streak : null,
+    createdAt: String(r.created_at ?? new Date().toISOString()),
+    completedDates: Array.isArray(r.completed_dates) ? (r.completed_dates as string[]) : [],
+    lastCompleted: (r.last_completed as string | null) ?? null,
+    archivedAt: (r.archived_at as string | null) ?? null,
+  }
+}
+
+function habitToRow(h: Habit, userId: string) {
+  return {
+    id: h.id,
+    user_id: userId,
+    name: h.name,
+    description: h.description,
+    repetition_type: h.repetitionType,
+    days_of_week: h.daysOfWeek,
+    dates_of_month: h.datesOfMonth,
+    color: h.color,
+    icon: h.icon,
+    target_streak: h.targetStreak,
+    completed_dates: h.completedDates,
+    last_completed: h.lastCompleted,
+    archived_at: h.archivedAt,
+    created_at: h.createdAt,
+    updated_at: new Date().toISOString(),
+  }
 }
 
 // ---- brain dump notes ----

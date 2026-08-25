@@ -1,6 +1,7 @@
 import { Flag, Plus, RotateCcw, SearchX, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BrainDump } from './components/BrainDump'
+import { HabitTracker } from './components/HabitTracker'
 import { EMPTY_PRESETS, EmptyState } from './components/EmptyState'
 import { Header } from './components/Header'
 import { SearchPalette } from './components/SearchPalette'
@@ -10,6 +11,7 @@ import { TaskEditor } from './components/TaskEditor'
 import { TaskInput } from './components/TaskInput'
 import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
+import { useHabits } from './store/habitStore'
 import { useNotes } from './store/noteStore'
 import { useTaskStore } from './store/taskStore'
 import AuthGate from './components/AuthGate'
@@ -40,6 +42,8 @@ function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string 
       return 'Recycle Bin'
     case 'braindump':
       return 'Brain Dump'
+    case 'habits':
+      return 'Your Habits'
     default:
       return lists.find((l) => `list:${l.id}` === view)?.name ?? 'Inbox'
   }
@@ -49,6 +53,7 @@ function AppShell() {
   const store = useTaskStore()
   const { tasks, lists } = store
   const { notes } = useNotes()
+  const { habits } = useHabits()
 
   const [view, setView] = useState<ViewId>('today')
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
@@ -113,7 +118,7 @@ function AppShell() {
         e.preventDefault()
         setSearchOpen(true)
       } else if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        if (viewRef.current === 'braindump') return
+        if (viewRef.current === 'braindump' || viewRef.current === 'habits') return
         e.preventDefault()
         setQuickAddOpen(true)
       }
@@ -160,11 +165,14 @@ function AppShell() {
         onDeleteList={(id) => store.deleteList(id)}
         onOpenSettings={() => setSettingsOpen(true)}
         noteCount={notes.length}
+        habitCount={habits.filter((h) => h.archivedAt === null).length}
       />
 
  <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
  <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 sm:px-6 sm:pb-16">
-          {view === 'braindump' ? (
+          {view === 'habits' ? (
+            <HabitTracker onOpenMobileNav={() => setMobileNavOpen(true)} />
+          ) : view === 'braindump' ? (
             <BrainDump onOpenMobileNav={() => setMobileNavOpen(true)} />
           ) : (
             <>
@@ -272,7 +280,7 @@ function AppShell() {
       </main>
 
       {/* Mobile FAB */}
-      {view !== 'completed' && view !== 'trash' && view !== 'braindump' && (
+      {view !== 'completed' && view !== 'trash' && view !== 'braindump' && view !== 'habits' && (
         <button
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}

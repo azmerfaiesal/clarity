@@ -33,6 +33,7 @@ export type ViewId =
   | 'favorites'
   | 'trash'
   | 'braindump'
+  | 'habits'
   | `list:${string}`
 
 /** A Brain Dump note: free-form text, optional tags, nothing required but the body. */
@@ -42,6 +43,34 @@ export interface BrainDump {
   tags: string[]
   createdAt: string
   updatedAt: string
+}
+
+export type RepetitionType = 'daily' | 'weekly' | 'monthly'
+
+/**
+ * A habit. `completedDates` (local 'YYYY-MM-DD') is the source of truth for all
+ * tracking; streak, best streak, totals and completion rate are derived from it
+ * on read rather than stored, so they cannot drift away from the log after an
+ * edit or an undo. `lastCompleted` is kept separately because it carries a
+ * time of day the date log cannot.
+ */
+export interface Habit {
+  id: string
+  name: string
+  description: string
+  repetitionType: RepetitionType
+  /** 0=Sunday … 6=Saturday. Used when repetitionType is 'weekly'. */
+  daysOfWeek: number[]
+  /** 1–31. Used when repetitionType is 'monthly'. */
+  datesOfMonth: number[]
+  color: string
+  icon: string
+  targetStreak: number | null
+  createdAt: string
+  completedDates: string[]
+  lastCompleted: string | null
+  /** Set to pause a habit without destroying its history. */
+  archivedAt: string | null
 }
 
 export type SortMode = 'manual' | 'dueDate' | 'priority' | 'created' | 'alpha'

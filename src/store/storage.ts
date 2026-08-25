@@ -1,4 +1,4 @@
-import type { BrainDump, Task, TaskList } from '../types'
+import type { BrainDump, Habit, Task, TaskList } from '../types'
 import { addDays, todayStr } from '../utils/dateUtils'
 import { makeId } from '../utils/taskUtils'
 
@@ -23,6 +23,7 @@ const FONT_FAMILY_KEY = 'clarity.fontfamily.v1'
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
 const notesKey = (scope: string) => `${PREFIX}.notes:${scope}`
+const habitsKey = (scope: string) => `${PREFIX}.habits:${scope}`
 const draftKey = (scope: string) => `${PREFIX}.draft:${scope}`
 
 function read<T>(key: string): T | null {
@@ -66,6 +67,14 @@ export function saveNotes(scope: string, notes: BrainDump[]): void {
   write(notesKey(scope), notes)
 }
 
+export function loadHabits(scope: string): Habit[] | null {
+  return read<Habit[]>(habitsKey(scope))
+}
+
+export function saveHabits(scope: string, habits: Habit[]): void {
+  write(habitsKey(scope), habits)
+}
+
 /**
  * The unsaved Brain Dump composer text, kept so a refresh mid-thought does not
  * throw away what was typed. Cleared once the note is saved or discarded.
@@ -92,6 +101,7 @@ export function clearScope(scope: string): void {
     localStorage.removeItem(tasksKey(scope))
     localStorage.removeItem(listsKey(scope))
     localStorage.removeItem(notesKey(scope))
+    localStorage.removeItem(habitsKey(scope))
     localStorage.removeItem(draftKey(scope))
   } catch {
     /* ignore */
