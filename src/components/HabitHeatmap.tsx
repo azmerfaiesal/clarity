@@ -1,7 +1,14 @@
 import { useMemo } from 'react'
 import type { Habit } from '../types'
 import { addDays, parseDate, todayStr } from '../utils/dateUtils'
-import { countOn, intensityOn, isCompletedOn, isScheduled, weekStart } from '../utils/habitUtils'
+import {
+  amountOn,
+  formatAmount,
+  intensityOn,
+  isCompletedOn,
+  isScheduled,
+  weekStart,
+} from '../utils/habitUtils'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -32,7 +39,7 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
       const week: { date: string; state: CellState; level: number; count: number }[] = []
       for (let d = 0; d < 7; d++) {
         const date = cursor
-        const count = countOn(habit, date)
+        const count = amountOn(habit, date)
         let state: CellState
         // Days before the habit existed still draw, faintly — a grid with a
         // hole in it reads as broken rather than as "not tracked yet".
@@ -123,10 +130,10 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
                     ? undefined
                     : `${date} · ${
                         state === 'done'
-                          ? habit.allowRepeats
-                            ? `${count}${habit.dailyTarget ? `/${habit.dailyTarget}` : ''}${
-                                isCompletedOn(habit, date) ? '' : ' (partial)'
-                              }`
+                          ? habit.trackBy !== 'checkoff'
+                            ? `${formatAmount(habit, count)}${
+                                habit.dailyTarget ? ` / ${formatAmount(habit, habit.dailyTarget)}` : ''
+                              }${isCompletedOn(habit, date) ? '' : ' (partial)'}`
                             : 'done'
                           : state === 'missed'
                             ? 'missed'
@@ -162,7 +169,7 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
 
 export function HeatmapLegend({ habit }: { habit: Habit }) {
   // A counted habit needs a ramp legend; a binary one would be lying with it.
-  if (habit.allowRepeats) {
+  if (habit.trackBy !== 'checkoff') {
     return (
       <span className="flex items-center gap-1.5 font-mono text-3xs text-faint">
         <span className="h-2.5 w-2.5 rounded-[2px] bg-line-strong/60" aria-hidden />
@@ -177,7 +184,9 @@ export function HeatmapLegend({ habit }: { habit: Habit }) {
           />
         ))}
         More
-        {habit.dailyTarget ? <span className="ml-1">· target {habit.dailyTarget}</span> : null}
+        {habit.dailyTarget ? (
+          <span className="ml-1">· target {formatAmount(habit, habit.dailyTarget)}</span>
+        ) : null}
       </span>
     )
   }

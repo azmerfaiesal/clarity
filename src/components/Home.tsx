@@ -4,7 +4,8 @@ import type { Habit, Task, TaskList, ViewId } from '../types'
 import { useHabits } from '../store/habitStore'
 import { useNotes } from '../store/noteStore'
 import { formatRelative, todayStr } from '../utils/dateUtils'
-import { habitStats, isCompletedOn } from '../utils/habitUtils'
+import { formatAmount, habitStats, isCompletedOn } from '../utils/habitUtils'
+import { HabitIcon } from './HabitIcon'
 import { TaskItem } from './TaskItem'
 
 /**
@@ -100,7 +101,9 @@ export function Home({
                 habit={h}
                 today={today}
                 onToggle={() =>
-                  h.allowRepeats ? adjustCompletion(h.id, 1) : toggleCompletion(h.id)
+                  h.trackBy !== 'checkoff'
+                    ? adjustCompletion(h.id, h.trackBy === 'duration' ? 5 : 1)
+                    : toggleCompletion(h.id)
                 }
               />
             ))}
@@ -223,12 +226,12 @@ function HomeHabitRow({
       >
         {done ? (
           <Check className="h-4 w-4" strokeWidth={3} />
-        ) : habit.allowRepeats ? (
-          <span className="font-mono text-3xs tabular-nums">
-            {s.countToday}/{s.needPerDay}
+        ) : habit.trackBy !== 'checkoff' ? (
+          <span className="font-mono text-[9px] tabular-nums">
+            {formatAmount(habit, s.amountToday)}
           </span>
         ) : (
-          <span className="text-xs">{habit.icon || '·'}</span>
+          <HabitIcon icon={habit.icon} className="h-3.5 w-3.5" fallback={<span>·</span>} />
         )}
       </button>
       <span className={`min-w-0 flex-1 truncate text-sm ${done ? 'text-muted line-through' : 'text-ink'}`}>

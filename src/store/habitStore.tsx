@@ -8,12 +8,27 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Habit } from '../types'
+import type { Habit, HabitTemplate } from '../types'
 import { todayStr } from '../utils/dateUtils'
+import { requiredPerDay } from '../utils/habitUtils'
 import { makeId } from '../utils/taskUtils'
-import { LOCAL_SCOPE, loadHabits, saveHabits } from './storage'
+import {
+  LOCAL_SCOPE,
+  loadHabits,
+  loadTemplates,
+  saveHabits,
+  saveTemplates,
+} from './storage'
 import { useAuth } from './auth'
-import { deleteHabitRow, loadHabitsFromServer, subscribeToHabits, upsertHabit } from './sync'
+import {
+  deleteHabitRow,
+  deleteTemplateRow,
+  loadHabitsFromServer,
+  loadTemplatesFromServer,
+  subscribeToHabits,
+  upsertHabit,
+  upsertTemplate,
+} from './sync'
 
 /**
  * Habits, following the same shape as the task and note stores: local state is
@@ -24,7 +39,11 @@ import { deleteHabitRow, loadHabitsFromServer, subscribeToHabits, upsertHabit } 
  * times a day, not on every keystroke, so there is nothing to coalesce.
  */
 
-export type HabitDraft = Omit<Habit, 'id' | 'createdAt' | 'completedDates' | 'lastCompleted' | 'archivedAt'>
+export type HabitDraft = Omit<
+  Habit,
+  'id' | 'createdAt' | 'logs' | 'lastCompleted' | 'archivedAt' | 'sortOrder'
+> &
+  Partial<Pick<Habit, 'sortOrder'>>
 
 interface HabitStore {
   habits: Habit[]
@@ -32,11 +51,22 @@ interface HabitStore {
   addHabit: (draft: HabitDraft) => Habit
   updateHabit: (id: string, patch: Partial<Omit<Habit, 'id' | 'createdAt'>>) => void
   deleteHabit: (id: string) => void
-  /** Tick or untick a specific date. Idempotent per date. */
+  /** Tick or untick a whole date. */
   toggleCompletion: (id: string, date?: string) => void
-  /** Add or remove one log on a date, for habits that allow repeats. */
+  /** Add to (or subtract from) a date's amount. */
   adjustCompletion: (id: string, delta: number, date?: string) => void
+  /** Set a date's amount outright — what the hold-to-log slider commits. */
+  setAmount: (id: string, amount: number, date?: string) => void
   setArchived: (id: string, archived: boolean) => void
+  /** Move a habit to a new position in the manual order. */
+  reorderHabits: (ids: string[]) => void
+  templates: HabitTemplate[]
+  saveAsTemplate: (habit: Habit) => void
+  deleteTemplate: (id: string) => void
+  /** Tick every habit that tracks writing, for the given day. Idempotent. */
+  recordWriting: (date?: string) => void
+  /** Create the built-in Writing habit if the account has none. */
+  addWritingHabit: () => void
 }
 
 const HabitContext = createContext<HabitStore | null>(null)
@@ -47,9 +77,15 @@ export function HabitProvider({ children }: { children: ReactNode }) {
 
   const [scope, setScope] = useState(LOCAL_SCOPE)
   const [habits, setHabits] = useState<Habit[]>(() => loadHabits(LOCAL_SCOPE) ?? [])
+  const [templates, setTemplates] = useState<HabitTemplate[]>(
+    () => loadTemplates(LOCAL_SCOPE) ?? [],
+  )
   const [ready, setReady] = useState(false)
 
   const seen = useRef(new Set<string>())
+  // Lets the log helpers read the latest habits without depending on them.
+  const habitsRef = useRef<Habit[]>(habits)
+  habitsRef.current = habits
 
   useEffect(() => {
     if (authLoading) return
@@ -58,6 +94,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     seen.current = new Set()
     setScope(next)
     setHabits(loadHabits(next) ?? [])
+    setTemplates(loadTemplates(next) ?? [])
     setReady(false)
   }, [authLoading, userId, scope])
 
@@ -69,8 +106,12 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     }
     let cancelled = false
     void (async () => {
-      const { habits: server, fromServer } = await loadHabitsFromServer(userId)
+      const [{ habits: server, fromServer }, { templates: serverTemplates }] = await Promise.all([
+        loadHabitsFromServer(userId),
+        loadTemplatesFromServer(userId),
+      ])
       if (cancelled) return
+      if (serverTemplates.length) setTemplates(serverTemplates)
       if (fromServer) {
         for (const h of server) seen.current.add(h.id)
         setHabits((local) => {
@@ -103,6 +144,10 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     saveHabits(scope, habits)
   }, [scope, habits])
 
+  useEffect(() => {
+    saveTemplates(scope, templates)
+  }, [scope, templates])
+
   const push = useCallback(
     (habit: Habit) => {
       if (!userId) return
@@ -119,9 +164,10 @@ export function HabitProvider({ children }: { children: ReactNode }) {
         ...draft,
         id: makeId(),
         createdAt: new Date().toISOString(),
-        completedDates: [],
+        logs: {},
         lastCompleted: null,
         archivedAt: null,
+        sortOrder: draft.sortOrder ?? Date.now(),
       }
       setHabits((prev) => [...prev, habit])
       push(habit)
@@ -150,52 +196,149 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     [applyPatch],
   )
 
-  const toggleCompletion = useCallback<HabitStore['toggleCompletion']>(
-    (id, date = todayStr()) => {
+  /** Write one date's amount, dropping the key when it falls to zero. */
+  const writeAmount = useCallback(
+    (id: string, date: string, next: number, touched: boolean) => {
       applyPatch(id, (h) => {
-        // Untick clears the whole day, however many logs it holds.
-        const has = h.completedDates.includes(date)
-        const completedDates = has
-          ? h.completedDates.filter((d) => d !== date)
-          : [...h.completedDates, date].sort()
+        const logs = { ...h.logs }
+        if (next > 0) logs[date] = next
+        else delete logs[date]
         return {
           ...h,
-          completedDates,
-          // Unticking the most recent day should not leave a stale timestamp.
-          lastCompleted: has
-            ? completedDates.length
-              ? (h.lastCompleted ?? null)
-              : null
-            : new Date().toISOString(),
+          logs,
+          // Clearing the last entry should not leave a stale timestamp behind.
+          lastCompleted: touched
+            ? new Date().toISOString()
+            : Object.keys(logs).length
+              ? h.lastCompleted
+              : null,
         }
       })
     },
     [applyPatch],
   )
 
+  const toggleCompletion = useCallback<HabitStore['toggleCompletion']>(
+    (id, date = todayStr()) => {
+      const h = habitsRef.current.find((x) => x.id === id)
+      if (!h) return
+      const has = (h.logs[date] ?? 0) > 0
+      // Untick clears the day outright, whatever amount it held.
+      writeAmount(id, date, has ? 0 : requiredPerDay(h), !has)
+    },
+    [writeAmount],
+  )
+
   const adjustCompletion = useCallback<HabitStore['adjustCompletion']>(
     (id, delta, date = todayStr()) => {
-      applyPatch(id, (h) => {
-        const completedDates = [...h.completedDates]
-        if (delta > 0) {
-          for (let i = 0; i < delta; i++) completedDates.push(date)
-        } else {
-          for (let i = 0; i < -delta; i++) {
-            const at = completedDates.lastIndexOf(date)
-            if (at === -1) break
-            completedDates.splice(at, 1)
-          }
+      const h = habitsRef.current.find((x) => x.id === id)
+      if (!h) return
+      const next = Math.max(0, (h.logs[date] ?? 0) + delta)
+      writeAmount(id, date, next, delta > 0)
+    },
+    [writeAmount],
+  )
+
+  const setAmount = useCallback<HabitStore['setAmount']>(
+    (id, amount, date = todayStr()) => {
+      const h = habitsRef.current.find((x) => x.id === id)
+      if (!h) return
+      const next = Math.max(0, Math.round(amount))
+      writeAmount(id, date, next, next > (h.logs[date] ?? 0))
+    },
+    [writeAmount],
+  )
+
+  const reorderHabits = useCallback<HabitStore['reorderHabits']>(
+    (ids) => {
+      setHabits((prev) => {
+        const order = new Map(ids.map((id, i) => [id, i]))
+        const next = prev.map((h) =>
+          order.has(h.id) ? { ...h, sortOrder: order.get(h.id)! } : h,
+        )
+        // Push only the rows whose position actually moved.
+        for (const h of next) {
+          const before = prev.find((p) => p.id === h.id)
+          if (before && before.sortOrder !== h.sortOrder) push(h)
         }
-        completedDates.sort()
-        return {
-          ...h,
-          completedDates,
-          lastCompleted: delta > 0 ? new Date().toISOString() : h.lastCompleted,
-        }
+        return next
       })
     },
-    [applyPatch],
+    [push],
   )
+
+  const saveAsTemplate = useCallback<HabitStore['saveAsTemplate']>(
+    (habit) => {
+      const template: HabitTemplate = {
+        id: makeId(),
+        name: habit.name,
+        description: habit.description,
+        icon: habit.icon,
+        color: habit.color,
+        repetitionType: habit.repetitionType,
+        daysOfWeek: habit.daysOfWeek,
+        datesOfMonth: habit.datesOfMonth,
+        timesPerWeek: habit.timesPerWeek,
+        trackBy: habit.trackBy,
+        dailyTarget: habit.dailyTarget,
+        createdAt: new Date().toISOString(),
+      }
+      setTemplates((prev) => [template, ...prev])
+      if (userId) upsertTemplate(template, userId).catch(() => {})
+    },
+    [userId],
+  )
+
+  const deleteTemplate = useCallback<HabitStore['deleteTemplate']>(
+    (id) => {
+      setTemplates((prev) => prev.filter((t) => t.id !== id))
+      if (userId) deleteTemplateRow(id).catch(() => {})
+    },
+    [userId],
+  )
+
+  /**
+   * Notes calls this after a note is saved. It only ever sets a day to done, so
+   * writing twice in a day is not double-counted and an existing manual tick is
+   * left alone.
+   */
+  const recordWriting = useCallback(
+    (date: string = todayStr()) => {
+      for (const h of habitsRef.current) {
+        if (h.source !== 'notes' || h.archivedAt) continue
+        if ((h.logs[date] ?? 0) >= requiredPerDay(h)) continue
+        writeAmount(h.id, date, requiredPerDay(h), true)
+      }
+    },
+    [writeAmount],
+  )
+
+  const addWritingHabit = useCallback(() => {
+    if (habitsRef.current.some((h) => h.source === 'notes')) return
+    const now = new Date().toISOString()
+    const habit: Habit = {
+      id: makeId(),
+      name: 'Writing',
+      description: 'Ticks itself on any day you add a note.',
+      repetitionType: 'daily',
+      daysOfWeek: [],
+      datesOfMonth: [],
+      timesPerWeek: null,
+      trackBy: 'checkoff',
+      dailyTarget: null,
+      color: '#c084fc',
+      icon: 'lucide:pen',
+      targetStreak: null,
+      createdAt: now,
+      logs: {},
+      lastCompleted: null,
+      archivedAt: null,
+      sortOrder: Date.now(),
+      source: 'notes',
+    }
+    setHabits((prev) => [...prev, habit])
+    push(habit)
+  }, [push])
 
   const setArchived = useCallback<HabitStore['setArchived']>(
     (id, archived) => {
@@ -222,7 +365,14 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       deleteHabit,
       toggleCompletion,
       adjustCompletion,
+      setAmount,
       setArchived,
+      reorderHabits,
+      templates,
+      saveAsTemplate,
+      deleteTemplate,
+      recordWriting,
+      addWritingHabit,
     }),
     [
       habits,
@@ -232,7 +382,14 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       deleteHabit,
       toggleCompletion,
       adjustCompletion,
+      setAmount,
       setArchived,
+      reorderHabits,
+      templates,
+      saveAsTemplate,
+      deleteTemplate,
+      recordWriting,
+      addWritingHabit,
     ],
   )
 

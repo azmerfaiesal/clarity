@@ -4,6 +4,7 @@ import {
   Inbox,
   ListPlus,
   Moon,
+  ChevronRight,
   ClipboardList,
   House,
   NotebookPen,
@@ -15,8 +16,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
-import type { Task, TaskList, ViewId } from '../types'
+import { useEffect, useState } from 'react'
+import type { HabitFilter, Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
 import { useTheme } from '../store/theme'
 
@@ -28,18 +29,24 @@ function NavItem({
   count,
   active,
   onClick,
+  expanded,
+  onToggle,
 }: {
   icon: React.ReactNode
   label: string
   count?: number
   active: boolean
   onClick: () => void
+  /** Present on sections that own a disclosure panel. */
+  expanded?: boolean
+  onToggle?: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
+      aria-expanded={onToggle ? expanded : undefined}
       className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
         active
           ? 'bg-accent-soft font-medium text-ink'
@@ -57,6 +64,21 @@ function NavItem({
       <span className="flex-1 truncate">{label}</span>
       {count !== undefined && count > 0 && (
         <span className="font-mono text-2xs text-faint tabular-nums">{count}</span>
+      )}
+      {onToggle && (
+        <span
+          role="button"
+          tabIndex={-1}
+          aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggle()
+          }}
+          className="-mr-1 rounded p-0.5 text-faint transition-transform duration-200 hover:text-ink"
+          style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </span>
       )}
     </button>
   )
@@ -174,6 +196,8 @@ export function Sidebar({
   onOpenSettings,
   noteCount,
   habitCount,
+  habitFilter,
+  onHabitFilter,
 }: {
   view: ViewId
   tasks: Task[]
@@ -187,12 +211,23 @@ export function Sidebar({
   onOpenSettings: () => void
   noteCount: number
   habitCount: number
+  habitFilter: HabitFilter
+  onHabitFilter: (f: HabitFilter) => void
 }) {
   const { theme, toggleTheme, controlledByHost } = useTheme()
   const [addingList, setAddingList] = useState(false)
   const [editingListId, setEditingListId] = useState<string | null>(null)
+  const [tasksOpen, setTasksOpen] = useState(false)
+  const [habitsOpen, setHabitsOpen] = useState(false)
 
   const count = (v: ViewId) => tasksForView(tasks, v).filter((t) => !t.completed).length
+
+  // Arriving in a section from elsewhere (Home, a link) should reveal its panel.
+  useEffect(() => {
+    if (isTaskView) setTasksOpen(true)
+    if (view === 'habits') setHabitsOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view])
 
   // Everything that is a way of looking at tasks, as opposed to a section.
   const isTaskView =
@@ -254,15 +289,107 @@ export function Sidebar({
           label="Tasks"
           count={count('today')}
           active={isTaskView}
-          onClick={() => nav('today')}
+          expanded={tasksOpen}
+          onToggle={() => setTasksOpen((v) => !v)}
+          onClick={() => {
+            setTasksOpen(true)
+            nav('today')
+          }}
         />
+        {/* Task views and lists are ways of slicing tasks, so they live under
+            Tasks rather than competing with the sections. */}
+        <div className="disclosure" data-open={tasksOpen}>
+          <div>
+            <div className="space-y-0.5 pt-0.5 pl-3.5">
+              <NavItem
+                icon={<Inbox className="h-4 w-4" />}
+                label="Inbox"
+                count={count('inbox')}
+                active={view === 'inbox'}
+                onClick={() => nav('inbox')}
+              />
+              <NavItem
+                icon={<CalendarDays className="h-4 w-4" />}
+                label="Today"
+                count={count('today')}
+                active={view === 'today'}
+                onClick={() => nav('today')}
+              />
+              <NavItem
+                icon={<CalendarDays className="h-4 w-4" />}
+                label="Upcoming"
+                count={count('upcoming')}
+                active={view === 'upcoming'}
+                onClick={() => nav('upcoming')}
+              />
+              <NavItem
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                label="Completed"
+                count={tasks.filter((t) => t.completed && t.deletedAt === null).length}
+                active={view === 'completed'}
+                onClick={() => nav('completed')}
+              />
+              <NavItem
+                icon={<Star className="h-4 w-4" />}
+                label="Favorites"
+                count={tasks.filter((t) => t.favorite && !t.completed && t.deletedAt === null).length}
+                active={view === 'favorites'}
+                onClick={() => nav('favorites')}
+              />
+              <NavItem
+                icon={<Trash2 className="h-4 w-4" />}
+                label="Recycle Bin"
+                count={tasks.filter((t) => t.deletedAt !== null).length}
+                active={view === 'trash'}
+                onClick={() => nav('trash')}
+              />
+            </div>
+          </div>
+        </div>
         <NavItem
           icon={<Target className="h-4 w-4" />}
           label="Habits"
           count={habitCount}
           active={view === 'habits'}
-          onClick={() => nav('habits')}
+          expanded={habitsOpen}
+          onToggle={() => setHabitsOpen((v) => !v)}
+          onClick={() => {
+            setHabitsOpen(true)
+            nav('habits')
+          }}
         />
+        {/* Filter the habit list by how often it repeats. */}
+        <div className="disclosure" data-open={habitsOpen}>
+          <div>
+            <div className="space-y-0.5 pt-0.5 pl-3.5">
+              {(
+                [
+                  ['all', 'All'],
+                  ['daily', 'Daily'],
+                  ['weekly', 'Weekly'],
+                  ['monthly', 'Monthly'],
+                ] as [HabitFilter, string][]
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={view === 'habits' && habitFilter === value}
+                  onClick={() => {
+                    onHabitFilter(value)
+                    nav('habits')
+                  }}
+                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                    view === 'habits' && habitFilter === value
+                      ? 'bg-accent-soft font-medium text-ink'
+                      : 'text-muted hover:bg-surface hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         <NavItem
           icon={<NotebookPen className="h-4 w-4" />}
           label="Notes"
@@ -272,58 +399,9 @@ export function Sidebar({
         />
       </nav>
 
-      {/* Task views and lists, shown only while Tasks is the active section —
-          they are ways of slicing tasks, so they are noise anywhere else. */}
-      {isTaskView && (
-        <>
-      <nav aria-label="Task views" className="mt-6 space-y-0.5 px-2.5">
-        <span className="label mb-1.5 block px-2.5">Views</span>
-        <NavItem
-          icon={<Inbox className="h-4 w-4" />}
-          label="Inbox"
-          count={count('inbox')}
-          active={view === 'inbox'}
-          onClick={() => nav('inbox')}
-        />
-        <NavItem
-          icon={<CalendarDays className="h-4 w-4" />}
-          label="Today"
-          count={count('today')}
-          active={view === 'today'}
-          onClick={() => nav('today')}
-        />
-        <NavItem
-          icon={<CalendarDays className="h-4 w-4" />}
-          label="Upcoming"
-          count={count('upcoming')}
-          active={view === 'upcoming'}
-          onClick={() => nav('upcoming')}
-        />
-        <NavItem
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          label="Completed"
-          count={tasks.filter((t) => t.completed && t.deletedAt === null).length}
-          active={view === 'completed'}
-          onClick={() => nav('completed')}
-        />
-        <NavItem
-          icon={<Star className="h-4 w-4" />}
-          label="Favorites"
-          count={tasks.filter((t) => t.favorite && !t.completed && t.deletedAt === null).length}
-          active={view === 'favorites'}
-          onClick={() => nav('favorites')}
-        />
-        <NavItem
-          icon={<Trash2 className="h-4 w-4" />}
-          label="Recycle Bin"
-          count={tasks.filter((t) => t.deletedAt !== null).length}
-          active={view === 'trash'}
-          onClick={() => nav('trash')}
-        />
-      </nav>
-
-      {/* Lists */}
-      <div className="mt-6 flex-1 overflow-y-auto px-2.5">
+      {/* Lists — part of Tasks, so they follow its disclosure. */}
+      <div className="disclosure mt-1 flex-1 overflow-y-auto px-2.5" data-open={tasksOpen}>
+       <div>
         <div className="mb-1.5 flex items-center justify-between px-2.5">
           <span className="label">Lists</span>
           <button
@@ -434,11 +512,8 @@ export function Sidebar({
             />
           </div>
         )}
+       </div>
       </div>
-
-        </>
-      )}
-      {!isTaskView && <div className="flex-1" />}
 
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-line p-2.5">

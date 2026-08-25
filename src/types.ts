@@ -46,7 +46,10 @@ export interface BrainDump {
   updatedAt: string
 }
 
-export type RepetitionType = 'daily' | 'weekly' | 'monthly'
+export type RepetitionType = 'daily' | 'weekly' | 'monthly' | 'timesPerWeek'
+export type TrackBy = 'checkoff' | 'count' | 'duration'
+/** Where completions come from. `notes` habits tick themselves when you write. */
+export type HabitSource = 'manual' | 'notes'
 
 /**
  * A habit. `completedDates` (local 'YYYY-MM-DD') is the source of truth for all
@@ -64,24 +67,49 @@ export interface Habit {
   daysOfWeek: number[]
   /** 1–31. Used when repetitionType is 'monthly'. */
   datesOfMonth: number[]
+  /** Completions needed per week when repetitionType is 'timesPerWeek'. */
+  timesPerWeek: number | null
+  /** Checkoff is a tick; count logs a number; duration logs minutes. */
+  trackBy: TrackBy
+  /** Amount that finishes a day — logs for count, minutes for duration. */
+  dailyTarget: number | null
   color: string
+  /** A `lucide:name` reference, a raw emoji, or empty. */
   icon: string
   targetStreak: number | null
-  /** When true the habit can be logged several times a day. */
-  allowRepeats: boolean
-  /** Logs needed for a day to count as done. Null means one. */
-  dailyTarget: number | null
   createdAt: string
   /**
-   * A multiset of local 'YYYY-MM-DD' completion events — the same date repeated
-   * means it was logged that many times. A binary habit is simply the case
-   * where no date repeats, so old data needs no migration.
+   * Completion log, local 'YYYY-MM-DD' to amount. Checkoff stores 1, count
+   * stores the number of logs, duration stores minutes — one shape for all
+   * three, so the streak maths never branches on how a habit is tracked.
    */
-  completedDates: string[]
+  logs: Record<string, number>
   lastCompleted: string | null
   /** Set to pause a habit without destroying its history. */
   archivedAt: string | null
+  /** Manual ordering, lowest first. */
+  sortOrder: number
+  source: HabitSource
 }
+
+/** A saved habit shape, reusable when creating a new one. */
+export interface HabitTemplate {
+  id: string
+  name: string
+  description: string
+  icon: string
+  color: string
+  repetitionType: RepetitionType
+  daysOfWeek: number[]
+  datesOfMonth: number[]
+  timesPerWeek: number | null
+  trackBy: TrackBy
+  dailyTarget: number | null
+  createdAt: string
+}
+
+/** Sidebar filter for the habit list. */
+export type HabitFilter = 'all' | 'daily' | 'weekly' | 'monthly'
 
 export type SortMode = 'manual' | 'dueDate' | 'priority' | 'created' | 'alpha'
 

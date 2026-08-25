@@ -16,7 +16,14 @@ import { useHabits } from './store/habitStore'
 import { useNotes } from './store/noteStore'
 import { useTaskStore } from './store/taskStore'
 import AuthGate from './components/AuthGate'
-import { DEFAULT_FILTERS, type Filters, type SortMode, type Task, type ViewId } from './types'
+import {
+  DEFAULT_FILTERS,
+  type Filters,
+  type HabitFilter,
+  type SortMode,
+  type Task,
+  type ViewId,
+} from './types'
 import { isOverdue, sectionLabel, todayStr, formatDueDate } from './utils/dateUtils'
 import {
   applyFilters,
@@ -59,6 +66,7 @@ function AppShell() {
   const { habits } = useHabits()
 
   const [view, setView] = useState<ViewId>('home')
+  const [habitFilter, setHabitFilter] = useState<HabitFilter>('all')
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [sort, setSort] = useState<SortMode>('manual')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -169,6 +177,8 @@ function AppShell() {
         onOpenSettings={() => setSettingsOpen(true)}
         noteCount={notes.length}
         habitCount={habits.filter((h) => h.archivedAt === null).length}
+        habitFilter={habitFilter}
+        onHabitFilter={setHabitFilter}
       />
 
  <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
@@ -187,7 +197,10 @@ function AppShell() {
               store={store}
             />
           ) : view === 'habits' ? (
-            <HabitTracker onOpenMobileNav={() => setMobileNavOpen(true)} />
+            <HabitTracker
+              onOpenMobileNav={() => setMobileNavOpen(true)}
+              filter={habitFilter}
+            />
           ) : view === 'notes' ? (
             <BrainDump onOpenMobileNav={() => setMobileNavOpen(true)} />
           ) : (

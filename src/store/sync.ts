@@ -1,4 +1,4 @@
-import type { BrainDump, Habit, Task, TaskList } from '../types'
+import type { BrainDump, Habit, HabitTemplate, Task, TaskList } from '../types'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -13,6 +13,7 @@ const TASKS_TABLE = 'clarity_tasks'
 const LISTS_TABLE = 'clarity_lists'
 const NOTES_TABLE = 'clarity_notes'
 const HABITS_TABLE = 'clarity_habits'
+const TEMPLATES_TABLE = 'clarity_habit_templates'
 
 export interface LoadedData {
   tasks: Task[]
@@ -112,6 +113,12 @@ function numberArray(v: unknown): number[] {
 }
 
 function rowToHabit(r: Record<string, unknown>): Habit {
+  const logs: Record<string, number> = {}
+  if (r.logs && typeof r.logs === 'object') {
+    for (const [k, v] of Object.entries(r.logs as Record<string, unknown>)) {
+      if (typeof v === 'number' && v > 0) logs[k] = v
+    }
+  }
   return {
     id: String(r.id),
     name: String(r.name ?? ''),
@@ -119,15 +126,18 @@ function rowToHabit(r: Record<string, unknown>): Habit {
     repetitionType: (r.repetition_type as Habit['repetitionType']) ?? 'daily',
     daysOfWeek: numberArray(r.days_of_week),
     datesOfMonth: numberArray(r.dates_of_month),
+    timesPerWeek: typeof r.times_per_week === 'number' ? r.times_per_week : null,
+    trackBy: (r.track_by as Habit['trackBy']) ?? 'checkoff',
+    dailyTarget: typeof r.daily_target === 'number' ? r.daily_target : null,
     color: String(r.color ?? '#3ddbf0'),
     icon: String(r.icon ?? ''),
     targetStreak: typeof r.target_streak === 'number' ? r.target_streak : null,
-    allowRepeats: r.allow_repeats === true,
-    dailyTarget: typeof r.daily_target === 'number' ? r.daily_target : null,
     createdAt: String(r.created_at ?? new Date().toISOString()),
-    completedDates: Array.isArray(r.completed_dates) ? (r.completed_dates as string[]) : [],
+    logs,
     lastCompleted: (r.last_completed as string | null) ?? null,
     archivedAt: (r.archived_at as string | null) ?? null,
+    sortOrder: typeof r.sort_order === 'number' ? r.sort_order : 0,
+    source: (r.source as Habit['source']) ?? 'manual',
   }
 }
 
@@ -140,16 +150,79 @@ function habitToRow(h: Habit, userId: string) {
     repetition_type: h.repetitionType,
     days_of_week: h.daysOfWeek,
     dates_of_month: h.datesOfMonth,
+    times_per_week: h.timesPerWeek,
+    track_by: h.trackBy,
+    daily_target: h.dailyTarget,
     color: h.color,
     icon: h.icon,
     target_streak: h.targetStreak,
-    allow_repeats: h.allowRepeats,
-    daily_target: h.dailyTarget,
-    completed_dates: h.completedDates,
+    logs: h.logs,
     last_completed: h.lastCompleted,
     archived_at: h.archivedAt,
+    sort_order: h.sortOrder,
+    source: h.source,
     created_at: h.createdAt,
     updated_at: new Date().toISOString(),
+  }
+}
+
+// ---- habit templates ----
+
+export async function loadTemplatesFromServer(
+  userId: string,
+): Promise<{ templates: HabitTemplate[]; fromServer: boolean }> {
+  const { data, error } = await supabase
+    .from(TEMPLATES_TABLE)
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) return { templates: [], fromServer: false }
+  return { templates: (data ?? []).map(rowToTemplate), fromServer: true }
+}
+
+export async function upsertTemplate(t: HabitTemplate, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from(TEMPLATES_TABLE)
+    .upsert(
+      {
+        id: t.id,
+        user_id: userId,
+        name: t.name,
+        description: t.description,
+        icon: t.icon,
+        color: t.color,
+        repetition_type: t.repetitionType,
+        days_of_week: t.daysOfWeek,
+        dates_of_month: t.datesOfMonth,
+        times_per_week: t.timesPerWeek,
+        track_by: t.trackBy,
+        daily_target: t.dailyTarget,
+        created_at: t.createdAt,
+      },
+      { onConflict: 'id' },
+    )
+  if (error) throw error
+}
+
+export async function deleteTemplateRow(id: string): Promise<void> {
+  const { error } = await supabase.from(TEMPLATES_TABLE).delete().eq('id', id)
+  if (error) throw error
+}
+
+function rowToTemplate(r: Record<string, unknown>): HabitTemplate {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ''),
+    description: String(r.description ?? ''),
+    icon: String(r.icon ?? ''),
+    color: String(r.color ?? '#3ddbf0'),
+    repetitionType: (r.repetition_type as HabitTemplate['repetitionType']) ?? 'daily',
+    daysOfWeek: numberArray(r.days_of_week),
+    datesOfMonth: numberArray(r.dates_of_month),
+    timesPerWeek: typeof r.times_per_week === 'number' ? r.times_per_week : null,
+    trackBy: (r.track_by as HabitTemplate['trackBy']) ?? 'checkoff',
+    dailyTarget: typeof r.daily_target === 'number' ? r.daily_target : null,
+    createdAt: String(r.created_at ?? new Date().toISOString()),
   }
 }
 
