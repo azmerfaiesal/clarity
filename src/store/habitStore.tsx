@@ -34,6 +34,8 @@ interface HabitStore {
   deleteHabit: (id: string) => void
   /** Tick or untick a specific date. Idempotent per date. */
   toggleCompletion: (id: string, date?: string) => void
+  /** Add or remove one log on a date, for habits that allow repeats. */
+  adjustCompletion: (id: string, delta: number, date?: string) => void
   setArchived: (id: string, archived: boolean) => void
 }
 
@@ -151,6 +153,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
   const toggleCompletion = useCallback<HabitStore['toggleCompletion']>(
     (id, date = todayStr()) => {
       applyPatch(id, (h) => {
+        // Untick clears the whole day, however many logs it holds.
         const has = h.completedDates.includes(date)
         const completedDates = has
           ? h.completedDates.filter((d) => d !== date)
@@ -164,6 +167,30 @@ export function HabitProvider({ children }: { children: ReactNode }) {
               ? (h.lastCompleted ?? null)
               : null
             : new Date().toISOString(),
+        }
+      })
+    },
+    [applyPatch],
+  )
+
+  const adjustCompletion = useCallback<HabitStore['adjustCompletion']>(
+    (id, delta, date = todayStr()) => {
+      applyPatch(id, (h) => {
+        const completedDates = [...h.completedDates]
+        if (delta > 0) {
+          for (let i = 0; i < delta; i++) completedDates.push(date)
+        } else {
+          for (let i = 0; i < -delta; i++) {
+            const at = completedDates.lastIndexOf(date)
+            if (at === -1) break
+            completedDates.splice(at, 1)
+          }
+        }
+        completedDates.sort()
+        return {
+          ...h,
+          completedDates,
+          lastCompleted: delta > 0 ? new Date().toISOString() : h.lastCompleted,
         }
       })
     },
@@ -187,8 +214,26 @@ export function HabitProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo<HabitStore>(
-    () => ({ habits, ready, addHabit, updateHabit, deleteHabit, toggleCompletion, setArchived }),
-    [habits, ready, addHabit, updateHabit, deleteHabit, toggleCompletion, setArchived],
+    () => ({
+      habits,
+      ready,
+      addHabit,
+      updateHabit,
+      deleteHabit,
+      toggleCompletion,
+      adjustCompletion,
+      setArchived,
+    }),
+    [
+      habits,
+      ready,
+      addHabit,
+      updateHabit,
+      deleteHabit,
+      toggleCompletion,
+      adjustCompletion,
+      setArchived,
+    ],
   )
 
   return <HabitContext.Provider value={value}>{children}</HabitContext.Provider>

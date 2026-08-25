@@ -4,7 +4,7 @@ import type { Habit, Task, TaskList, ViewId } from '../types'
 import { useHabits } from '../store/habitStore'
 import { useNotes } from '../store/noteStore'
 import { formatRelative, todayStr } from '../utils/dateUtils'
-import { habitStats } from '../utils/habitUtils'
+import { habitStats, isCompletedOn } from '../utils/habitUtils'
 import { TaskItem } from './TaskItem'
 
 /**
@@ -32,7 +32,7 @@ export function Home({
     duplicateTask: (id: string) => void
   }
 }) {
-  const { habits, toggleCompletion } = useHabits()
+  const { habits, toggleCompletion, adjustCompletion } = useHabits()
   const { notes } = useNotes()
   const today = todayStr()
 
@@ -48,7 +48,7 @@ export function Home({
     () => habits.filter((h) => h.archivedAt === null && habitStats(h, today).dueToday),
     [habits, today],
   )
-  const habitsDone = dueHabits.filter((h) => h.completedDates.includes(today)).length
+  const habitsDone = dueHabits.filter((h) => isCompletedOn(h, today)).length
 
   const recentNotes = useMemo(() => notes.slice(0, 3), [notes])
 
@@ -95,7 +95,14 @@ export function Home({
         ) : (
           <ul className="space-y-1" role="list">
             {dueHabits.map((h) => (
-              <HomeHabitRow key={h.id} habit={h} today={today} onToggle={() => toggleCompletion(h.id)} />
+              <HomeHabitRow
+                key={h.id}
+                habit={h}
+                today={today}
+                onToggle={() =>
+                  h.allowRepeats ? adjustCompletion(h.id, 1) : toggleCompletion(h.id)
+                }
+              />
             ))}
           </ul>
         )}
@@ -200,8 +207,8 @@ function HomeHabitRow({
   today: string
   onToggle: () => void
 }) {
-  const done = habit.completedDates.includes(today)
   const s = habitStats(habit, today)
+  const done = s.doneToday
   return (
     <li className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-surface">
       <button
@@ -214,7 +221,15 @@ function HomeHabitRow({
         }`}
         style={done ? { backgroundColor: habit.color, color: 'var(--bg)' } : { color: habit.color }}
       >
-        {done ? <Check className="h-4 w-4" strokeWidth={3} /> : <span className="text-xs">{habit.icon || '·'}</span>}
+        {done ? (
+          <Check className="h-4 w-4" strokeWidth={3} />
+        ) : habit.allowRepeats ? (
+          <span className="font-mono text-3xs tabular-nums">
+            {s.countToday}/{s.needPerDay}
+          </span>
+        ) : (
+          <span className="text-xs">{habit.icon || '·'}</span>
+        )}
       </button>
       <span className={`min-w-0 flex-1 truncate text-sm ${done ? 'text-muted line-through' : 'text-ink'}`}>
         {habit.name}

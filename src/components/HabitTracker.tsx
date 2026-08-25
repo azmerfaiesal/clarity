@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Habit } from '../types'
 import { useHabits, type HabitDraft } from '../store/habitStore'
 import { todayStr } from '../utils/dateUtils'
-import { currentStreak, habitStats } from '../utils/habitUtils'
+import { currentStreak, habitStats, isCompletedOn } from '../utils/habitUtils'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
 import { HabitCard } from './HabitCard'
 import { HabitForm } from './HabitForm'
@@ -17,7 +17,8 @@ const SUGGESTIONS: { name: string; icon: string; color: string }[] = [
 ]
 
 export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
-  const { habits, addHabit, updateHabit, deleteHabit, toggleCompletion, setArchived } = useHabits()
+  const { habits, addHabit, updateHabit, deleteHabit, toggleCompletion, adjustCompletion, setArchived } =
+    useHabits()
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Habit | null>(null)
@@ -47,7 +48,7 @@ export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void 
     () => active.filter((h) => habitStats(h).dueToday),
     [active],
   )
-  const doneToday = dueToday.filter((h) => h.completedDates.includes(todayStr())).length
+  const doneToday = dueToday.filter((h) => isCompletedOn(h, todayStr())).length
 
   const handleToggle = useCallback(
     (habit: Habit, date?: string) => {
@@ -70,6 +71,27 @@ export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void 
       )
     },
     [toggleCompletion],
+  )
+
+  const handleAdjust = useCallback(
+    (habit: Habit, delta: number, date?: string) => {
+      const target = date ?? todayStr()
+      adjustCompletion(habit.id, delta, target)
+      if (delta <= 0) return
+      // Announce only when this log is the one that finishes the day.
+      const next: Habit = { ...habit, completedDates: [...habit.completedDates, target] }
+      if (!isCompletedOn(next, target)) return
+      const streak = currentStreak(next)
+      setFlashId(habit.id)
+      setToast(
+        habit.targetStreak !== null && streak === habit.targetStreak
+          ? `${habit.name} · ${streak}-day target reached 🎉`
+          : streak > 1
+            ? `Nice — ${streak} in a row`
+            : 'Logged. Day one.',
+      )
+    },
+    [adjustCompletion],
   )
 
   const handleDelete = useCallback(
@@ -107,6 +129,8 @@ export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void 
       color: s.color,
       icon: s.icon,
       targetStreak: null,
+      allowRepeats: false,
+      dailyTarget: null,
     })
 
   return (
@@ -167,6 +191,7 @@ export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void 
               habit={h}
               justCompleted={flashId === h.id}
               onToggle={(date) => handleToggle(h, date)}
+              onAdjust={(delta, date) => handleAdjust(h, delta, date)}
               onEdit={() => {
                 setEditing(h)
                 setFormOpen(true)
@@ -188,6 +213,7 @@ export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void 
                 habit={h}
                 justCompleted={false}
                 onToggle={(date) => handleToggle(h, date)}
+                onAdjust={(delta, date) => handleAdjust(h, delta, date)}
                 onEdit={() => {
                   setEditing(h)
                   setFormOpen(true)

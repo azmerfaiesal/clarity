@@ -64,6 +64,10 @@ export function HabitForm({
   const [targetStreak, setTargetStreak] = useState(
     habit?.targetStreak ? String(habit.targetStreak) : '',
   )
+  const [allowRepeats, setAllowRepeats] = useState(habit?.allowRepeats ?? false)
+  const [dailyTarget, setDailyTarget] = useState(
+    habit?.dailyTarget ? String(habit.dailyTarget) : '',
+  )
   const [showErrors, setShowErrors] = useState(false)
 
   useEffect(() => {
@@ -91,6 +95,7 @@ export function HabitForm({
       return
     }
     const parsedTarget = Number.parseInt(targetStreak, 10)
+    const parsedDaily = Number.parseInt(dailyTarget, 10)
     onSave({
       name: name.trim().slice(0, NAME_MAX),
       description: description.trim().slice(0, DESC_MAX),
@@ -100,6 +105,10 @@ export function HabitForm({
       color,
       icon,
       targetStreak: Number.isFinite(parsedTarget) && parsedTarget > 0 ? parsedTarget : null,
+      allowRepeats,
+      // Only meaningful alongside repeats; dropped otherwise so a leftover value
+      // cannot make a plain habit impossible to complete.
+      dailyTarget: allowRepeats && parsedDaily > 0 ? parsedDaily : null,
     })
   }
 
@@ -311,6 +320,43 @@ export function HabitForm({
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Counting */}
+          <div>
+            <span className="mb-1.5 block text-xs font-medium text-faint">Counting</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={allowRepeats}
+              onClick={() => setAllowRepeats((v) => !v)}
+              className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                allowRepeats
+                  ? 'border-accent/50 bg-accent-soft font-medium text-ink'
+                  : 'border-line text-muted hover:bg-surface hover:text-ink'
+              }`}
+            >
+              Allow several per day
+            </button>
+            {allowRepeats && (
+              <label className="mt-2.5 flex items-center gap-2">
+                <span className="text-xs text-faint">Per day target</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={dailyTarget}
+                  onChange={(e) => setDailyTarget(e.target.value)}
+                  placeholder="8"
+                  aria-label="Per day target"
+                  className="w-20 rounded-md border border-line bg-surface px-2.5 py-1.5 font-mono text-sm text-ink outline-none placeholder:text-faint focus:border-accent"
+                />
+                <span className="text-3xs text-faint">
+                  {dailyTarget
+                    ? `the day counts as done at ${dailyTarget}`
+                    : 'blank means one log finishes the day'}
+                </span>
+              </label>
+            )}
           </div>
 
           {/* Target streak */}

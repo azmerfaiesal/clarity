@@ -67,7 +67,16 @@ export interface Habit {
   color: string
   icon: string
   targetStreak: number | null
+  /** When true the habit can be logged several times a day. */
+  allowRepeats: boolean
+  /** Logs needed for a day to count as done. Null means one. */
+  dailyTarget: number | null
   createdAt: string
+  /**
+   * A multiset of local 'YYYY-MM-DD' completion events — the same date repeated
+   * means it was logged that many times. A binary habit is simply the case
+   * where no date repeats, so old data needs no migration.
+   */
   completedDates: string[]
   lastCompleted: string | null
   /** Set to pause a habit without destroying its history. */

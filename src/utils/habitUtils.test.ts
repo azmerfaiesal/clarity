@@ -3,11 +3,16 @@ import type { Habit } from '../types'
 import {
   bestStreak,
   completionRate,
+  countOn,
   currentStreak,
+  intensityOn,
+  isCompletedOn,
   isScheduled,
   periodProgress,
   repetitionLabel,
   scheduledDates,
+  totalCompletions,
+  totalLogs,
 } from './habitUtils'
 
 /**
@@ -27,6 +32,8 @@ function habit(over: Partial<Habit> = {}): Habit {
     color: '#3ddbf0',
     icon: '',
     targetStreak: null,
+    allowRepeats: false,
+    dailyTarget: null,
     createdAt: '2026-01-01T08:00:00.000Z',
     completedDates: [],
     lastCompleted: null,
@@ -216,5 +223,73 @@ describe('repetitionLabel', () => {
     expect(repetitionLabel(habit({ repetitionType: 'monthly', datesOfMonth: [1, 2, 3, 11] }))).toBe(
       'Monthly · 1st, 2nd, 3rd, 11th',
     )
+  })
+})
+
+describe('multi-count habits', () => {
+  const water = (dates: string[]) =>
+    habit({
+      allowRepeats: true,
+      dailyTarget: 8,
+      createdAt: '2026-03-01T00:00:00.000Z',
+      completedDates: dates,
+    })
+
+  const times = (date: string, n: number) => Array.from({ length: n }, () => date)
+
+  it('counts repeats of the same date as separate logs', () => {
+    expect(countOn(water(times('2026-03-01', 3)), '2026-03-01')).toBe(3)
+  })
+
+  it('does not call a day done until it reaches its target', () => {
+    expect(isCompletedOn(water(times('2026-03-01', 7)), '2026-03-01')).toBe(false)
+    expect(isCompletedOn(water(times('2026-03-01', 8)), '2026-03-01')).toBe(true)
+    expect(isCompletedOn(water(times('2026-03-01', 9)), '2026-03-01')).toBe(true)
+  })
+
+  it('keeps partial days out of the streak', () => {
+    // Day one hit the target, day two stopped at three.
+    const h = water([...times('2026-03-01', 8), ...times('2026-03-02', 3)])
+    expect(currentStreak(h, '2026-03-02')).toBe(1) // 2 Mar is still open
+    expect(currentStreak(h, '2026-03-03')).toBe(0) // now 2 Mar is a miss
+  })
+
+  it('counts days, not logs, in the lifetime total', () => {
+    const h = water([...times('2026-03-01', 8), ...times('2026-03-02', 8)])
+    expect(totalCompletions(h)).toBe(2)
+    expect(totalLogs(h)).toBe(16)
+  })
+
+  it('keeps a partial day out of the completion rate', () => {
+    const h = water([...times('2026-03-01', 8), ...times('2026-03-02', 4)])
+    expect(completionRate(h, '2026-03-03')).toBe(0.5)
+  })
+
+  it('ramps intensity across progress toward the target', () => {
+    const at = (n: number) => intensityOn(water(times('2026-03-01', n)), '2026-03-01')
+    expect(at(0)).toBe(0)
+    expect(at(1)).toBe(1)
+    expect(at(4)).toBe(2)
+    expect(at(6)).toBe(3)
+    expect(at(8)).toBe(4)
+    expect(at(20)).toBe(4) // never past full
+  })
+
+  it('steps intensity per log when repeats are allowed without a target', () => {
+    const h = habit({ allowRepeats: true, dailyTarget: null, completedDates: times('2026-03-01', 2) })
+    expect(intensityOn(h, '2026-03-01')).toBe(2)
+  })
+
+  it('leaves binary habits at full intensity and one log per day', () => {
+    const h = habit({ completedDates: ['2026-03-01'] })
+    expect(intensityOn(h, '2026-03-01')).toBe(4)
+    expect(isCompletedOn(h, '2026-03-01')).toBe(true)
+  })
+
+  it('ignores a stray target when repeats are off', () => {
+    // Guards against a habit that had repeats switched off keeping a target
+    // and silently becoming impossible to complete.
+    const h = habit({ allowRepeats: false, dailyTarget: 8, completedDates: ['2026-03-01'] })
+    expect(isCompletedOn(h, '2026-03-01')).toBe(true)
   })
 })

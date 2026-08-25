@@ -88,6 +88,11 @@ create table if not exists public.clarity_habits (
   color           text not null default '#3ddbf0',
   icon            text not null default '',
   target_streak   integer,
+  -- Several logs a day, with a per-day target. completed_dates is a multiset:
+  -- the same date repeated means that many logs, so a binary habit is just the
+  -- case where no date repeats.
+  allow_repeats   boolean not null default false,
+  daily_target    integer,
   completed_dates jsonb not null default '[]'::jsonb,
   last_completed  timestamptz,
   archived_at     timestamptz,

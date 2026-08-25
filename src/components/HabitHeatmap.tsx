@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
 import type { Habit } from '../types'
 import { addDays, parseDate, todayStr } from '../utils/dateUtils'
-import { isScheduled, weekStart } from '../utils/habitUtils'
+import { countOn, intensityOn, isCompletedOn, isScheduled, weekStart } from '../utils/habitUtils'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 type CellState = 'future' | 'untracked' | 'notdue' | 'missed' | 'done'
+
+/** Opacity per ramp step, so one colour carries four levels of intensity. */
+const RAMP = [0, 0.3, 0.5, 0.75, 1]
 
 /**
  * A year of the habit at a glance, laid out the way contribution graphs are:
@@ -22,23 +25,24 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
     // 53 columns ending on the week containing today.
     const start = weekStart(addDays(today, -364))
     const created = habit.createdAt.slice(0, 10)
-    const done = new Set(habit.completedDates)
 
-    const weeks: { date: string; state: CellState }[][] = []
+    const weeks: { date: string; state: CellState; level: number; count: number }[][] = []
     let cursor = start
     while (cursor <= today || parseDate(cursor).getDay() !== 0) {
-      const week: { date: string; state: CellState }[] = []
+      const week: { date: string; state: CellState; level: number; count: number }[] = []
       for (let d = 0; d < 7; d++) {
         const date = cursor
+        const count = countOn(habit, date)
         let state: CellState
         // Days before the habit existed still draw, faintly — a grid with a
         // hole in it reads as broken rather than as "not tracked yet".
         if (date > today) state = 'future'
         else if (date < created) state = 'untracked'
-        else if (done.has(date)) state = 'done'
+        // A partial day still shows colour: it was worked on, just not finished.
+        else if (count > 0) state = 'done'
         else if (isScheduled(habit, date)) state = 'missed'
         else state = 'notdue'
-        week.push({ date, state })
+        week.push({ date, state, level: intensityOn(habit, date), count })
         cursor = addDays(cursor, 1)
       }
       weeks.push(week)
@@ -111,7 +115,7 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
               gap: `${gap}px`,
             }}
           >
-            {weeks.flat().map(({ date, state }) => (
+            {weeks.flat().map(({ date, state, level, count }) => (
               <div
                 key={date}
                 title={
@@ -119,7 +123,11 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
                     ? undefined
                     : `${date} · ${
                         state === 'done'
-                          ? 'done'
+                          ? habit.allowRepeats
+                            ? `${count}${habit.dailyTarget ? `/${habit.dailyTarget}` : ''}${
+                                isCompletedOn(habit, date) ? '' : ' (partial)'
+                              }`
+                            : 'done'
                           : state === 'missed'
                             ? 'missed'
                             : state === 'untracked'
@@ -138,7 +146,11 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
                           ? 'bg-line/35'
                           : 'bg-line/60'
                 }`}
-                style={state === 'done' ? { backgroundColor: habit.color } : undefined}
+                style={
+                  state === 'done'
+                    ? { backgroundColor: habit.color, opacity: RAMP[level] }
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -148,7 +160,27 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
   )
 }
 
-export function HeatmapLegend({ color }: { color: string }) {
+export function HeatmapLegend({ habit }: { habit: Habit }) {
+  // A counted habit needs a ramp legend; a binary one would be lying with it.
+  if (habit.allowRepeats) {
+    return (
+      <span className="flex items-center gap-1.5 font-mono text-3xs text-faint">
+        <span className="h-2.5 w-2.5 rounded-[2px] bg-line-strong/60" aria-hidden />
+        None
+        <span className="ml-1">Less</span>
+        {[1, 2, 3, 4].map((l) => (
+          <span
+            key={l}
+            className="h-2.5 w-2.5 rounded-[2px]"
+            style={{ backgroundColor: habit.color, opacity: RAMP[l] }}
+            aria-hidden
+          />
+        ))}
+        More
+        {habit.dailyTarget ? <span className="ml-1">· target {habit.dailyTarget}</span> : null}
+      </span>
+    )
+  }
   return (
     <span className="flex items-center gap-1.5 font-mono text-3xs text-faint">
       <span className="h-2.5 w-2.5 rounded-[2px] bg-line/60" aria-hidden />
@@ -157,7 +189,7 @@ export function HeatmapLegend({ color }: { color: string }) {
       Missed
       <span
         className="ml-1 h-2.5 w-2.5 rounded-[2px]"
-        style={{ backgroundColor: color }}
+        style={{ backgroundColor: habit.color }}
         aria-hidden
       />
       Done

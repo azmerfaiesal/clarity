@@ -1,6 +1,6 @@
-import { Archive, ArchiveRestore, Check, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Check, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Habit } from '../types'
-import { habitStats, repetitionLabel } from '../utils/habitUtils'
+import { habitStats, repetitionLabel, totalLogs } from '../utils/habitUtils'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { HabitHeatmap, HeatmapLegend } from './HabitHeatmap'
 
@@ -11,6 +11,7 @@ import { HabitHeatmap, HeatmapLegend } from './HabitHeatmap'
 export function HabitCard({
   habit,
   onToggle,
+  onAdjust,
   onEdit,
   onDelete,
   onArchive,
@@ -18,6 +19,8 @@ export function HabitCard({
 }: {
   habit: Habit
   onToggle: (date?: string) => void
+  /** Add or remove one log, for habits that count. */
+  onAdjust: (delta: number, date?: string) => void
   onEdit: () => void
   onDelete: () => void
   onArchive: (archived: boolean) => void
@@ -35,37 +38,81 @@ export function HabitCard({
       style={justCompleted ? { boxShadow: `0 0 22px -8px ${habit.color}` } : undefined}
     >
       <div className="flex items-start gap-3">
-        {/* Today's check */}
-        <button
-          type="button"
-          disabled={!canTick}
-          onClick={() => onToggle()}
-          aria-pressed={s.doneToday}
-          aria-label={
-            !canTick
-              ? `${habit.name} — not scheduled today`
-              : s.doneToday
-                ? `Undo today's completion of ${habit.name}`
-                : `Mark ${habit.name} complete for today`
-          }
-          title={!canTick ? 'Not scheduled today' : s.doneToday ? 'Done today · undo' : 'Mark complete'}
-          className={`mt-0.5 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
-            s.doneToday ? 'border-transparent' : 'border-line border-dashed hover:border-solid'
-          }`}
-          style={
-            s.doneToday
-              ? { backgroundColor: habit.color, color: 'var(--bg)' }
-              : { color: habit.color }
-          }
-        >
-          {s.doneToday ? (
-            <Check className="h-5 w-5" strokeWidth={3} />
-          ) : habit.icon ? (
-            <span className="text-base">{habit.icon}</span>
-          ) : (
-            <Check className="h-5 w-5 opacity-40" strokeWidth={2.5} />
+        {/* Today's log. Counted habits add one per tap and show progress; binary
+            habits toggle. */}
+        <div className="mt-0.5 flex shrink-0 flex-col items-center gap-1">
+          <button
+            type="button"
+            disabled={!canTick}
+            onClick={() => (habit.allowRepeats ? onAdjust(1) : onToggle())}
+            aria-pressed={s.doneToday}
+            aria-label={
+              !canTick
+                ? `${habit.name} — not scheduled today`
+                : habit.allowRepeats
+                  ? `Log one for ${habit.name} — ${s.countToday} of ${s.needPerDay} today`
+                  : s.doneToday
+                    ? `Undo today's completion of ${habit.name}`
+                    : `Mark ${habit.name} complete for today`
+            }
+            title={
+              !canTick
+                ? 'Not scheduled today'
+                : habit.allowRepeats
+                  ? 'Log one'
+                  : s.doneToday
+                    ? 'Done today · undo'
+                    : 'Mark complete'
+            }
+            className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+              canTick ? 'cursor-pointer' : ''
+            } ${s.doneToday ? 'border-transparent' : 'border-line border-dashed hover:border-solid'}`}
+            style={
+              s.doneToday
+                ? { backgroundColor: habit.color, color: 'var(--bg)' }
+                : habit.allowRepeats && s.countToday > 0
+                  ? {
+                      // Partial days fill proportionally, so the button itself
+                      // shows how far through the day you are.
+                      backgroundColor: `${habit.color}${Math.round(
+                        (s.countToday / s.needPerDay) * 40 + 15,
+                      )
+                        .toString(16)
+                        .padStart(2, '0')}`,
+                      color: habit.color,
+                    }
+                  : { color: habit.color }
+            }
+          >
+            {habit.allowRepeats ? (
+              s.doneToday ? (
+                <Check className="h-5 w-5" strokeWidth={3} />
+              ) : (
+                <span className="font-mono text-xs font-semibold tabular-nums">
+                  {s.countToday}
+                  <span className="opacity-60">/{s.needPerDay}</span>
+                </span>
+              )
+            ) : s.doneToday ? (
+              <Check className="h-5 w-5" strokeWidth={3} />
+            ) : habit.icon ? (
+              <span className="text-base">{habit.icon}</span>
+            ) : (
+              <Plus className="h-5 w-5 opacity-40" strokeWidth={2.5} />
+            )}
+          </button>
+          {habit.allowRepeats && s.countToday > 0 && !archived && (
+            <button
+              type="button"
+              onClick={() => onAdjust(-1)}
+              aria-label={`Remove one log from ${habit.name}`}
+              title="Remove one"
+              className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
+            >
+              <Minus className="h-3 w-3" />
+            </button>
           )}
-        </button>
+        </div>
 
         {/* Title + meta */}
         <div className="min-w-0 flex-1">
@@ -75,6 +122,14 @@ export function HabitCard({
           </h3>
           <p className="mt-0.5 truncate text-sm text-muted">
             <span className="text-faint">{repetitionLabel(habit)}</span>
+            {habit.allowRepeats && (
+              <span className="text-faint">
+                {' · '}
+                <span style={{ color: habit.color }}>
+                  Multi{habit.dailyTarget ? ` ×${habit.dailyTarget}` : ''}
+                </span>
+              </span>
+            )}
             {habit.description && <span className="text-faint"> · </span>}
             {habit.description}
             {archived && <span className="text-faint"> · Paused</span>}
@@ -157,7 +212,7 @@ export function HabitCard({
       <div className="mt-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <span className="font-mono text-3xs text-faint">Last 365 days</span>
-          <HeatmapLegend color={habit.color} />
+          <HeatmapLegend habit={habit} />
         </div>
         <HabitHeatmap habit={habit} />
       </div>
@@ -167,6 +222,11 @@ export function HabitCard({
         <span>
           <span className="text-muted">{s.best}</span> best streak
         </span>
+        {habit.allowRepeats && (
+          <span>
+            <span className="text-muted">{totalLogs(habit)}</span> logs
+          </span>
+        )}
         <span>
           <span className="text-muted">{Math.round(s.rate * 100)}%</span> completion
         </span>

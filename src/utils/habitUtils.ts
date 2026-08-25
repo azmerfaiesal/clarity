@@ -37,7 +37,8 @@ export function isScheduled(habit: Habit, dateStr: string): boolean {
 }
 
 /**
- * The first day the maths considers. Normally the creation date, but a habit
+ * The first day the maths considers. Repeats do not affect this — the earliest
+ * entry is the earliest entry however many times it appears. Normally the creation date, but a habit
  * card lets you tick a past scheduled day, so anything backfilled earlier than
  * that pulls the start back — otherwise the tick would register visually while
  * counting for nothing.
@@ -60,8 +61,48 @@ export function scheduledDates(habit: Habit, through: string = todayStr()): stri
   return out
 }
 
+/** How many times the habit was logged on this date. */
+export function countOn(habit: Habit, dateStr: string): number {
+  let n = 0
+  for (const d of habit.completedDates) if (d === dateStr) n++
+  return n
+}
+
+/** Logs needed before a day counts as done. */
+export function requiredPerDay(habit: Habit): number {
+  return habit.allowRepeats && habit.dailyTarget && habit.dailyTarget > 0 ? habit.dailyTarget : 1
+}
+
+/**
+ * Done means the day reached its target, not merely that it was touched — three
+ * glasses out of eight is progress, not a completed day, and a streak that
+ * counted it would be lying.
+ */
 export function isCompletedOn(habit: Habit, dateStr: string): boolean {
-  return habit.completedDates.includes(dateStr)
+  return countOn(habit, dateStr) >= requiredPerDay(habit)
+}
+
+/**
+ * 0 for untouched, then 1–4 for the heatmap ramp. With a target, the ramp is
+ * progress toward it; without one, each log is a step and four or more is full.
+ */
+export function intensityOn(habit: Habit, dateStr: string): 0 | 1 | 2 | 3 | 4 {
+  const n = countOn(habit, dateStr)
+  if (n === 0) return 0
+  if (!habit.allowRepeats) return 4
+  const need = requiredPerDay(habit)
+  const level = need > 1 ? Math.ceil((n / need) * 4) : Math.min(n, 4)
+  return Math.min(4, Math.max(1, level)) as 1 | 2 | 3 | 4
+}
+
+/** Dates that reached their target, deduped — the set the streak maths walks. */
+function doneSet(habit: Habit): Set<string> {
+  const counts = new Map<string, number>()
+  for (const d of habit.completedDates) counts.set(d, (counts.get(d) ?? 0) + 1)
+  const need = requiredPerDay(habit)
+  const out = new Set<string>()
+  for (const [date, n] of counts) if (n >= need) out.add(date)
+  return out
 }
 
 /**
@@ -73,7 +114,7 @@ export function isCompletedOn(habit: Habit, dateStr: string): boolean {
  * miss. Tomorrow, that same untouched day does break it.
  */
 export function currentStreak(habit: Habit, today: string = todayStr()): number {
-  const done = new Set(habit.completedDates)
+  const done = doneSet(habit)
   const start = startDate(habit)
   let cursor = today
 
@@ -92,7 +133,7 @@ export function currentStreak(habit: Habit, today: string = todayStr()): number 
 
 /** Longest run of consecutive scheduled occurrences ever completed. */
 export function bestStreak(habit: Habit, today: string = todayStr()): number {
-  const done = new Set(habit.completedDates)
+  const done = doneSet(habit)
   let best = 0
   let run = 0
   for (const date of scheduledDates(habit, today)) {
@@ -107,14 +148,19 @@ export function bestStreak(habit: Habit, today: string = todayStr()): number {
   return Math.max(best, currentStreak(habit, today))
 }
 
-/** Completions that fall on a scheduled day, from the habit's start onward. */
+/** Distinct days completed. Repeats within a day count once — the card says "days". */
 export function totalCompletions(habit: Habit): number {
+  return doneSet(habit).size
+}
+
+/** Every log, repeats included. */
+export function totalLogs(habit: Habit): number {
   return habit.completedDates.length
 }
 
 /** Completed ÷ scheduled so far, 0–1. Days still open are excluded. */
 export function completionRate(habit: Habit, today: string = todayStr()): number {
-  const done = new Set(habit.completedDates)
+  const done = doneSet(habit)
   const due = scheduledDates(habit, today).filter((d) => d !== today || done.has(d))
   if (due.length === 0) return 0
   return due.filter((d) => done.has(d)).length / due.length
@@ -134,7 +180,7 @@ export function periodProgress(
   habit: Habit,
   today: string = todayStr(),
 ): { done: number; total: number; label: string } {
-  const completed = new Set(habit.completedDates)
+  const completed = doneSet(habit)
   let from: string
   let to: string
   let label: string
@@ -176,6 +222,8 @@ export function habitStats(habit: Habit, today: string = todayStr()) {
     progress: periodProgress(habit, today),
     dueToday: isScheduled(habit, today),
     doneToday: isCompletedOn(habit, today),
+    countToday: countOn(habit, today),
+    needPerDay: requiredPerDay(habit),
   }
 }
 
