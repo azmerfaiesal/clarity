@@ -279,6 +279,86 @@ export function intensityOn(habit: Habit, dateStr: string): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, Math.max(1, level)) as 1 | 2 | 3 | 4
 }
 
+/**
+ * The unbroken run of completed occurrences containing `dateStr`, if that day
+ * was completed. Used by the day popup to answer "where does this sit?".
+ */
+export function runContaining(
+  habit: Habit,
+  dateStr: string,
+  today: string = todayStr(),
+): { length: number; from: string; to: string; index: number } | null {
+  if (!isCompletedOn(habit, dateStr)) return null
+
+  if (habit.repetitionType === 'timesPerWeek') {
+    // Runs are counted in weeks here, so report the week band instead.
+    const target = weeklyTarget(habit)
+    let from = weekStart(dateStr)
+    if (completionsInWeek(habit, from) < target) return null
+    while (completionsInWeek(habit, addDays(from, -7)) >= target) from = addDays(from, -7)
+    let to = weekStart(dateStr)
+    let length = 1
+    let cursor = from
+    while (cursor < to) {
+      length++
+      cursor = addDays(cursor, 7)
+    }
+    const index = length
+    while (
+      completionsInWeek(habit, addDays(to, 7)) >= weeklyTarget(habit) &&
+      addDays(to, 7) <= weekStart(today)
+    ) {
+      to = addDays(to, 7)
+      length++
+    }
+    return { length, from, to: addDays(to, 6), index }
+  }
+
+  // Walk back to the start of the run, then forward to its end.
+  let from = dateStr
+  for (let i = 0; i < MAX_WALK; i++) {
+    const prev = previousScheduled(habit, from)
+    if (!prev || !isCompletedOn(habit, prev)) break
+    from = prev
+  }
+  let to = dateStr
+  for (let i = 0; i < MAX_WALK; i++) {
+    const next = nextScheduled(habit, to)
+    if (!next || next > today || !isCompletedOn(habit, next)) break
+    to = next
+  }
+
+  let length = 0
+  let index = 0
+  let cursor = from
+  for (let i = 0; i < MAX_WALK && cursor <= to; i++) {
+    if (isScheduled(habit, cursor)) {
+      length++
+      if (cursor === dateStr) index = length
+    }
+    cursor = addDays(cursor, 1)
+  }
+  return { length, from, to, index }
+}
+
+function previousScheduled(habit: Habit, dateStr: string): string | null {
+  let cursor = addDays(dateStr, -1)
+  for (let i = 0; i < 400; i++) {
+    if (isScheduled(habit, cursor)) return cursor
+    cursor = addDays(cursor, -1)
+  }
+  return null
+}
+
+function nextScheduled(habit: Habit, dateStr: string): string | null {
+  let cursor = addDays(dateStr, 1)
+  for (let i = 0; i < 400; i++) {
+    if (isScheduled(habit, cursor)) return cursor
+    cursor = addDays(cursor, 1)
+  }
+  return null
+}
+
 /** Every stat a card shows. */
 export function habitStats(habit: Habit, today: string = todayStr()) {
   return {

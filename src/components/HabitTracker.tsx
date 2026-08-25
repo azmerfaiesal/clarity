@@ -7,6 +7,7 @@ import { currentStreak, habitStats, isCompletedOn, requiredPerDay } from '../uti
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
 import { HabitCard } from './HabitCard'
 import { HabitIcon } from './HabitIcon'
+import { DayDetail } from './DayDetail'
 import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
 
@@ -35,6 +36,7 @@ export function HabitTracker({
     setAmount,
     setArchived,
     reorderHabits,
+    setLogNotes,
     templates,
     saveAsTemplate,
     deleteTemplate,
@@ -42,6 +44,9 @@ export function HabitTracker({
   } = useHabits()
   const [dragId, setDragId] = useState<string | null>(null)
   const [summary, setSummary] = useState<Habit | null>(null)
+  const [day, setDay] = useState<{ habitId: string; date: string; anchor: { x: number; y: number } } | null>(
+    null,
+  )
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Habit | null>(null)
@@ -300,6 +305,7 @@ export function HabitTracker({
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
                 onOpenSummary={() => setSummary(h)}
+                onPickDay={(date, anchor) => setDay({ habitId: h.id, date, anchor })}
                 onEdit={() => {
                   setEditing(h)
                   setFormOpen(true)
@@ -326,6 +332,7 @@ export function HabitTracker({
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
                 onOpenSummary={() => setSummary(h)}
+                onPickDay={(date, anchor) => setDay({ habitId: h.id, date, anchor })}
                 onEdit={() => {
                   setEditing(h)
                   setFormOpen(true)
@@ -337,6 +344,24 @@ export function HabitTracker({
           </div>
         </div>
       )}
+
+      {day && (() => {
+        const h = habits.find((x) => x.id === day.habitId)
+        if (!h) return null
+        return (
+          <DayDetail
+            habit={h}
+            date={day.date}
+            today={todayStr()}
+            anchor={day.anchor}
+            // A writing habit's days come from the notes, so annotating one
+            // here would be overwritten on the next reconcile.
+            editable={h.source !== 'notes'}
+            onSetNotes={(notes) => setLogNotes(h.id, day.date, notes)}
+            onClose={() => setDay(null)}
+          />
+        )
+      })()}
 
       {summary && (
         <HabitSummary

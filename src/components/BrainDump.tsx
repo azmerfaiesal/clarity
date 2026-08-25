@@ -1,7 +1,6 @@
 import { Menu, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BrainDump as Note } from '../types'
-import { useHabits } from '../store/habitStore'
 import { useNotes } from '../store/noteStore'
 import { formatDateTime, formatRelative } from '../utils/dateUtils'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
@@ -34,7 +33,6 @@ function normalizeTag(raw: string): string {
 export function BrainDump({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const { notes, saveState, createNote, updateNote, deleteNote, readDraft, writeDraft, discardDraft } =
     useNotes()
-  const { recordWriting } = useHabits()
 
   const [content, setContent] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -112,11 +110,9 @@ export function BrainDump({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
     } else {
       await createNote(body, finalTags)
     }
-    // Any habit that tracks writing counts today as done.
-    recordWriting()
     reset()
     textareaRef.current?.focus()
-  }, [content, tags, tagDraft, editingId, updateNote, createNote, reset, recordWriting])
+  }, [content, tags, tagDraft, editingId, updateNote, createNote, reset])
 
   const openForEdit = useCallback(
     (note: Note) => {

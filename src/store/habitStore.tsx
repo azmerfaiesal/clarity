@@ -20,6 +20,7 @@ import {
   saveTemplates,
 } from './storage'
 import { useAuth } from './auth'
+import { useNotes } from './noteStore'
 import {
   deleteHabitRow,
   deleteTemplateRow,
@@ -41,7 +42,7 @@ import {
 
 export type HabitDraft = Omit<
   Habit,
-  'id' | 'createdAt' | 'logs' | 'lastCompleted' | 'archivedAt' | 'sortOrder'
+  'id' | 'createdAt' | 'logs' | 'logNotes' | 'lastCompleted' | 'archivedAt' | 'sortOrder'
 > &
   Partial<Pick<Habit, 'sortOrder'>>
 
@@ -60,11 +61,11 @@ interface HabitStore {
   setArchived: (id: string, archived: boolean) => void
   /** Move a habit to a new position in the manual order. */
   reorderHabits: (ids: string[]) => void
+  /** Replace the notes describing a day's logs. */
+  setLogNotes: (id: string, date: string, notes: string[]) => void
   templates: HabitTemplate[]
   saveAsTemplate: (habit: Habit) => void
   deleteTemplate: (id: string) => void
-  /** Tick every habit that tracks writing, for the given day. Idempotent. */
-  recordWriting: (date?: string) => void
   /** Create the built-in Writing habit if the account has none. */
   addWritingHabit: () => void
 }
@@ -73,6 +74,9 @@ const HabitContext = createContext<HabitStore | null>(null)
 
 export function HabitProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
+  // HabitProvider sits inside NoteProvider, so writing habits can be derived
+  // from the notes rather than told about them.
+  const { notes } = useNotes()
   const userId = user?.id
 
   const [scope, setScope] = useState(LOCAL_SCOPE)
@@ -165,6 +169,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
         id: makeId(),
         createdAt: new Date().toISOString(),
         logs: {},
+        logNotes: {},
         lastCompleted: null,
         archivedAt: null,
         sortOrder: draft.sortOrder ?? Date.now(),
@@ -201,11 +206,17 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     (id: string, date: string, next: number, touched: boolean) => {
       applyPatch(id, (h) => {
         const logs = { ...h.logs }
+        const logNotes = { ...h.logNotes }
         if (next > 0) logs[date] = next
-        else delete logs[date]
+        else {
+          delete logs[date]
+          // A day with nothing logged has nothing to describe.
+          delete logNotes[date]
+        }
         return {
           ...h,
           logs,
+          logNotes,
           // Clearing the last entry should not leave a stale timestamp behind.
           lastCompleted: touched
             ? new Date().toISOString()
@@ -247,6 +258,19 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       writeAmount(id, date, next, next > (h.logs[date] ?? 0))
     },
     [writeAmount],
+  )
+
+  const setLogNotes = useCallback<HabitStore['setLogNotes']>(
+    (id, date, notes) => {
+      applyPatch(id, (h) => {
+        const logNotes = { ...h.logNotes }
+        const cleaned = notes.map((n) => n.trim()).filter(Boolean)
+        if (cleaned.length) logNotes[date] = cleaned
+        else delete logNotes[date]
+        return { ...h, logNotes }
+      })
+    },
+    [applyPatch],
   )
 
   const reorderHabits = useCallback<HabitStore['reorderHabits']>(
@@ -298,20 +322,39 @@ export function HabitProvider({ children }: { children: ReactNode }) {
   )
 
   /**
-   * Notes calls this after a note is saved. It only ever sets a day to done, so
-   * writing twice in a day is not double-counted and an existing manual tick is
-   * left alone.
+   * Reconcile any writing-tracked habit against the notes themselves.
+   *
+   * Deriving rather than recording at save time means the habit is right by
+   * construction: notes written before the habit existed show up in its
+   * history, and deleting a note takes its day back. Recording on save could
+   * only ever have described the future, and would drift the moment a note was
+   * removed.
    */
-  const recordWriting = useCallback(
-    (date: string = todayStr()) => {
-      for (const h of habitsRef.current) {
-        if (h.source !== 'notes' || h.archivedAt) continue
-        if ((h.logs[date] ?? 0) >= requiredPerDay(h)) continue
-        writeAmount(h.id, date, requiredPerDay(h), true)
-      }
-    },
-    [writeAmount],
-  )
+  useEffect(() => {
+    if (!ready) return
+    const writing = habitsRef.current.filter((h) => h.source === 'notes')
+    if (writing.length === 0) return
+
+    // A note belongs to the local day it was created on.
+    const days = new Set(notes.map((n) => n.createdAt.slice(0, 10)))
+
+    for (const h of writing) {
+      const current = Object.keys(h.logs)
+      const missing = [...days].filter((d) => !(h.logs[d] > 0))
+      const stale = current.filter((d) => !days.has(d))
+      if (missing.length === 0 && stale.length === 0) continue
+
+      const logs: Record<string, number> = {}
+      for (const d of days) logs[d] = 1
+      applyPatch(h.id, (habit) => ({
+        ...habit,
+        logs,
+        lastCompleted: days.size
+          ? [...days].sort().reverse()[0] + 'T00:00:00.000Z'
+          : null,
+      }))
+    }
+  }, [notes, ready, applyPatch])
 
   const addWritingHabit = useCallback(() => {
     if (habitsRef.current.some((h) => h.source === 'notes')) return
@@ -332,6 +375,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       reminderTime: null,
       createdAt: now,
       logs: {},
+      logNotes: {},
       lastCompleted: null,
       archivedAt: null,
       sortOrder: Date.now(),
@@ -369,10 +413,10 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       setAmount,
       setArchived,
       reorderHabits,
+      setLogNotes,
       templates,
       saveAsTemplate,
       deleteTemplate,
-      recordWriting,
       addWritingHabit,
     }),
     [
@@ -386,10 +430,10 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       setAmount,
       setArchived,
       reorderHabits,
+      setLogNotes,
       templates,
       saveAsTemplate,
       deleteTemplate,
-      recordWriting,
       addWritingHabit,
     ],
   )

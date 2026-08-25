@@ -12,6 +12,7 @@ import {
   isScheduled,
   periodProgress,
   repetitionLabel,
+  runContaining,
   scheduledDates,
   totalAmount,
   totalCompletions,
@@ -41,6 +42,7 @@ function habit(over: Partial<Habit> = {}): Habit {
     reminderTime: null,
     createdAt: '2026-01-01T08:00:00.000Z',
     logs: {},
+    logNotes: {},
     lastCompleted: null,
     archivedAt: null,
     sortOrder: 0,
@@ -307,5 +309,36 @@ describe('repetitionLabel', () => {
     expect(
       repetitionLabel(habit({ repetitionType: 'timesPerWeek', timesPerWeek: 4 })),
     ).toBe('4× per week')
+  })
+})
+
+describe('runContaining', () => {
+  it('locates a day inside its unbroken run', () => {
+    const h = habit({
+      createdAt: '2026-03-01T00:00:00.000Z',
+      logs: ticks(['2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05']),
+    })
+    expect(runContaining(h, '2026-03-04', '2026-03-06')).toMatchObject({
+      length: 4,
+      from: '2026-03-02',
+      to: '2026-03-05',
+      index: 3,
+    })
+  })
+
+  it('returns nothing for a day that was not completed', () => {
+    const h = habit({ createdAt: '2026-03-01T00:00:00.000Z', logs: ticks(['2026-03-02']) })
+    expect(runContaining(h, '2026-03-03', '2026-03-06')).toBeNull()
+  })
+
+  it('skips unscheduled days rather than breaking the run on them', () => {
+    // Mon/Wed/Fri: the run spans a week but only counts its three occurrences.
+    const h = habit({
+      repetitionType: 'weekly',
+      daysOfWeek: [1, 3, 5],
+      createdAt: '2026-03-01T00:00:00.000Z',
+      logs: ticks(['2026-03-02', '2026-03-04', '2026-03-06']),
+    })
+    expect(runContaining(h, '2026-03-04', '2026-03-07')).toMatchObject({ length: 3, index: 2 })
   })
 })

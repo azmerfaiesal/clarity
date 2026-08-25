@@ -119,6 +119,12 @@ function rowToHabit(r: Record<string, unknown>): Habit {
       if (typeof v === 'number' && v > 0) logs[k] = v
     }
   }
+  const logNotes: Record<string, string[]> = {}
+  if (r.log_notes && typeof r.log_notes === 'object') {
+    for (const [k, v] of Object.entries(r.log_notes as Record<string, unknown>)) {
+      if (Array.isArray(v)) logNotes[k] = v.filter((n): n is string => typeof n === 'string')
+    }
+  }
   return {
     id: String(r.id),
     name: String(r.name ?? ''),
@@ -135,6 +141,7 @@ function rowToHabit(r: Record<string, unknown>): Habit {
     reminderTime: (r.reminder_time as string | null) ?? null,
     createdAt: String(r.created_at ?? new Date().toISOString()),
     logs,
+    logNotes,
     lastCompleted: (r.last_completed as string | null) ?? null,
     archivedAt: (r.archived_at as string | null) ?? null,
     sortOrder: typeof r.sort_order === 'number' ? r.sort_order : 0,
@@ -159,6 +166,7 @@ function habitToRow(h: Habit, userId: string) {
     target_streak: h.targetStreak,
     reminder_time: h.reminderTime,
     logs: h.logs,
+    log_notes: h.logNotes,
     last_completed: h.lastCompleted,
     archived_at: h.archivedAt,
     sort_order: h.sortOrder,

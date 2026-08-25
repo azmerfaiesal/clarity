@@ -25,7 +25,16 @@ const RAMP = [0, 0.3, 0.5, 0.75, 1]
  * different from one it was due and missed — without that, a Mon/Wed/Fri habit
  * would read as though it had failed four days out of every seven.
  */
-export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number }) {
+export function HabitHeatmap({
+  habit,
+  cell = 12,
+  onPickDay,
+}: {
+  habit: Habit
+  cell?: number
+  /** Clicking a cell opens that day's record, anchored to the cell. */
+  onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+}) {
   const today = todayStr()
 
   const { weeks, months } = useMemo(() => {
@@ -123,8 +132,15 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
             }}
           >
             {weeks.flat().map(({ date, state, level, count }) => (
-              <div
+              <button
                 key={date}
+                type="button"
+                disabled={state === 'future'}
+                onClick={(e) => {
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  onPickDay?.(date, { x: r.left + r.width / 2, y: r.top })
+                }}
+                aria-label={`${date} — open day`}
                 title={
                   state === 'future'
                     ? undefined
@@ -142,7 +158,7 @@ export function HabitHeatmap({ habit, cell = 12 }: { habit: Habit; cell?: number
                               : 'not due'
                       }`
                 }
-                className={`rounded-[2px] ${
+                className={`rounded-[2px] transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
                   state === 'future'
                     ? 'opacity-0'
                     : state === 'done'

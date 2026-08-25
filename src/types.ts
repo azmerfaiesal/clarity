@@ -86,6 +86,8 @@ export interface Habit {
    * three, so the streak maths never branches on how a habit is tracked.
    */
   logs: Record<string, number>
+  /** Short notes describing a day's logs, e.g. what the three sessions were. */
+  logNotes: Record<string, string[]>
   lastCompleted: string | null
   /** Set to pause a habit without destroying its history. */
   archivedAt: string | null

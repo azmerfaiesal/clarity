@@ -34,6 +34,7 @@ export function HabitCard({
   onSetAmount,
   onSaveTemplate,
   onOpenSummary,
+  onPickDay,
   dragHandleProps,
   dragging,
 }: {
@@ -48,6 +49,7 @@ export function HabitCard({
   onSetAmount: (amount: number, date?: string) => void
   onSaveTemplate: () => void
   onOpenSummary: () => void
+  onPickDay: (date: string, anchor: { x: number; y: number }) => void
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>
   dragging?: boolean
 }) {
@@ -312,7 +314,7 @@ export function HabitCard({
           <span className="font-mono text-3xs text-faint">Last 365 days</span>
           <HeatmapLegend habit={habit} />
         </div>
-        <HabitHeatmap habit={habit} />
+        <HabitHeatmap habit={habit} onPickDay={onPickDay} />
       </div>
 
       {/* Secondary stats */}

@@ -100,6 +100,8 @@ create table if not exists public.clarity_habits (
   times_per_week  integer,
   -- date -> amount. One shape for all three tracking modes.
   logs            jsonb not null default '{}'::jsonb,
+  -- date -> short notes describing that day's logs.
+  log_notes       jsonb not null default '{}'::jsonb,
   sort_order      integer not null default 0,
   -- 'notes' habits tick themselves when a note is written that day.
   source          text not null default 'manual'
