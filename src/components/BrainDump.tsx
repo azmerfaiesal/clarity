@@ -194,7 +194,7 @@ export function BrainDump({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">
-            Brain Dump
+            Notes
           </h1>
           <p className="mt-1 font-mono text-2xs tracking-[0.06em] text-faint uppercase">
             {notes.length} {notes.length === 1 ? 'note' : 'notes'}

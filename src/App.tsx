@@ -1,6 +1,7 @@
 import { Flag, Plus, RotateCcw, SearchX, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BrainDump } from './components/BrainDump'
+import { Home } from './components/Home'
 import { HabitTracker } from './components/HabitTracker'
 import { EMPTY_PRESETS, EmptyState } from './components/EmptyState'
 import { Header } from './components/Header'
@@ -40,10 +41,12 @@ function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string 
       return 'Favorites'
     case 'trash':
       return 'Recycle Bin'
-    case 'braindump':
-      return 'Brain Dump'
+    case 'notes':
+      return 'Notes'
     case 'habits':
       return 'Your Habits'
+    case 'home':
+      return 'Home'
     default:
       return lists.find((l) => `list:${l.id}` === view)?.name ?? 'Inbox'
   }
@@ -55,7 +58,7 @@ function AppShell() {
   const { notes } = useNotes()
   const { habits } = useHabits()
 
-  const [view, setView] = useState<ViewId>('today')
+  const [view, setView] = useState<ViewId>('home')
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [sort, setSort] = useState<SortMode>('manual')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -118,7 +121,7 @@ function AppShell() {
         e.preventDefault()
         setSearchOpen(true)
       } else if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        if (viewRef.current === 'braindump' || viewRef.current === 'habits') return
+        if (viewRef.current !== 'inbox' && viewRef.current !== 'today' && viewRef.current !== 'upcoming' && !viewRef.current.startsWith('list:')) return
         e.preventDefault()
         setQuickAddOpen(true)
       }
@@ -169,10 +172,23 @@ function AppShell() {
       />
 
  <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
- <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 sm:px-6 sm:pb-16">
-          {view === 'habits' ? (
+ <div
+            className={`mx-auto w-full flex-1 px-4 pb-28 sm:px-6 sm:pb-16 ${
+              view === 'habits' ? 'max-w-5xl' : 'max-w-2xl'
+            }`}
+          >
+          {view === 'home' ? (
+            <Home
+              tasks={tasks}
+              lists={lists}
+              onOpenMobileNav={() => setMobileNavOpen(true)}
+              onNavigate={setView}
+              onEditTask={(t) => setEditingTask(t)}
+              store={store}
+            />
+          ) : view === 'habits' ? (
             <HabitTracker onOpenMobileNav={() => setMobileNavOpen(true)} />
-          ) : view === 'braindump' ? (
+          ) : view === 'notes' ? (
             <BrainDump onOpenMobileNav={() => setMobileNavOpen(true)} />
           ) : (
             <>
@@ -280,7 +296,7 @@ function AppShell() {
       </main>
 
       {/* Mobile FAB */}
-      {view !== 'completed' && view !== 'trash' && view !== 'braindump' && view !== 'habits' && (
+      {view !== 'completed' && view !== 'trash' && view !== 'notes' && view !== 'habits' && view !== 'home' && (
         <button
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}

@@ -4,7 +4,12 @@ import type { Habit, RepetitionType } from '../types'
 import type { HabitDraft } from '../store/habitStore'
 import { WEEKDAYS, ordinal } from '../utils/habitUtils'
 
-const HABIT_COLORS = ['#3ddbf0', '#3bff9e', '#ffb020', '#ff4d5e', '#ff5cd6', '#a78bfa', '#4aa8ff']
+// A fuller ramp than the list palette — habits sit side by side and need to be
+// told apart at a glance.
+const HABIT_COLORS = [
+  '#3bff9e', '#5eead4', '#a3e635', '#ffd23d', '#ffb020', '#ff8a3d',
+  '#ff4d5e', '#ff5cd6', '#c084fc', '#a78bfa', '#7c8cff', '#4aa8ff', '#3ddbf0',
+]
 const ICONS = ['📚', '🏃', '🧘', '💧', '💪', '🎧', '✍️', '🌱', '🛏️', '🥗', '🧹', '💰']
 
 const NAME_MAX = 50
@@ -31,6 +36,28 @@ export function HabitForm({
     habit?.repetitionType ?? 'daily',
   )
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(habit?.daysOfWeek ?? [1, 3, 5])
+  // Weekdays and weekends are presets over the weekly rule, not separate models,
+  // so the schedule stays one concept for the streak maths.
+  const sameDays = (a: number[], b: number[]) =>
+    a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i])
+  const preset: string =
+    repetitionType === 'daily'
+      ? 'daily'
+      : repetitionType === 'monthly'
+        ? 'monthly'
+        : sameDays(daysOfWeek, [1, 2, 3, 4, 5])
+          ? 'weekdays'
+          : sameDays(daysOfWeek, [0, 6])
+            ? 'weekends'
+            : 'pick'
+  const applyPreset = (p: string) => {
+    if (p === 'daily') return setRepetitionType('daily')
+    if (p === 'monthly') return setRepetitionType('monthly')
+    setRepetitionType('weekly')
+    if (p === 'weekdays') setDaysOfWeek([1, 2, 3, 4, 5])
+    else if (p === 'weekends') setDaysOfWeek([0, 6])
+    else if (daysOfWeek.length === 0) setDaysOfWeek([1, 3, 5])
+  }
   const [datesOfMonth, setDatesOfMonth] = useState<number[]>(habit?.datesOfMonth ?? [1])
   const [color, setColor] = useState(habit?.color ?? HABIT_COLORS[0])
   const [icon, setIcon] = useState(habit?.icon ?? '')
@@ -146,25 +173,27 @@ export function HabitForm({
           {/* Repetition */}
           <div>
             <span className="mb-1.5 block text-xs font-medium text-faint">Repeats</span>
-            <div
-              role="radiogroup"
-              aria-label="Repetition"
-              className="inline-flex overflow-hidden rounded-md border border-line"
-            >
-              {(['daily', 'weekly', 'monthly'] as RepetitionType[]).map((t) => (
+            <div role="radiogroup" aria-label="Repetition" className="flex flex-wrap gap-1.5">
+              {[
+                ['daily', 'Daily'],
+                ['weekdays', 'Weekdays'],
+                ['weekends', 'Weekends'],
+                ['pick', 'Pick days'],
+                ['monthly', 'Monthly'],
+              ].map(([value, label]) => (
                 <button
-                  key={t}
+                  key={value}
                   type="button"
                   role="radio"
-                  aria-checked={repetitionType === t}
-                  onClick={() => setRepetitionType(t)}
-                  className={`cursor-pointer px-3 py-1.5 text-xs capitalize transition-colors ${
-                    repetitionType === t
-                      ? 'bg-accent-soft font-medium text-ink'
-                      : 'text-muted hover:bg-surface hover:text-ink'
+                  aria-checked={preset === value}
+                  onClick={() => applyPreset(value)}
+                  className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                    preset === value
+                      ? 'border-accent/50 bg-accent-soft font-medium text-ink'
+                      : 'border-line text-muted hover:bg-surface hover:text-ink'
                   }`}
                 >
-                  {t}
+                  {label}
                 </button>
               ))}
             </div>

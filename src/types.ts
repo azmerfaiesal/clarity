@@ -26,13 +26,14 @@ export interface TaskList {
 }
 
 export type ViewId =
+  | 'home'
   | 'inbox'
   | 'today'
   | 'upcoming'
   | 'completed'
   | 'favorites'
   | 'trash'
-  | 'braindump'
+  | 'notes'
   | 'habits'
   | `list:${string}`
 

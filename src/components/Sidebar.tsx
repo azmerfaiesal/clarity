@@ -4,6 +4,8 @@ import {
   Inbox,
   ListPlus,
   Moon,
+  ClipboardList,
+  House,
   NotebookPen,
   Pencil,
   Target,
@@ -192,6 +194,16 @@ export function Sidebar({
 
   const count = (v: ViewId) => tasksForView(tasks, v).filter((t) => !t.completed).length
 
+  // Everything that is a way of looking at tasks, as opposed to a section.
+  const isTaskView =
+    view === 'inbox' ||
+    view === 'today' ||
+    view === 'upcoming' ||
+    view === 'completed' ||
+    view === 'favorites' ||
+    view === 'trash' ||
+    view.startsWith('list:')
+
   const closeListForm = () => setAddingList(false)
 
   // Opening one form closes the other; two open editors in a narrow column is
@@ -229,8 +241,43 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Primary nav */}
-      <nav aria-label="Views" className="space-y-0.5 px-2.5">
+      {/* Top level: the four things this app tracks. */}
+      <nav aria-label="Sections" className="space-y-0.5 px-2.5">
+        <NavItem
+          icon={<House className="h-4 w-4" />}
+          label="Home"
+          active={view === 'home'}
+          onClick={() => nav('home')}
+        />
+        <NavItem
+          icon={<ClipboardList className="h-4 w-4" />}
+          label="Tasks"
+          count={count('today')}
+          active={isTaskView}
+          onClick={() => nav('today')}
+        />
+        <NavItem
+          icon={<Target className="h-4 w-4" />}
+          label="Habits"
+          count={habitCount}
+          active={view === 'habits'}
+          onClick={() => nav('habits')}
+        />
+        <NavItem
+          icon={<NotebookPen className="h-4 w-4" />}
+          label="Notes"
+          count={noteCount}
+          active={view === 'notes'}
+          onClick={() => nav('notes')}
+        />
+      </nav>
+
+      {/* Task views and lists, shown only while Tasks is the active section —
+          they are ways of slicing tasks, so they are noise anywhere else. */}
+      {isTaskView && (
+        <>
+      <nav aria-label="Task views" className="mt-6 space-y-0.5 px-2.5">
+        <span className="label mb-1.5 block px-2.5">Views</span>
         <NavItem
           icon={<Inbox className="h-4 w-4" />}
           label="Inbox"
@@ -276,7 +323,7 @@ export function Sidebar({
       </nav>
 
       {/* Lists */}
-      <div className="mt-7 flex-1 overflow-y-auto px-2.5">
+      <div className="mt-6 flex-1 overflow-y-auto px-2.5">
         <div className="mb-1.5 flex items-center justify-between px-2.5">
           <span className="label">Lists</span>
           <button
@@ -389,24 +436,9 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Brain Dump is not a task view, so it sits apart from them and from the
-          lists that filter them. */}
-      <div className="space-y-0.5 border-t border-line px-2.5 py-2">
-        <NavItem
-          icon={<Target className="h-4 w-4" />}
-          label="Habits"
-          count={habitCount}
-          active={view === 'habits'}
-          onClick={() => nav('habits')}
-        />
-        <NavItem
-          icon={<NotebookPen className="h-4 w-4" />}
-          label="Brain Dump"
-          count={noteCount}
-          active={view === 'braindump'}
-          onClick={() => nav('braindump')}
-        />
-      </div>
+        </>
+      )}
+      {!isTaskView && <div className="flex-1" />}
 
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-line p-2.5">

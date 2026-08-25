@@ -160,7 +160,7 @@ export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void 
           </div>
         </div>
       ) : (
-        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+        <div className="space-y-3">
           {active.map((h) => (
             <HabitCard
               key={h.id}
@@ -181,7 +181,7 @@ export function HabitTracker({ onOpenMobileNav }: { onOpenMobileNav: () => void 
       {archived.length > 0 && (
         <div className="mt-9">
           <span className="label">Paused</span>
-          <div className="mt-2 space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+          <div className="mt-2 space-y-3">
             {archived.map((h) => (
               <HabitCard
                 key={h.id}
