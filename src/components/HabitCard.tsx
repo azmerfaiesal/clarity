@@ -240,7 +240,13 @@ export function HabitCard({
             style={{ backgroundColor: `${habit.color}1f` }}
             title={`Current streak${habit.targetStreak ? ` · target ${habit.targetStreak}` : ''}`}
           >
-            <FlameIcon className="h-3.5 w-3.5" beaming={s.current > 0} color={habit.color} />
+            <FlameIcon
+              className="h-3.5 w-3.5"
+              beaming={s.current > 0}
+              color={habit.color}
+              streak={s.current}
+              peak={habit.targetStreak ?? 30}
+            />
             <span className="font-mono text-sm font-semibold tabular-nums" style={{ color: habit.color }}>
               {s.current}
             </span>

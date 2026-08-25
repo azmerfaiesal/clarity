@@ -243,6 +243,8 @@ function HomeHabitRow({
           className="h-3 w-3"
           beaming={s.current > 0}
           color={s.current > 0 ? habit.color : undefined}
+          streak={s.current}
+          peak={habit.targetStreak ?? 30}
         />
         {s.current}
       </span>

@@ -65,7 +65,8 @@ export function HabitHeatmap({
       if (weeks.length > 54) break
     }
 
-    // Label a column when its month differs from the column before it.
+    // A week opens a month when its month differs from the week before it. That
+    // flag drives both the label and the extra gap, so the two stay aligned.
     const months = weeks.map((w, i) => {
       const m = parseDate(w[0].date).getMonth()
       if (i === 0) return null
@@ -77,6 +78,11 @@ export function HabitHeatmap({
   }, [habit, today])
 
   const gap = Math.max(2, Math.round(cell / 4))
+  // Months read as separate blocks rather than one continuous ribbon.
+  const monthGap = gap + 3
+  // Rounded almost to a squircle, stopping short of a circle so the grid still
+  // reads as a grid.
+  const radius = Math.max(3, Math.round(cell / 3))
   const col = `${cell}px`
 
   return (
@@ -105,76 +111,87 @@ export function HabitHeatmap({
         </div>
 
         <div>
-          {/* Month labels, one slot per week column */}
-          <div
-            className="grid"
-            style={{ gridAutoFlow: 'column', gridAutoColumns: col, gap: `${gap}px` }}
-          >
+          {/* Month labels. Same flex structure and gaps as the grid below, so a
+              label always sits over the week that opens its month. */}
+          <div className="flex" style={{ gap: `${gap}px` }}>
             {months.map((m, i) => (
               <span
                 key={i}
                 className="font-mono whitespace-nowrap text-faint"
-                style={{ fontSize: Math.max(8, cell - 2), lineHeight: `${cell + gap + 2}px` }}
+                style={{
+                  width: col,
+                  marginLeft: m && i > 0 ? `${monthGap}px` : undefined,
+                  fontSize: Math.max(8, cell - 2),
+                  lineHeight: `${cell + gap + 2}px`,
+                }}
               >
                 {m ?? ''}
               </span>
             ))}
           </div>
 
-          {/* The grid itself */}
-          <div
-            className="grid"
-            style={{
-              gridAutoFlow: 'column',
-              gridAutoColumns: col,
-              gridTemplateRows: `repeat(7, ${col})`,
-              gap: `${gap}px`,
-            }}
-          >
-            {weeks.flat().map(({ date, state, level, count }) => (
-              <button
-                key={date}
-                type="button"
-                disabled={state === 'future'}
-                onClick={(e) => {
-                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  onPickDay?.(date, { x: r.left + r.width / 2, y: r.top })
+          {/* One column per week, with a wider gutter where a month begins. */}
+          <div className="flex" style={{ gap: `${gap}px` }}>
+            {weeks.map((week, i) => (
+              <div
+                key={week[0].date}
+                className="flex flex-col"
+                style={{
+                  gap: `${gap}px`,
+                  marginLeft: months[i] && i > 0 ? `${monthGap}px` : undefined,
                 }}
-                aria-label={`${date} — open day`}
-                title={
-                  state === 'future'
-                    ? undefined
-                    : `${date} · ${
-                        state === 'done'
-                          ? habit.trackBy !== 'checkoff'
-                            ? `${formatAmount(habit, count)}${
-                                habit.dailyTarget ? ` / ${formatAmount(habit, habit.dailyTarget)}` : ''
-                              }${isCompletedOn(habit, date) ? '' : ' (partial)'}`
-                            : 'done'
+              >
+                {week.map(({ date, state, level, count }) => (
+                  <button
+                    key={date}
+                    type="button"
+                    disabled={state === 'future'}
+                    onClick={(e) => {
+                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                      onPickDay?.(date, { x: r.left + r.width / 2, y: r.top })
+                    }}
+                    aria-label={`${date} — open day`}
+                    title={
+                      state === 'future'
+                        ? undefined
+                        : `${date} · ${
+                            state === 'done'
+                              ? habit.trackBy !== 'checkoff'
+                                ? `${formatAmount(habit, count)}${
+                                    habit.dailyTarget
+                                      ? ` / ${formatAmount(habit, habit.dailyTarget)}`
+                                      : ''
+                                  }${isCompletedOn(habit, date) ? '' : ' (partial)'}`
+                                : 'done'
+                              : state === 'missed'
+                                ? 'missed'
+                                : state === 'untracked'
+                                  ? 'not tracked'
+                                  : 'not due'
+                          }`
+                    }
+                    style={{
+                      width: col,
+                      height: col,
+                      borderRadius: `${radius}px`,
+                      ...(state === 'done'
+                        ? { backgroundColor: habit.color, opacity: RAMP[level] }
+                        : {}),
+                    }}
+                    className={`transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
+                      state === 'future'
+                        ? 'opacity-0'
+                        : state === 'done'
+                          ? ''
                           : state === 'missed'
-                            ? 'missed'
+                            ? 'bg-line-strong/60'
                             : state === 'untracked'
-                              ? 'not tracked'
-                              : 'not due'
-                      }`
-                }
-                className={`rounded-[2px] transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
-                  state === 'future'
-                    ? 'opacity-0'
-                    : state === 'done'
-                      ? ''
-                      : state === 'missed'
-                        ? 'bg-line-strong/60'
-                        : state === 'untracked'
-                          ? 'bg-line/35'
-                          : 'bg-line/60'
-                }`}
-                style={
-                  state === 'done'
-                    ? { backgroundColor: habit.color, opacity: RAMP[level] }
-                    : undefined
-                }
-              />
+                              ? 'bg-line/35'
+                              : 'bg-line/60'
+                    }`}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         </div>

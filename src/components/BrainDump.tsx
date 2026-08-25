@@ -30,7 +30,16 @@ function normalizeTag(raw: string): string {
  * open, write, tag if you feel like it, save. Editing reuses the same composer
  * inline instead of opening a dialog, which keeps the writing surface constant.
  */
-export function BrainDump({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
+export function BrainDump({
+  onOpenMobileNav,
+  tagFilter,
+  onTagFilter,
+}: {
+  onOpenMobileNav: () => void
+  /** Owned by App so the sidebar's tag list can drive it. */
+  tagFilter: string | null
+  onTagFilter: (tag: string | null) => void
+}) {
   const { notes, saveState, createNote, updateNote, deleteNote, readDraft, writeDraft, discardDraft } =
     useNotes()
 
@@ -40,7 +49,6 @@ export function BrainDump({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
   const [query, setQuery] = useState('')
-  const [tagFilter, setTagFilter] = useState<string | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
@@ -330,7 +338,7 @@ export function BrainDump({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
                   key={tag}
                   type="button"
                   aria-pressed={tagFilter === tag}
-                  onClick={() => setTagFilter((cur) => (cur === tag ? null : tag))}
+                  onClick={() => onTagFilter(tagFilter === tag ? null : tag)}
                   className={`cursor-pointer rounded border px-1.5 py-0.5 font-mono text-3xs transition-colors ${
                     tagFilter === tag
                       ? 'border-accent/50 bg-accent-soft text-accent'

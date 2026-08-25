@@ -198,6 +198,9 @@ export function Sidebar({
   habitCount,
   habitFilter,
   onHabitFilter,
+  noteTags,
+  noteTag,
+  onNoteTag,
 }: {
   view: ViewId
   tasks: Task[]
@@ -213,12 +216,17 @@ export function Sidebar({
   habitCount: number
   habitFilter: HabitFilter
   onHabitFilter: (f: HabitFilter) => void
+  /** Tags in use across the notes, with counts, most used first. */
+  noteTags: [string, number][]
+  noteTag: string | null
+  onNoteTag: (tag: string | null) => void
 }) {
   const { theme, toggleTheme, controlledByHost } = useTheme()
   const [addingList, setAddingList] = useState(false)
   const [editingListId, setEditingListId] = useState<string | null>(null)
   const [tasksOpen, setTasksOpen] = useState(false)
   const [habitsOpen, setHabitsOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
 
   const count = (v: ViewId) => tasksForView(tasks, v).filter((t) => !t.completed).length
 
@@ -226,6 +234,7 @@ export function Sidebar({
   useEffect(() => {
     if (isTaskView) setTasksOpen(true)
     if (view === 'habits') setHabitsOpen(true)
+    if (view === 'notes') setNotesOpen(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view])
 
@@ -510,8 +519,58 @@ export function Sidebar({
           label="Notes"
           count={noteCount}
           active={view === 'notes'}
-          onClick={() => nav('notes')}
+          expanded={notesOpen}
+          onToggle={() => setNotesOpen((v) => !v)}
+          onClick={() => {
+            setNotesOpen(true)
+            nav('notes')
+          }}
         />
+        {/* Tags in use across the notes, as a way in. */}
+        <div className="disclosure" data-open={notesOpen}>
+          <div>
+            <div className="space-y-0.5 pt-0.5 pl-3.5">
+              <button
+                type="button"
+                aria-pressed={view === 'notes' && noteTag === null}
+                onClick={() => {
+                  onNoteTag(null)
+                  nav('notes')
+                }}
+                className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                  view === 'notes' && noteTag === null
+                    ? 'bg-accent-soft font-medium text-ink'
+                    : 'text-muted hover:bg-surface hover:text-ink'
+                }`}
+              >
+                All notes
+              </button>
+              {noteTags.length === 0 ? (
+                <p className="px-2.5 py-1 text-3xs text-faint">No tags yet.</p>
+              ) : (
+                noteTags.map(([tag, n]) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    aria-pressed={view === 'notes' && noteTag === tag}
+                    onClick={() => {
+                      onNoteTag(tag)
+                      nav('notes')
+                    }}
+                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors ${
+                      view === 'notes' && noteTag === tag
+                        ? 'bg-accent-soft font-medium text-ink'
+                        : 'text-muted hover:bg-surface hover:text-ink'
+                    }`}
+                  >
+                    <span className="min-w-0 flex-1 truncate font-mono text-3xs">{tag}</span>
+                    <span className="shrink-0 font-mono text-3xs text-faint tabular-nums">{n}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </nav>
 
       {/* Footer */}

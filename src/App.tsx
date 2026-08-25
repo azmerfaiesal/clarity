@@ -64,10 +64,18 @@ function AppShell() {
   const store = useTaskStore()
   const { tasks, lists } = store
   const { notes } = useNotes()
+
+  // Tags in use across the notes, most used first — the sidebar's way in.
+  const noteTags = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const n of notes) for (const t of n.tags) counts.set(t, (counts.get(t) ?? 0) + 1)
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  }, [notes])
   const { habits } = useHabits()
 
   const [view, setView] = useState<ViewId>('home')
   const [habitFilter, setHabitFilter] = useState<HabitFilter>('all')
+  const [noteTag, setNoteTag] = useState<string | null>(null)
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [sort, setSort] = useState<SortMode>('manual')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -197,6 +205,9 @@ function AppShell() {
         habitCount={habits.filter((h) => h.archivedAt === null).length}
         habitFilter={habitFilter}
         onHabitFilter={setHabitFilter}
+        noteTags={noteTags}
+        noteTag={noteTag}
+        onNoteTag={setNoteTag}
       />
 
  <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
@@ -220,7 +231,11 @@ function AppShell() {
               filter={habitFilter}
             />
           ) : view === 'notes' ? (
-            <BrainDump onOpenMobileNav={() => setMobileNavOpen(true)} />
+            <BrainDump
+              onOpenMobileNav={() => setMobileNavOpen(true)}
+              tagFilter={noteTag}
+              onTagFilter={setNoteTag}
+            />
           ) : (
             <>
           <Header
