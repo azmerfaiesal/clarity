@@ -9,6 +9,8 @@ import {
   CloudOff,
   Moon,
   Palette,
+  RefreshCw,
+  TriangleAlert,
   Sun,
   Type,
   X,
@@ -20,6 +22,8 @@ import type { WeekStart } from '../utils/habitUtils'
 import { permissionState, requestPermission, type PermissionState } from '../store/notifications'
 import { DEFAULT_FONT, FONTS, FONT_KEYS, ensureFontLoaded, type FontKey } from '../store/fonts'
 import { ACCENTS, ACCENT_KEYS, accentSwatch } from '../store/accents'
+import { clearSyncError, useSyncHealth } from '../store/syncHealth'
+import { formatRelative } from '../utils/dateUtils'
 
 const SHORTCUTS: [string, string][] = [
   ['N', 'New task'],
@@ -57,6 +61,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [notifyState, setNotifyState] = useState<PermissionState>(() => permissionState())
   const { user, signOut } = useAuth()
   const store = useTaskStore()
+  const sync = useSyncHealth()
 
   useEffect(() => {
     FONT_KEYS.forEach(ensureFontLoaded)
@@ -341,18 +346,49 @@ export function Settings({ onClose }: { onClose: () => void }) {
           {user ? (
             <>
  <div className="flex items-center gap-2 text-sm text-ink">
-                {store.ready ? (
+                {sync.ok === false ? (
+ <TriangleAlert className="h-4 w-4 text-danger" aria-hidden />
+                ) : store.ready ? (
  <Cloud className="h-4 w-4 text-success" aria-hidden />
                 ) : (
  <CloudOff className="h-4 w-4 text-faint" aria-hidden />
                 )}
  <span className="truncate">{user.email}</span>
               </div>
+              {/* The state this used to claim unconditionally. A write the
+                  server refuses will never succeed on a retry, so saying
+                  nothing about it left a device quietly out of step. */}
+              {sync.ok === false ? (
+                <>
+                  <p className="mt-1 text-xs text-danger">
+                    Not syncing — changes are saved on this device only.
+                  </p>
+                  {sync.lastError && (
+                    <p className="mt-1 font-mono text-3xs break-words text-faint">
+                      {sync.lastError}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearSyncError()
+                      window.location.reload()
+                    }}
+ className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+                  >
+ <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                    Try again
+                  </button>
+                </>
+              ) : (
  <p className="mt-1 text-xs text-faint">
-                {store.ready
-                  ? 'Tasks sync automatically across your devices.'
-                  : 'Connecting…'}
-              </p>
+                  {!store.ready
+                    ? 'Connecting…'
+                    : sync.lastOkAt
+                      ? `Syncing across your devices · last ${formatRelative(sync.lastOkAt)}`
+                      : 'Syncing across your devices.'}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => {

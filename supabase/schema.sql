@@ -102,7 +102,10 @@ create table if not exists public.clarity_habits (
   logs            jsonb not null default '{}'::jsonb,
   -- date -> short notes describing that day's logs.
   log_notes       jsonb not null default '{}'::jsonb,
-  sort_order      integer not null default 0,
+  -- bigint, not integer: a new habit's sort order is Date.now(), which is far
+  -- past the range of an int4. As an integer this rejected every habit ever
+  -- created with a 400, leaving it stranded on the device that made it.
+  sort_order      bigint not null default 0,
   -- 'notes' habits tick themselves when a note is written that day.
   source          text not null default 'manual'
                     check (source in ('manual', 'notes')),

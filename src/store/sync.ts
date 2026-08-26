@@ -1,5 +1,6 @@
 import type { BrainDump, Habit, HabitTemplate, Task, TaskList } from '../types'
 import { supabase } from '../lib/supabase'
+import { reportSyncError, reportSyncOk } from './syncHealth'
 
 /**
  * Sync layer between the local reducer state and Supabase.
@@ -19,6 +20,33 @@ import { supabase } from '../lib/supabase'
 export interface Subscription {
   stop: () => void
   refresh: () => void
+}
+
+/**
+ * Run one write and say plainly whether it worked.
+ *
+ * Half of these used to discard the result entirely, so a row the server was
+ * refusing looked exactly like a row it had accepted — the caller marked it
+ * synced and never tried again. Now a refusal is recorded for Settings to show,
+ * and rethrown so the caller can put the row back in the queue.
+ */
+async function write<T extends { error: unknown }>(
+  operation: string,
+  run: () => PromiseLike<T>,
+): Promise<void> {
+  let result: T
+  try {
+    result = await run()
+  } catch (err) {
+    // Never reached the server at all: offline, or the tab died mid-flight.
+    reportSyncError(operation, err)
+    throw err
+  }
+  if (result.error) {
+    reportSyncError(operation, result.error)
+    throw result.error
+  }
+  reportSyncOk()
 }
 
 const TASKS_TABLE = 'clarity_tasks'
@@ -41,9 +69,11 @@ export async function loadFromServer(userId: string): Promise<LoadedData> {
   ])
 
   if (te || le) {
+    reportSyncError('loading tasks', te ?? le)
     return { tasks: [], lists: [], fromServer: false }
   }
 
+  reportSyncOk()
   return {
     tasks: (tasks ?? []).map(rowToTask),
     lists: (lists ?? []).map(rowToList),
@@ -52,23 +82,23 @@ export async function loadFromServer(userId: string): Promise<LoadedData> {
 }
 
 export async function upsertTask(task: Task, userId: string): Promise<void> {
-  await supabase.from(TASKS_TABLE).upsert(taskToRow(task, userId), {
-    onConflict: 'id',
-  })
+  await write('saving a task', () =>
+    supabase.from(TASKS_TABLE).upsert(taskToRow(task, userId), { onConflict: 'id' }),
+  )
 }
 
 export async function deleteTaskRow(id: string): Promise<void> {
-  await supabase.from(TASKS_TABLE).delete().eq('id', id)
+  await write('deleting a task', () => supabase.from(TASKS_TABLE).delete().eq('id', id))
 }
 
 export async function upsertList(list: TaskList, userId: string): Promise<void> {
-  await supabase.from(LISTS_TABLE).upsert(listToRow(list, userId), {
-    onConflict: 'id',
-  })
+  await write('saving a list', () =>
+    supabase.from(LISTS_TABLE).upsert(listToRow(list, userId), { onConflict: 'id' }),
+  )
 }
 
 export async function deleteListRow(id: string): Promise<void> {
-  await supabase.from(LISTS_TABLE).delete().eq('id', id)
+  await write('deleting a list', () => supabase.from(LISTS_TABLE).delete().eq('id', id))
 }
 
 // ---- habits ----
@@ -82,20 +112,22 @@ export async function loadHabitsFromServer(
     .eq('user_id', userId)
     .order('created_at', { ascending: true })
 
-  if (error) return { habits: [], fromServer: false }
+  if (error) {
+    reportSyncError('loading habits', error)
+    return { habits: [], fromServer: false }
+  }
+  reportSyncOk()
   return { habits: (data ?? []).map(rowToHabit), fromServer: true }
 }
 
 export async function upsertHabit(habit: Habit, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from(HABITS_TABLE)
-    .upsert(habitToRow(habit, userId), { onConflict: 'id' })
-  if (error) throw error
+  await write('saving a habit', () =>
+    supabase.from(HABITS_TABLE).upsert(habitToRow(habit, userId), { onConflict: 'id' }),
+  )
 }
 
 export async function deleteHabitRow(id: string): Promise<void> {
-  const { error } = await supabase.from(HABITS_TABLE).delete().eq('id', id)
-  if (error) throw error
+  await write('deleting a habit', () => supabase.from(HABITS_TABLE).delete().eq('id', id))
 }
 
 export function subscribeToHabits(
@@ -226,14 +258,17 @@ export async function loadTemplatesFromServer(
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-  if (error) return { templates: [], fromServer: false }
+  if (error) {
+    reportSyncError('loading templates', error)
+    return { templates: [], fromServer: false }
+  }
+  reportSyncOk()
   return { templates: (data ?? []).map(rowToTemplate), fromServer: true }
 }
 
 export async function upsertTemplate(t: HabitTemplate, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from(TEMPLATES_TABLE)
-    .upsert(
+  await write('saving a template', () =>
+    supabase.from(TEMPLATES_TABLE).upsert(
       {
         id: t.id,
         user_id: userId,
@@ -250,13 +285,14 @@ export async function upsertTemplate(t: HabitTemplate, userId: string): Promise<
         created_at: t.createdAt,
       },
       { onConflict: 'id' },
-    )
-  if (error) throw error
+    ),
+  )
 }
 
 export async function deleteTemplateRow(id: string): Promise<void> {
-  const { error } = await supabase.from(TEMPLATES_TABLE).delete().eq('id', id)
-  if (error) throw error
+  await write('deleting a template', () =>
+    supabase.from(TEMPLATES_TABLE).delete().eq('id', id),
+  )
 }
 
 function rowToTemplate(r: Record<string, unknown>): HabitTemplate {
@@ -287,20 +323,22 @@ export async function loadNotesFromServer(
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
-  if (error) return { notes: [], fromServer: false }
+  if (error) {
+    reportSyncError('loading notes', error)
+    return { notes: [], fromServer: false }
+  }
+  reportSyncOk()
   return { notes: (data ?? []).map(rowToNote), fromServer: true }
 }
 
 export async function upsertNote(note: BrainDump, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from(NOTES_TABLE)
-    .upsert(noteToRow(note, userId), { onConflict: 'id' })
-  if (error) throw error
+  await write('saving a note', () =>
+    supabase.from(NOTES_TABLE).upsert(noteToRow(note, userId), { onConflict: 'id' }),
+  )
 }
 
 export async function deleteNoteRow(id: string): Promise<void> {
-  const { error } = await supabase.from(NOTES_TABLE).delete().eq('id', id)
-  if (error) throw error
+  await write('deleting a note', () => supabase.from(NOTES_TABLE).delete().eq('id', id))
 }
 
 export function subscribeToNotes(
