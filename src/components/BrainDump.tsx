@@ -240,13 +240,20 @@ export function BrainDump({
                   type="button"
                   aria-pressed={tagFilter === tag}
                   onClick={() => onTagFilter(tagFilter === tag ? null : tag)}
+                  // Accent throughout, because every chip here is a control.
+                  // The picked one fills; the rest are outlined in the same hue,
+                  // so the row reads as one set with one member switched on
+                  // rather than as grey furniture next to a coloured thing.
                   className={`cursor-pointer rounded border px-1.5 py-0.5 font-mono text-3xs transition-colors ${
                     tagFilter === tag
-                      ? 'border-accent/50 bg-accent-soft text-accent'
-                      : 'border-line text-muted hover:text-ink'
+                      ? 'border-accent bg-accent text-accent-ink'
+                      : 'border-accent/30 text-accent/80 hover:border-accent/60 hover:bg-accent-soft hover:text-accent'
                   }`}
                 >
-                  {tag} <span className="text-faint">{count}</span>
+                  {tag}{' '}
+                  <span className={tagFilter === tag ? 'text-accent-ink/70' : 'text-accent/50'}>
+                    {count}
+                  </span>
                 </button>
               ))}
             </div>
