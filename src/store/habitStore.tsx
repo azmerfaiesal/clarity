@@ -113,6 +113,30 @@ export function HabitProvider({ children }: { children: ReactNode }) {
   }, [authLoading, userId, scope])
 
   /**
+   * Send a habit to the server, and keep trying if it does not land.
+   *
+   * A single fire-and-forget write is not enough on a phone: the tab is
+   * suspended the moment you switch away, and a habit created seconds earlier
+   * simply never arrives. Retrying covers the brief failures; anything still
+   * missing after that is picked up as an orphan by the next snapshot, which
+   * is the backstop for a device that was closed outright.
+   */
+  const push = useCallback(
+    (habit: Habit) => {
+      if (!userId) return
+      const attempt = (tries: number) => {
+        upsertHabit(habit, userId)
+          .then(() => seen.current.add(habit.id))
+          .catch(() => {
+            if (tries < 3) window.setTimeout(() => attempt(tries + 1), 1500 * (tries + 1))
+          })
+      }
+      attempt(0)
+    },
+    [userId],
+  )
+
+  /**
    * Take a server snapshot as the truth, and decide what to do with anything
    * local that is not in it.
    *
@@ -127,14 +151,14 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       setHabits((local) => {
         const { rows, orphans } = mergeSnapshot(server, local, known)
         // Re-push, in case the original push is what failed and left it here.
-        if (userId) for (const h of orphans) upsertHabit(h, userId).catch(() => {})
+        for (const h of orphans) push(h)
         return rows
       })
       const ids = new Set(server.map((h) => h.id))
       seen.current = ids
       saveSyncedIds(userId ?? LOCAL_SCOPE, 'habits', [...ids])
     },
-    [userId],
+    [userId, push],
   )
 
   useEffect(() => {
@@ -183,16 +207,6 @@ export function HabitProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveTemplates(scope, templates)
   }, [scope, templates])
-
-  const push = useCallback(
-    (habit: Habit) => {
-      if (!userId) return
-      upsertHabit(habit, userId)
-        .then(() => seen.current.add(habit.id))
-        .catch(() => {})
-    },
-    [userId],
-  )
 
   const addHabit = useCallback<HabitStore['addHabit']>(
     (draft) => {

@@ -22,6 +22,7 @@ const FONT_FAMILY_KEY = 'clarity.fontfamily.v1'
 const WEEK_START_KEY = 'clarity.weekstart.v1'
 const ACCENT_KEY = 'clarity.accent.v1'
 const HABIT_RANGE_KEY = 'clarity.habitrange.v1'
+const VIEW_KEY = 'clarity.view.v1'
 
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
@@ -227,6 +228,28 @@ export function loadAccent(): string | null {
 export function saveAccent(key: string): void {
   try {
     localStorage.setItem(ACCENT_KEY, key)
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * The section that was open, so a refresh puts you back where you were rather
+ * than at Home. Device-local and not scoped to an account: it is a position in
+ * the app, not data. A view naming a list that no longer exists is caught by
+ * the fallback in App.
+ */
+export function loadView(): string | null {
+  try {
+    return localStorage.getItem(VIEW_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function saveView(view: string): void {
+  try {
+    localStorage.setItem(VIEW_KEY, view)
   } catch {
     /* ignore */
   }

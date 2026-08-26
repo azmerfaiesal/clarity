@@ -13,6 +13,7 @@ import { TaskInput } from './components/TaskInput'
 import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
 import { useHabits } from './store/habitStore'
+import { loadView, saveView } from './store/storage'
 import { checkReminders } from './store/notifications'
 import { useNotes } from './store/noteStore'
 import { useTaskStore } from './store/taskStore'
@@ -61,6 +62,26 @@ function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string 
   }
 }
 
+const SECTION_VIEWS: ViewId[] = [
+  'home',
+  'inbox',
+  'today',
+  'upcoming',
+  'completed',
+  'favorites',
+  'trash',
+  'notes',
+  'habits',
+]
+
+/** A stored view is only trusted if it still names something the app has. */
+function restoreView(): ViewId {
+  const saved = loadView()
+  if (!saved) return 'home'
+  if (SECTION_VIEWS.includes(saved as ViewId)) return saved as ViewId
+  return saved.startsWith('list:') ? (saved as ViewId) : 'home'
+}
+
 function AppShell() {
   const store = useTaskStore()
   const { tasks, lists } = store
@@ -74,7 +95,8 @@ function AppShell() {
   }, [notes])
   const { habits, templates, deleteTemplate } = useHabits()
 
-  const [view, setView] = useState<ViewId>('home')
+  // Reopen where you left off.
+  const [view, setView] = useState<ViewId>(restoreView)
   const [habitFilter, setHabitFilter] = useState<HabitFilter>('all')
   const [noteTag, setNoteTag] = useState<string | null>(null)
   // A template picked in the sidebar: either the seed for a new habit, or the
@@ -93,12 +115,19 @@ function AppShell() {
   const [undoVisible, setUndoVisible] = useState(false)
   const undoTimer = useRef<number | null>(null)
 
-  // Handle deleted list: fall back to inbox if the current view vanishes
   useEffect(() => {
+    saveView(view)
+  }, [view])
+
+  // Handle deleted list: fall back to inbox if the current view vanishes.
+  // Waits for the store, or a restored list view would be bounced on load,
+  // before the lists it names have arrived.
+  useEffect(() => {
+    if (!store.ready) return
     if (view.startsWith('list:') && !lists.some((l) => `list:${l.id}` === view)) {
       setView('inbox')
     }
-  }, [lists, view])
+  }, [lists, view, store.ready])
 
   // Undo toast lifecycle
   useEffect(() => {

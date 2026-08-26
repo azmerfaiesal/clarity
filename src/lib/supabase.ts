@@ -14,10 +14,36 @@ export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLB
 
 import { createClient } from '@supabase/supabase-js'
 
+/**
+ * Writes go out with `keepalive`, so the browser finishes them even if the page
+ * is put to sleep a moment later.
+ *
+ * This is not hypothetical: iOS Safari suspends a tab the instant you switch
+ * apps, and an ordinary fetch dies with it. Create a habit, lock the phone, and
+ * the row never reaches the server while the device happily shows it — which
+ * is exactly how one device ends up with a habit the others have never heard
+ * of. Reads are left alone; they can simply be asked again.
+ *
+ * `keepalive` caps the request body at 64KB, so anything larger falls back to a
+ * normal fetch rather than failing outright.
+ */
+const KEEPALIVE_MAX_BODY = 60_000
+
+export const resilientFetch: typeof fetch = (input, init) => {
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const body = init?.body
+  const small = typeof body === 'string' && body.length < KEEPALIVE_MAX_BODY
+  if (method !== 'GET' && method !== 'HEAD' && small) {
+    return fetch(input, { ...init, keepalive: true })
+  }
+  return fetch(input, init)
+}
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+  global: { fetch: resilientFetch },
 })
