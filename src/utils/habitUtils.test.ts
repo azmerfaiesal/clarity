@@ -16,6 +16,8 @@ import {
   scheduledDates,
   totalAmount,
   totalCompletions,
+  weekdayOrder,
+  weekStart,
 } from './habitUtils'
 
 /**
@@ -340,5 +342,53 @@ describe('runContaining', () => {
       logs: ticks(['2026-03-02', '2026-03-04', '2026-03-06']),
     })
     expect(runContaining(h, '2026-03-04', '2026-03-07')).toMatchObject({ length: 3, index: 2 })
+  })
+})
+
+describe('week start', () => {
+  // 2026-03-01 is a Sunday, so 2026-03-02 opens the Monday week.
+  it('anchors the week on the chosen day', () => {
+    expect(weekStart('2026-03-04')).toBe('2026-03-01')
+    expect(weekStart('2026-03-04', 1)).toBe('2026-03-02')
+    // A Sunday belongs to the week that just ended when weeks start Monday.
+    expect(weekStart('2026-03-08', 1)).toBe('2026-03-02')
+    expect(weekStart('2026-03-08')).toBe('2026-03-08')
+  })
+
+  it('orders weekdays from the chosen first day', () => {
+    expect(weekdayOrder()).toEqual([0, 1, 2, 3, 4, 5, 6])
+    expect(weekdayOrder(1)).toEqual([1, 2, 3, 4, 5, 6, 0])
+  })
+
+  it('counts a per-week quota against the week the setting defines', () => {
+    // Sat 7th and Sun 8th March. One Sunday-anchored week holds only the
+    // Saturday; the Monday-anchored week holds both.
+    const h = habit({
+      repetitionType: 'timesPerWeek',
+      timesPerWeek: 2,
+      logs: ticks(['2026-03-07', '2026-03-08']),
+    })
+    expect(completionsInWeek(h, '2026-03-07')).toBe(1)
+    expect(completionsInWeek(h, '2026-03-07', 1)).toBe(2)
+  })
+
+  it('moves a per-week streak with the anchor', () => {
+    const h = habit({
+      repetitionType: 'timesPerWeek',
+      timesPerWeek: 2,
+      createdAt: '2026-03-01T08:00:00.000Z',
+      logs: ticks(['2026-03-07', '2026-03-08']),
+    })
+    // Sunday weeks: the week of the 8th has one tick and is still open, and
+    // the week before it fell short — no streak.
+    expect(currentStreak(h, '2026-03-09')).toBe(0)
+    // Monday weeks: the 2nd-8th week hit its two and is now closed.
+    expect(currentStreak(h, '2026-03-09', 1)).toBe(1)
+  })
+
+  it('leaves day-based streaks untouched', () => {
+    const h = habit({ logs: ticks(['2026-03-06', '2026-03-07', '2026-03-08']) })
+    expect(currentStreak(h, '2026-03-08')).toBe(3)
+    expect(currentStreak(h, '2026-03-08', 1)).toBe(3)
   })
 })

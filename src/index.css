@@ -357,6 +357,30 @@ body {
   animation-delay: var(--beam-delay, 0s);
 }
 
+/*
+ * Today's cell in a habit grid. An outline ring rather than a fill, so the
+ * cell keeps saying whether the day is done while still marking where "now"
+ * is. Both halves are outside the box, which leaves the 12px square itself
+ * untouched and stops the grid rhythm from wobbling.
+ */
+@keyframes cell-today {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--cell-glow, var(--accent)) 45%, transparent),
+      0 0 3px 0 color-mix(in srgb, var(--cell-glow, var(--accent)) 20%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1.5px color-mix(in srgb, var(--cell-glow, var(--accent)) 85%, transparent),
+      0 0 7px 1px color-mix(in srgb, var(--cell-glow, var(--accent)) 45%, transparent);
+  }
+}
+
+.cell-today {
+  animation: cell-today 2.6s ease-in-out infinite;
+}
+
 @keyframes check-pop {
   0% {
     transform: scale(0.6);

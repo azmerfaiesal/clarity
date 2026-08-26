@@ -4,7 +4,9 @@ import type { Habit, Task, TaskList, ViewId } from '../types'
 import { useHabits } from '../store/habitStore'
 import { useNotes } from '../store/noteStore'
 import { formatRelative, todayStr } from '../utils/dateUtils'
+import type { WeekStart } from '../utils/habitUtils'
 import { formatAmount, habitStats, isCompletedOn } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { TaskItem } from './TaskItem'
@@ -37,6 +39,7 @@ export function Home({
   const { habits, toggleCompletion, adjustCompletion } = useHabits()
   const { notes } = useNotes()
   const today = todayStr()
+  const firstDay = useWeekStart()
 
   const dueTasks = useMemo(
     () =>
@@ -47,8 +50,8 @@ export function Home({
   )
 
   const dueHabits = useMemo(
-    () => habits.filter((h) => h.archivedAt === null && habitStats(h, today).dueToday),
-    [habits, today],
+    () => habits.filter((h) => h.archivedAt === null && habitStats(h, today, firstDay).dueToday),
+    [habits, today, firstDay],
   )
   const habitsDone = dueHabits.filter((h) => isCompletedOn(h, today)).length
 
@@ -101,6 +104,7 @@ export function Home({
                 key={h.id}
                 habit={h}
                 today={today}
+                firstDay={firstDay}
                 onToggle={() =>
                   h.trackBy !== 'checkoff'
                     ? adjustCompletion(h.id, h.trackBy === 'duration' ? 5 : 1)
@@ -205,13 +209,15 @@ function Blank({ children }: { children: React.ReactNode }) {
 function HomeHabitRow({
   habit,
   today,
+  firstDay,
   onToggle,
 }: {
   habit: Habit
   today: string
+  firstDay: WeekStart
   onToggle: () => void
 }) {
-  const s = habitStats(habit, today)
+  const s = habitStats(habit, today, firstDay)
   const done = s.doneToday
   return (
     <li className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-surface">

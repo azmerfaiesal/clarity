@@ -21,6 +21,14 @@ const MAX_WEEKS = 530
 
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
+/** Which weekday a week begins on: 0 = Sunday, 1 = Monday. */
+export type WeekStart = 0 | 1
+
+/** Weekday numbers in display order for a week beginning on `firstDay`. */
+export function weekdayOrder(firstDay: WeekStart = 0): number[] {
+  return [0, 1, 2, 3, 4, 5, 6].map((i) => (i + firstDay) % 7)
+}
+
 /** How much was logged on a date. */
 export function amountOn(habit: Habit, dateStr: string): number {
   return habit.logs[dateStr] ?? 0
@@ -85,14 +93,22 @@ export function scheduledDates(habit: Habit, through: string = todayStr()): stri
   return out
 }
 
-/** Sunday-anchored start of the week containing `dateStr`. */
-export function weekStart(dateStr: string): string {
-  return addDays(dateStr, -parseDate(dateStr).getDay())
+/**
+ * Start of the week containing `dateStr`, anchored on `firstDay`.
+ *
+ * Sunday is the default because that is what the heatmap was built around, but
+ * a week that starts on Monday moves real numbers, not just the picture: it
+ * changes which days a per-week quota is counted across, so the same log can
+ * read as a longer or shorter streak. That is why the setting is threaded
+ * through the maths rather than applied at the edge.
+ */
+export function weekStart(dateStr: string, firstDay: WeekStart = 0): string {
+  return addDays(dateStr, -((parseDate(dateStr).getDay() - firstDay + 7) % 7))
 }
 
 /** Completed days inside the week containing `dateStr`. */
-export function completionsInWeek(habit: Habit, dateStr: string): number {
-  const from = weekStart(dateStr)
+export function completionsInWeek(habit: Habit, dateStr: string, firstDay: WeekStart = 0): number {
+  const from = weekStart(dateStr, firstDay)
   let n = 0
   for (let i = 0; i < 7; i++) if (isCompletedOn(habit, addDays(from, i))) n++
   return n
@@ -115,16 +131,20 @@ export function streakUnit(habit: Habit): 'week' | 'day' {
  * failed yet. A day due today and untouched does not break a streak, and
  * neither does a week still short of its target with days left in it.
  */
-export function currentStreak(habit: Habit, today: string = todayStr()): number {
+export function currentStreak(
+  habit: Habit,
+  today: string = todayStr(),
+  firstDay: WeekStart = 0,
+): number {
   if (habit.repetitionType === 'timesPerWeek') {
     const target = weeklyTarget(habit)
-    const firstWeek = weekStart(startDate(habit))
-    let cursor = weekStart(today)
+    const firstWeek = weekStart(startDate(habit), firstDay)
+    let cursor = weekStart(today, firstDay)
     // This week still has days left, so falling short is not yet a miss.
-    if (completionsInWeek(habit, cursor) < target) cursor = addDays(cursor, -7)
+    if (completionsInWeek(habit, cursor, firstDay) < target) cursor = addDays(cursor, -7)
     let streak = 0
     for (let i = 0; i < MAX_WEEKS && cursor >= firstWeek; i++) {
-      if (completionsInWeek(habit, cursor) < target) break
+      if (completionsInWeek(habit, cursor, firstDay) < target) break
       streak++
       cursor = addDays(cursor, -7)
     }
@@ -147,15 +167,19 @@ export function currentStreak(habit: Habit, today: string = todayStr()): number 
 }
 
 /** Longest run of consecutive completed units ever. */
-export function bestStreak(habit: Habit, today: string = todayStr()): number {
+export function bestStreak(
+  habit: Habit,
+  today: string = todayStr(),
+  firstDay: WeekStart = 0,
+): number {
   if (habit.repetitionType === 'timesPerWeek') {
     const target = weeklyTarget(habit)
-    const thisWeek = weekStart(today)
-    let cursor = weekStart(startDate(habit))
+    const thisWeek = weekStart(today, firstDay)
+    let cursor = weekStart(startDate(habit), firstDay)
     let best = 0
     let run = 0
     for (let i = 0; i < MAX_WEEKS && cursor <= thisWeek; i++) {
-      if (completionsInWeek(habit, cursor) >= target) {
+      if (completionsInWeek(habit, cursor, firstDay) >= target) {
         run++
         if (run > best) best = run
       } else if (cursor !== thisWeek) {
@@ -164,7 +188,7 @@ export function bestStreak(habit: Habit, today: string = todayStr()): number {
       }
       cursor = addDays(cursor, 7)
     }
-    return Math.max(best, currentStreak(habit, today))
+    return Math.max(best, currentStreak(habit, today, firstDay))
   }
 
   let best = 0
@@ -177,7 +201,7 @@ export function bestStreak(habit: Habit, today: string = todayStr()): number {
       run = 0
     }
   }
-  return Math.max(best, currentStreak(habit, today))
+  return Math.max(best, currentStreak(habit, today, firstDay))
 }
 
 /** Distinct days completed. The card labels this "days". */
@@ -195,15 +219,19 @@ export function totalAmount(habit: Habit): number {
 }
 
 /** Completed / due so far, 0-1. Units still open are excluded. */
-export function completionRate(habit: Habit, today: string = todayStr()): number {
+export function completionRate(
+  habit: Habit,
+  today: string = todayStr(),
+  firstDay: WeekStart = 0,
+): number {
   if (habit.repetitionType === 'timesPerWeek') {
     const target = weeklyTarget(habit)
-    const thisWeek = weekStart(today)
-    let cursor = weekStart(startDate(habit))
+    const thisWeek = weekStart(today, firstDay)
+    let cursor = weekStart(startDate(habit), firstDay)
     let due = 0
     let met = 0
     for (let i = 0; i < MAX_WEEKS && cursor <= thisWeek; i++) {
-      const hit = completionsInWeek(habit, cursor) >= target
+      const hit = completionsInWeek(habit, cursor, firstDay) >= target
       if (cursor !== thisWeek || hit) {
         due++
         if (hit) met++
@@ -226,10 +254,11 @@ export function completionRate(habit: Habit, today: string = todayStr()): number
 export function periodProgress(
   habit: Habit,
   today: string = todayStr(),
+  firstDay: WeekStart = 0,
 ): { done: number; total: number; label: string } {
   if (habit.repetitionType === 'timesPerWeek') {
     return {
-      done: completionsInWeek(habit, today),
+      done: completionsInWeek(habit, today, firstDay),
       total: weeklyTarget(habit),
       label: 'this week',
     }
@@ -247,7 +276,7 @@ export function periodProgress(
     to = `${first.slice(0, 8)}${String(lastDay).padStart(2, '0')}`
     label = 'this month'
   } else {
-    from = weekStart(today)
+    from = weekStart(today, firstDay)
     to = addDays(from, 6)
     label = 'this week'
   }
@@ -287,16 +316,17 @@ export function runContaining(
   habit: Habit,
   dateStr: string,
   today: string = todayStr(),
+  firstDay: WeekStart = 0,
 ): { length: number; from: string; to: string; index: number } | null {
   if (!isCompletedOn(habit, dateStr)) return null
 
   if (habit.repetitionType === 'timesPerWeek') {
     // Runs are counted in weeks here, so report the week band instead.
     const target = weeklyTarget(habit)
-    let from = weekStart(dateStr)
-    if (completionsInWeek(habit, from) < target) return null
-    while (completionsInWeek(habit, addDays(from, -7)) >= target) from = addDays(from, -7)
-    let to = weekStart(dateStr)
+    let from = weekStart(dateStr, firstDay)
+    if (completionsInWeek(habit, from, firstDay) < target) return null
+    while (completionsInWeek(habit, addDays(from, -7), firstDay) >= target) from = addDays(from, -7)
+    let to = weekStart(dateStr, firstDay)
     let length = 1
     let cursor = from
     while (cursor < to) {
@@ -305,8 +335,8 @@ export function runContaining(
     }
     const index = length
     while (
-      completionsInWeek(habit, addDays(to, 7)) >= weeklyTarget(habit) &&
-      addDays(to, 7) <= weekStart(today)
+      completionsInWeek(habit, addDays(to, 7), firstDay) >= weeklyTarget(habit) &&
+      addDays(to, 7) <= weekStart(today, firstDay)
     ) {
       to = addDays(to, 7)
       length++
@@ -360,13 +390,13 @@ function nextScheduled(habit: Habit, dateStr: string): string | null {
 }
 
 /** Every stat a card shows. */
-export function habitStats(habit: Habit, today: string = todayStr()) {
+export function habitStats(habit: Habit, today: string = todayStr(), firstDay: WeekStart = 0) {
   return {
-    current: currentStreak(habit, today),
-    best: bestStreak(habit, today),
+    current: currentStreak(habit, today, firstDay),
+    best: bestStreak(habit, today, firstDay),
     total: totalCompletions(habit),
-    rate: completionRate(habit, today),
-    progress: periodProgress(habit, today),
+    rate: completionRate(habit, today, firstDay),
+    progress: periodProgress(habit, today, firstDay),
     dueToday: isScheduled(habit, today),
     doneToday: isCompletedOn(habit, today),
     amountToday: amountOn(habit, today),

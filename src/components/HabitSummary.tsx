@@ -11,6 +11,7 @@ import {
   repetitionLabel,
   weekStart,
 } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 import { HabitIcon } from './HabitIcon'
 
 /**
@@ -20,7 +21,8 @@ import { HabitIcon } from './HabitIcon'
  */
 export function HabitSummary({ habit, onClose }: { habit: Habit; onClose: () => void }) {
   const today = todayStr()
-  const s = habitStats(habit, today)
+  const firstDay = useWeekStart()
+  const s = habitStats(habit, today, firstDay)
   const counted = habit.trackBy !== 'checkoff'
 
   useEffect(() => {
@@ -49,9 +51,9 @@ export function HabitSummary({ habit, onClose }: { habit: Habit; onClose: () => 
   }, [habit, today])
 
   const thisWeek = useMemo(() => {
-    const from = weekStart(today)
+    const from = weekStart(today, firstDay)
     return Array.from({ length: 7 }, (_, i) => addDays(from, i))
-  }, [today])
+  }, [today, firstDay])
 
   return (
     <div

@@ -7,8 +7,11 @@ import {
   intensityOn,
   isCompletedOn,
   isScheduled,
+  weekdayOrder,
   weekStart,
+  type WeekStart,
 } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -19,7 +22,8 @@ const RAMP = [0, 0.3, 0.5, 0.75, 1]
 
 /**
  * A year of the habit at a glance, laid out the way contribution graphs are:
- * one column per week, Sunday at the top, oldest week on the left.
+ * one column per week, oldest on the left, the first day of the week — Sunday
+ * or Monday, per the setting — at the top.
  *
  * Three tones rather than the usual two. A day the habit was never due looks
  * different from one it was due and missed — without that, a Mon/Wed/Fri habit
@@ -36,15 +40,16 @@ export function HabitHeatmap({
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const today = todayStr()
+  const firstDay = useWeekStart()
 
   const { weeks, months } = useMemo(() => {
     // 53 columns ending on the week containing today.
-    const start = weekStart(addDays(today, -364))
+    const start = weekStart(addDays(today, -364), firstDay)
     const created = habit.createdAt.slice(0, 10)
 
     const weeks: { date: string; state: CellState; level: number; count: number }[][] = []
     let cursor = start
-    while (cursor <= today || parseDate(cursor).getDay() !== 0) {
+    while (cursor <= today || parseDate(cursor).getDay() !== firstDay) {
       const week: { date: string; state: CellState; level: number; count: number }[] = []
       for (let d = 0; d < 7; d++) {
         const date = cursor
@@ -75,7 +80,7 @@ export function HabitHeatmap({
     })
 
     return { weeks, months }
-  }, [habit, today])
+  }, [habit, today, firstDay])
 
   const gap = Math.max(2, Math.round(cell / 4))
   // Months read as separate blocks rather than one continuous ribbon.
@@ -99,7 +104,7 @@ export function HabitHeatmap({
             } as React.CSSProperties
           }
         >
-          {['', 'Mon', '', 'Wed', '', 'Fri', ''].map((d, i) => (
+          {gutterLabels(firstDay).map((d, i) => (
             <span
               key={i}
               className="flex items-center pr-1 font-mono text-faint"
@@ -170,15 +175,22 @@ export function HabitHeatmap({
                                   : 'not due'
                           }`
                     }
-                    style={{
-                      width: col,
-                      height: col,
-                      borderRadius: `${radius}px`,
-                      ...(state === 'done'
-                        ? { backgroundColor: habit.color, opacity: RAMP[level] }
-                        : {}),
-                    }}
+                    style={
+                      {
+                        width: col,
+                        height: col,
+                        borderRadius: `${radius}px`,
+                        ...(date === today ? { '--cell-glow': habit.color } : {}),
+                        ...(state === 'done'
+                          ? { backgroundColor: habit.color, opacity: RAMP[level] }
+                          : {}),
+                      } as React.CSSProperties
+                    }
                     className={`transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
+                      // Today wears a ring that breathes, so the eye finds the
+                      // live end of the year without reading the month labels.
+                      date === today ? 'cell-today' : ''
+                    } ${
                       state === 'future'
                         ? 'opacity-0'
                         : state === 'done'
@@ -198,6 +210,16 @@ export function HabitHeatmap({
       </div>
     </div>
   )
+}
+
+/**
+ * Every other row is labelled, starting one in from the top — with seven rows
+ * and three labels that lands on Mon/Wed/Fri for a Sunday week and Tue/Thu/Sat
+ * for a Monday one, which is the same rhythm either way.
+ */
+function gutterLabels(firstDay: WeekStart): string[] {
+  const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  return weekdayOrder(firstDay).map((d, i) => (i % 2 === 1 ? names[d] : ''))
 }
 
 export function HeatmapLegend({ habit }: { habit: Habit }) {

@@ -30,9 +30,19 @@ export function permissionState(): PermissionState {
 export async function requestPermission(): Promise<PermissionState> {
   if (typeof Notification === 'undefined') return 'unsupported'
   try {
-    return (await Notification.requestPermission()) as PermissionState
+    // Safari's `requestPermission` is the old callback form: it returns
+    // undefined and hands the answer to a callback. Awaiting it there yields
+    // undefined, which used to leave the panel showing "Enable notifications"
+    // even after the user had allowed them. Support both shapes, then read
+    // `Notification.permission` back as the authority either way.
+    const result = await new Promise<string | undefined>((resolve) => {
+      const returned = Notification.requestPermission(resolve)
+      if (returned && typeof returned.then === 'function') void returned.then(resolve)
+    })
+    const state = (result ?? Notification.permission) as PermissionState
+    return state === 'granted' || state === 'denied' ? state : permissionState()
   } catch {
-    return 'denied'
+    return permissionState()
   }
 }
 

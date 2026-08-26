@@ -4,6 +4,7 @@ import type { Habit, HabitFilter } from '../types'
 import { useHabits, type HabitDraft } from '../store/habitStore'
 import { todayStr } from '../utils/dateUtils'
 import { currentStreak, habitStats, isCompletedOn, requiredPerDay } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
 import { HabitCard } from './HabitCard'
 import { HabitIcon } from './HabitIcon'
@@ -42,6 +43,7 @@ export function HabitTracker({
     deleteTemplate,
     addWritingHabit,
   } = useHabits()
+  const firstDay = useWeekStart()
   const [dragId, setDragId] = useState<string | null>(null)
   const [summary, setSummary] = useState<Habit | null>(null)
   const [day, setDay] = useState<{ habitId: string; date: string; anchor: { x: number; y: number } } | null>(
@@ -82,8 +84,8 @@ export function HabitTracker({
   }, [habits, filter])
 
   const dueToday = useMemo(
-    () => active.filter((h) => habitStats(h).dueToday),
-    [active],
+    () => active.filter((h) => habitStats(h, todayStr(), firstDay).dueToday),
+    [active, firstDay],
   )
   const doneToday = dueToday.filter((h) => isCompletedOn(h, todayStr())).length
 
@@ -100,7 +102,7 @@ export function HabitTracker({
         ...habit,
         logs: { ...habit.logs, [target]: requiredPerDay(habit) },
       }
-      const streak = currentStreak(next)
+      const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
       setToast(
         habit.targetStreak !== null && streak === habit.targetStreak
@@ -110,7 +112,7 @@ export function HabitTracker({
             : 'Logged. Day one.',
       )
     },
-    [toggleCompletion],
+    [toggleCompletion, firstDay],
   )
 
   const handleAdjust = useCallback(
@@ -125,7 +127,7 @@ export function HabitTracker({
       }
       if (!isCompletedOn(next, target)) return
       if (isCompletedOn(habit, target)) return
-      const streak = currentStreak(next)
+      const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
       setToast(
         habit.targetStreak !== null && streak === habit.targetStreak
@@ -135,7 +137,7 @@ export function HabitTracker({
             : 'Logged. Day one.',
       )
     },
-    [adjustCompletion],
+    [adjustCompletion, firstDay],
   )
 
   const handleSetAmount = useCallback(
@@ -145,11 +147,11 @@ export function HabitTracker({
       setAmount(habit.id, amount, target)
       const next: Habit = { ...habit, logs: { ...habit.logs, [target]: amount } }
       if (before || !isCompletedOn(next, target)) return
-      const streak = currentStreak(next)
+      const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
       setToast(streak > 1 ? `Nice — ${streak} in a row` : 'Logged. Day one.')
     },
-    [setAmount],
+    [setAmount, firstDay],
   )
 
   const handleDelete = useCallback(

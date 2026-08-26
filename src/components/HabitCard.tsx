@@ -15,6 +15,7 @@ import { useRef, useState } from 'react'
 import type { Habit } from '../types'
 import { todayStr } from '../utils/dateUtils'
 import { formatAmount, habitStats, repetitionLabel, totalAmount } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 import { AmountSlider } from './AmountSlider'
 import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
@@ -61,7 +62,8 @@ export function HabitCard({
   const holdTimer = useRef<number | null>(null)
   const heldRef = useRef(false)
   const today = todayStr()
-  const s = habitStats(habit, today)
+  const firstDay = useWeekStart()
+  const s = habitStats(habit, today, firstDay)
   const archived = habit.archivedAt !== null
   const canTick = s.dueToday && !archived
   const counted = habit.trackBy !== 'checkoff'

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Habit } from '../types'
 import { parseDate } from '../utils/dateUtils'
 import { amountOn, formatAmount, isCompletedOn, isScheduled, runContaining } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 import { LogNotes } from './LogNotes'
 
 /**
@@ -36,7 +37,8 @@ export function DayDetail({
   const amount = amountOn(habit, date)
   const done = isCompletedOn(habit, date)
   const due = isScheduled(habit, date)
-  const run = runContaining(habit, date, today)
+  const firstDay = useWeekStart()
+  const run = runContaining(habit, date, today, firstDay)
   const notes = habit.logNotes[date] ?? []
   const counted = habit.trackBy !== 'checkoff'
 

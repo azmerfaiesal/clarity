@@ -8,8 +8,18 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { loadFontFamily, loadFontScale, loadTheme, saveFontFamily, saveFontScale, saveTheme } from './storage'
+import {
+  loadFontFamily,
+  loadFontScale,
+  loadTheme,
+  loadWeekStart,
+  saveFontFamily,
+  saveFontScale,
+  saveTheme,
+  saveWeekStart,
+} from './storage'
 import { DEFAULT_FONT, FONTS, applyFont, type FontKey } from './fonts'
+import type { WeekStart } from '../utils/habitUtils'
 
 export type Theme = 'light' | 'dark'
 export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -44,6 +54,9 @@ interface AppearanceState {
   setFontSize: (f: FontSize) => void
   fontFamily: FontKey
   setFontFamily: (f: FontKey) => void
+  /** 0 = weeks start on Sunday, 1 = on Monday. */
+  weekStartsOn: WeekStart
+  setWeekStartsOn: (d: WeekStart) => void
 }
 
 const ThemeContext = createContext<AppearanceState | null>(null)
@@ -69,6 +82,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const saved = loadFontFamily()
     return saved && saved in FONTS ? (saved as FontKey) : DEFAULT_FONT
   })
+  const [weekStartsOn, setWeekStartsOnState] = useState<WeekStart>(
+    () => (loadWeekStart() === 1 ? 1 : 0),
+  )
   const [controlledByHost, setControlledByHost] = useState(false)
   const hostControlled = useRef(false)
 
@@ -117,6 +133,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setFontFamilyState(f)
   }, [])
 
+  const setWeekStartsOn = useCallback((d: WeekStart) => {
+    saveWeekStart(d)
+    setWeekStartsOnState(d)
+  }, [])
+
   const value = useMemo<AppearanceState>(
     () => ({
       theme,
@@ -127,8 +148,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setFontSize,
       fontFamily,
       setFontFamily,
+      weekStartsOn,
+      setWeekStartsOn,
     }),
-    [theme, setTheme, controlledByHost, fontSize, setFontSize, fontFamily, setFontFamily],
+    [
+      theme,
+      setTheme,
+      controlledByHost,
+      fontSize,
+      setFontSize,
+      fontFamily,
+      setFontFamily,
+      weekStartsOn,
+      setWeekStartsOn,
+    ],
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
@@ -138,4 +171,12 @@ export function useTheme(): AppearanceState {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider')
   return ctx
+}
+
+/**
+ * Just the first day of the week. Its own hook because the habit views only
+ * need this one value, and reading it through `useTheme` reads oddly.
+ */
+export function useWeekStart(): WeekStart {
+  return useTheme().weekStartsOn
 }

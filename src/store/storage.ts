@@ -19,6 +19,7 @@ const PREFIX = 'clarity.v2'
 const THEME_KEY = 'clarity.theme.v1'
 const FONT_KEY = 'clarity.fontsize.v1'
 const FONT_FAMILY_KEY = 'clarity.fontfamily.v1'
+const WEEK_START_KEY = 'clarity.weekstart.v1'
 
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
@@ -165,6 +166,24 @@ export function loadFontFamily(): string | null {
 export function saveFontFamily(key: string): void {
   try {
     localStorage.setItem(FONT_FAMILY_KEY, key)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** First day of the week, 0 = Sunday and 1 = Monday. Null when never chosen. */
+export function loadWeekStart(): number | null {
+  try {
+    const raw = localStorage.getItem(WEEK_START_KEY)
+    return raw === '0' || raw === '1' ? Number(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function saveWeekStart(day: number): void {
+  try {
+    localStorage.setItem(WEEK_START_KEY, String(day))
   } catch {
     /* ignore */
   }
