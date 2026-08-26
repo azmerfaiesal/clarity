@@ -67,6 +67,7 @@ function HeatCell({
   radius,
   today,
   showFuture = false,
+  bursting = false,
   onPickDay,
 }: {
   habit: Habit
@@ -76,6 +77,8 @@ function HeatCell({
   today: string
   /** Draw days still to come faintly rather than not at all. */
   showFuture?: boolean
+  /** This day was just finished — set off the firework. */
+  bursting?: boolean
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const { date, state, level } = cell
@@ -94,15 +97,15 @@ function HeatCell({
           width: `${size}px`,
           height: `${size}px`,
           borderRadius: `${radius}px`,
-          ...(date === today ? { '--cell-glow': habit.color } : {}),
+          ...(date === today || bursting ? { '--cell-glow': habit.color } : {}),
           ...(state === 'done' ? { backgroundColor: habit.color, opacity: RAMP[level] } : {}),
         } as React.CSSProperties
       }
-      className={`transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
+      className={`relative transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
         // Today wears a ring that breathes, so the eye finds the live end of
         // the range without reading the labels.
         date === today ? 'cell-today' : ''
-      } ${
+      } ${bursting ? 'cell-burst' : ''} ${
         state === 'future'
           ? showFuture
             ? 'bg-line/25'
@@ -131,10 +134,13 @@ function HeatCell({
 export function HabitHeatmap({
   habit,
   cell = 12,
+  burstDate = null,
   onPickDay,
 }: {
   habit: Habit
   cell?: number
+  /** The day just finished, if any — it gets a firework. */
+  burstDate?: string | null
   /** Clicking a cell opens that day's record, anchored to the cell. */
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
@@ -178,8 +184,10 @@ export function HabitHeatmap({
   const col = `${cell}px`
 
   return (
+    // `overflow-x-auto` clips vertically too, so the scroller needs a little
+    // headroom or the firework on an edge cell is guillotined.
     <div className="overflow-x-auto">
-      <div className="inline-flex gap-1.5 pb-1">
+      <div className="inline-flex gap-1.5 py-1.5">
         {/* Weekday gutter */}
         <div
           className="grid shrink-0 pt-[var(--month-h)]"
@@ -241,6 +249,7 @@ export function HabitHeatmap({
                     size={cell}
                     radius={radius}
                     today={today}
+                    bursting={c.date === burstDate}
                     onPickDay={onPickDay}
                   />
                 ))}
@@ -276,11 +285,14 @@ export function HabitMonthRows({
   habit,
   span = 'month',
   cell = 16,
+  burstDate = null,
   onPickDay,
 }: {
   habit: Habit
   span?: 'month' | 'quarter'
   cell?: number
+  /** The day just finished, if any — it gets a firework. */
+  burstDate?: string | null
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const today = todayStr()
@@ -312,7 +324,7 @@ export function HabitMonthRows({
 
   return (
     <div className="overflow-x-auto">
-      <div className="inline-flex flex-col gap-1 pb-1">
+      <div className="inline-flex flex-col gap-1 py-2">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center" style={{ gap: `${gap}px` }}>
             <span
@@ -334,6 +346,7 @@ export function HabitMonthRows({
                 // The rest of the month is drawn, faintly. Dropping it would
                 // end the row at today and read as a month cut short.
                 showFuture
+                bursting={c.date === burstDate}
                 onPickDay={onPickDay}
               />
             ))}

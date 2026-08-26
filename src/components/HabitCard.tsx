@@ -42,6 +42,7 @@ export function HabitCard({
   onOpenSummary,
   onPickDay,
   onSetNotes,
+  burstDate,
   dragHandleProps,
   dragging,
 }: {
@@ -58,6 +59,8 @@ export function HabitCard({
   onOpenSummary: () => void
   onPickDay: (date: string, anchor: { x: number; y: number }) => void
   onSetNotes: (date: string, notes: string[]) => void
+  /** A day just finished on this habit — its box lets off a firework. */
+  burstDate?: string | null
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>
   dragging?: boolean
 }) {
@@ -369,9 +372,14 @@ export function HabitCard({
           <HeatmapLegend habit={habit} />
         </div>
         {range === 'year' ? (
-          <HabitHeatmap habit={habit} onPickDay={onPickDay} />
+          <HabitHeatmap habit={habit} burstDate={burstDate} onPickDay={onPickDay} />
         ) : (
-          <HabitMonthRows habit={habit} span={range} onPickDay={onPickDay} />
+          <HabitMonthRows
+            habit={habit}
+            span={range}
+            burstDate={burstDate}
+            onPickDay={onPickDay}
+          />
         )}
       </div>
 

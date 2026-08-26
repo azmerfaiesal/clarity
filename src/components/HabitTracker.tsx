@@ -56,6 +56,9 @@ export function HabitTracker({
   const [editing, setEditing] = useState<Habit | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [flashId, setFlashId] = useState<string | null>(null)
+  // The day just finished, and on which habit. Cleared on a timer so the same
+  // box can go off again if the day is undone and redone.
+  const [burst, setBurst] = useState<{ habitId: string; date: string } | null>(null)
 
   useEffect(() => {
     if (!toast) return
@@ -68,6 +71,12 @@ export function HabitTracker({
     const t = setTimeout(() => setFlashId(null), 900)
     return () => clearTimeout(t)
   }, [flashId])
+
+  useEffect(() => {
+    if (!burst) return
+    const t = setTimeout(() => setBurst(null), 750)
+    return () => clearTimeout(t)
+  }, [burst])
 
   const { active, archived } = useMemo(() => {
     const a: Habit[] = []
@@ -106,6 +115,7 @@ export function HabitTracker({
       }
       const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
+      setBurst({ habitId: habit.id, date: target })
       setToast(
         habit.targetStreak !== null && streak === habit.targetStreak
           ? `${habit.name} · ${streak}-day target reached`
@@ -131,6 +141,7 @@ export function HabitTracker({
       if (isCompletedOn(habit, target)) return
       const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
+      setBurst({ habitId: habit.id, date: target })
       setToast(
         habit.targetStreak !== null && streak === habit.targetStreak
           ? `${habit.name} · ${streak}-day target reached`
@@ -151,6 +162,7 @@ export function HabitTracker({
       if (before || !isCompletedOn(next, target)) return
       const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
+      setBurst({ habitId: habit.id, date: target })
       setToast(streak > 1 ? `Nice — ${streak} in a row` : 'Logged. Day one.')
     },
     [setAmount, firstDay],
@@ -306,6 +318,7 @@ export function HabitTracker({
               <HabitCard
                 habit={h}
                 justCompleted={flashId === h.id}
+                burstDate={burst?.habitId === h.id ? burst.date : null}
                 dragging={dragId === h.id}
                 dragHandleProps={{
                   draggable: true,
@@ -340,6 +353,7 @@ export function HabitTracker({
                 key={h.id}
                 habit={h}
                 justCompleted={false}
+                burstDate={burst?.habitId === h.id ? burst.date : null}
                 onToggle={(date) => handleToggle(h, date)}
                 onAdjust={(delta, date) => handleAdjust(h, delta, date)}
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
