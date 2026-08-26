@@ -21,6 +21,7 @@ const FONT_KEY = 'clarity.fontsize.v1'
 const FONT_FAMILY_KEY = 'clarity.fontfamily.v1'
 const WEEK_START_KEY = 'clarity.weekstart.v1'
 const ACCENT_KEY = 'clarity.accent.v1'
+const HABIT_RANGE_KEY = 'clarity.habitrange.v1'
 
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
@@ -204,6 +205,35 @@ export function saveAccent(key: string): void {
     localStorage.setItem(ACCENT_KEY, key)
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Which span each habit card was last showing, keyed by habit id.
+ *
+ * Device-local like the other view preferences: the range you want on a phone
+ * is not always the one you want on a laptop, and it describes how you are
+ * looking at a habit rather than anything about the habit itself.
+ */
+export function loadHabitRange(habitId: string): string | null {
+  try {
+    const raw = localStorage.getItem(HABIT_RANGE_KEY)
+    if (!raw) return null
+    const map = JSON.parse(raw) as Record<string, string>
+    return map[habitId] ?? null
+  } catch {
+    return null
+  }
+}
+
+export function saveHabitRange(habitId: string, range: string): void {
+  try {
+    const raw = localStorage.getItem(HABIT_RANGE_KEY)
+    const map = raw ? (JSON.parse(raw) as Record<string, string>) : {}
+    map[habitId] = range
+    localStorage.setItem(HABIT_RANGE_KEY, JSON.stringify(map))
+  } catch {
+    /* storage full or unavailable — the card just opens on its default */
   }
 }
 

@@ -21,10 +21,13 @@ import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { HabitHeatmap, HabitMonthRows, HeatmapLegend } from './HabitHeatmap'
+import { loadHabitRange, saveHabitRange } from '../store/storage'
+
+type Range = 'month' | 'quarter' | 'year'
 
 /**
  * One habit: a large check to log today on the left, the streak and lifetime
- * total on the right, and a year of history underneath.
+ * total on the right, and its history underneath.
  */
 export function HabitCard({
   habit,
@@ -59,9 +62,17 @@ export function HabitCard({
   dragging?: boolean
 }) {
   const [sliderOpen, setSliderOpen] = useState(false)
-  // Which span of history the card is showing. Per card, not global: one habit
-  // is worth reading a year of while another only matters this month.
-  const [range, setRange] = useState<'month' | 'quarter' | 'year'>('year')
+  // Which span of history the card is showing. Per card, not global — one
+  // habit is worth reading a year of while another only matters this month —
+  // and remembered, so the choice survives leaving the page.
+  const [range, setRange] = useState<Range>(() => {
+    const saved = loadHabitRange(habit.id)
+    return saved === 'month' || saved === 'quarter' || saved === 'year' ? saved : 'year'
+  })
+  const pickRange = (r: Range) => {
+    setRange(r)
+    saveHabitRange(habit.id, r)
+  }
   const holdTimer = useRef<number | null>(null)
   const heldRef = useRef(false)
   const today = todayStr()
@@ -346,7 +357,7 @@ export function HabitCard({
                 type="button"
                 role="radio"
                 aria-checked={range === value}
-                onClick={() => setRange(value)}
+                onClick={() => pickRange(value)}
                 className={`cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
                   range === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
                 }`}
