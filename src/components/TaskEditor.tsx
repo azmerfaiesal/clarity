@@ -155,7 +155,7 @@ export function TaskEditor({
             </Field>
             <Field label="List" icon={<Inbox className="h-3.5 w-3.5" />}>
               <select
-                aria-label="List"
+                aria-label="Category"
                 value={listId ?? ''}
                 onChange={(e) => setListId(e.target.value || null)}
  className="w-full cursor-pointer bg-transparent text-sm text-ink outline-none"

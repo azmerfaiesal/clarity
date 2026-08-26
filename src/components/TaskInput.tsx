@@ -239,7 +239,7 @@ export function TaskInput({
  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-2 py-1 text-xs text-muted hover:bg-surface">
  <Inbox className="h-3.5 w-3.5" aria-hidden />
             <select
-              aria-label="List"
+              aria-label="Category"
               value={listId ?? ''}
               onChange={(e) => setListId(e.target.value || null)}
  className="cursor-pointer bg-transparent outline-none"

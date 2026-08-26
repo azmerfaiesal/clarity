@@ -117,12 +117,12 @@ export function FilterMenu({
             </Row>
           ))}
           <MenuDivider />
-          <MenuLabel>List</MenuLabel>
+          <MenuLabel>Category</MenuLabel>
           <Row
             selected={filters.listId === 'any'}
             onClick={() => onChange({ ...filters, listId: 'any' })}
           >
-            Any list
+            Any category
           </Row>
           {lists.map((l) => (
             <Row
