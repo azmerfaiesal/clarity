@@ -26,9 +26,10 @@ function normalizeTag(raw: string): string {
 /**
  * Brain Dump — a blank sheet rather than a form.
  *
- * The composer is the first thing on the page and holds focus, so the flow is
- * open, write, tag if you feel like it, save. Editing reuses the same composer
- * inline instead of opening a dialog, which keeps the writing surface constant.
+ * The composer sits at the foot of the page, under what has already been
+ * written, so the flow is read back, then add. Editing reuses that same
+ * composer inline instead of opening a dialog, which keeps the writing surface
+ * constant — picking a note scrolls down to it.
  */
 export function BrainDump({
   onOpenMobileNav,
@@ -65,12 +66,6 @@ export function BrainDump({
     }
     // Only on mount — later reads would fight the user's typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Focus the sheet on arrival, but not on phones where it would throw up the
-  // keyboard before the user has decided to write.
-  useEffect(() => {
-    if (window.matchMedia('(min-width: 768px)').matches) textareaRef.current?.focus()
   }, [])
 
   // Grow the textarea with its content instead of scrolling inside a fixed box.
@@ -131,7 +126,7 @@ export function BrainDump({
       setTags(note.tags)
       setTagDraft('')
       setDirty(false)
-      composerRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      composerRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
       window.setTimeout(() => textareaRef.current?.focus(), 60)
     },
     [dirty, discardDraft],
@@ -209,100 +204,6 @@ export function BrainDump({
           </p>
         </div>
       </header>
-
-      {/* Writing area */}
-      <div
-        ref={composerRef}
-        className="anim-fade-in rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
-      >
-        {editing && (
-          <div className="flex items-center gap-2 border-b border-line px-3 py-2 font-mono text-2xs text-faint">
-            <span className="truncate">Editing · {formatDateTime(editing.createdAt)}</span>
-            <button
-              type="button"
-              onClick={reset}
-              className="ml-auto shrink-0 cursor-pointer rounded px-1.5 py-0.5 font-sans text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value)
-            setDirty(true)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault()
-              void save()
-            }
-          }}
-          placeholder="What's on your mind?"
-          aria-label="Brain dump"
-          rows={6}
-          className="block max-h-[60vh] w-full resize-none bg-transparent px-4 py-3.5 text-base leading-relaxed text-ink outline-none placeholder:text-faint"
-        />
-
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-line px-3 py-2.5">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-muted"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTags((prev) => prev.filter((t) => t !== tag))
-                    setDirty(true)
-                  }}
-                  aria-label={`Remove tag ${tag}`}
-                  className="cursor-pointer text-faint transition-colors hover:text-danger"
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
-            <input
-              value={tagDraft}
-              onChange={(e) => setTagDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                  e.preventDefault()
-                  commitTag(tagDraft)
-                } else if (e.key === 'Backspace' && !tagDraft && tags.length) {
-                  setTags((prev) => prev.slice(0, -1))
-                  setDirty(true)
-                }
-              }}
-              onBlur={() => commitTag(tagDraft)}
-              placeholder={tags.length ? 'Add tag' : 'Add tags…'}
-              aria-label="Add tag"
-              className="min-w-24 flex-1 bg-transparent font-mono text-2xs text-ink outline-none placeholder:text-faint"
-            />
-          </div>
-
-          <span
-            aria-live="polite"
-            className="shrink-0 font-mono text-3xs text-faint tabular-nums"
-          >
-            {status}
-          </span>
-          <button
-            type="button"
-            onClick={() => void save()}
-            disabled={!canSave}
-            className="shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {editingId ? 'Save changes' : 'Save'}
-          </button>
-        </div>
-      </div>
 
       {/* History */}
       {notes.length > 0 && (
@@ -395,6 +296,101 @@ export function BrainDump({
       {notes.length === 0 && !filtering && (
         <EmptyState {...EMPTY_PRESETS.braindump} />
       )}
+
+      {/* Writing area */}
+      <div
+        ref={composerRef}
+        className="anim-fade-in mt-8 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
+      >
+        {editing && (
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2 font-mono text-2xs text-faint">
+            <span className="truncate">Editing · {formatDateTime(editing.createdAt)}</span>
+            <button
+              type="button"
+              onClick={reset}
+              className="ml-auto shrink-0 cursor-pointer rounded px-1.5 py-0.5 font-sans text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value)
+            setDirty(true)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              void save()
+            }
+          }}
+          placeholder="What's on your mind?"
+          aria-label="Brain dump"
+          rows={6}
+          className="block max-h-[60vh] w-full resize-none bg-transparent px-4 py-3.5 text-base leading-relaxed text-ink outline-none placeholder:text-faint"
+        />
+
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-line px-3 py-2.5">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-muted"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTags((prev) => prev.filter((t) => t !== tag))
+                    setDirty(true)
+                  }}
+                  aria-label={`Remove tag ${tag}`}
+                  className="cursor-pointer text-faint transition-colors hover:text-danger"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            ))}
+            <input
+              value={tagDraft}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault()
+                  commitTag(tagDraft)
+                } else if (e.key === 'Backspace' && !tagDraft && tags.length) {
+                  setTags((prev) => prev.slice(0, -1))
+                  setDirty(true)
+                }
+              }}
+              onBlur={() => commitTag(tagDraft)}
+              placeholder={tags.length ? 'Add tag' : 'Add tags…'}
+              aria-label="Add tag"
+              className="min-w-24 flex-1 bg-transparent font-mono text-2xs text-ink outline-none placeholder:text-faint"
+            />
+          </div>
+
+          <span
+            aria-live="polite"
+            className="shrink-0 font-mono text-3xs text-faint tabular-nums"
+          >
+            {status}
+          </span>
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={!canSave}
+            className="shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {editingId ? 'Save changes' : 'Save'}
+          </button>
+        </div>
+      </div>
+
     </>
   )
 }

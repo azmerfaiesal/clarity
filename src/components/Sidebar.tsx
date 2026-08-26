@@ -16,7 +16,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { HabitFilter, Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
 import { useTheme } from '../store/theme'
@@ -267,8 +267,24 @@ export function Sidebar({
     onCloseMobile()
   }
 
+  // Keep the panel mounted while it animates back out. The ref stops a closed
+  // sidebar from playing that exit once on first render.
+  const [closing, setClosing] = useState(false)
+  const everOpened = useRef(false)
+  useEffect(() => {
+    if (mobileOpen) {
+      everOpened.current = true
+      setClosing(false)
+      return
+    }
+    if (!everOpened.current) return
+    setClosing(true)
+    const t = window.setTimeout(() => setClosing(false), 220)
+    return () => window.clearTimeout(t)
+  }, [mobileOpen])
+
   const content = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 pt-5 pb-5">
         <div className="glow flex h-7 w-7 items-center justify-center rounded-md bg-accent">
@@ -606,17 +622,24 @@ export function Sidebar({
       {/* Desktop sidebar */}
       <aside className="panel-l hidden h-full w-64 shrink-0 md:block lg:w-68">{content}</aside>
 
-      {/* Mobile drawer */}
-      {mobileOpen && (
+      {/* Mobile navigation. Rather than a drawer pinned to the left edge, the
+          panel travels in from that edge and settles in the middle of the
+          screen — and rewinds the same way, which is why it stays mounted for
+          the length of the exit. */}
+      {(mobileOpen || closing) && (
         <div
-          className="anim-fade-in fixed inset-0 z-40 bg-[var(--scrim)] backdrop-blur-[2px] md:hidden"
+          className={`fixed inset-0 z-40 flex items-center justify-center bg-[var(--scrim)] p-4 backdrop-blur-[2px] md:hidden ${
+            closing ? 'anim-fade-out' : 'anim-fade-in'
+          }`}
           onClick={onCloseMobile}
           role="presentation"
         >
           <aside
-            className="anim-fade-slide-in h-full w-72 border-r border-line bg-bg/95 backdrop-blur-xl"
+            className={`${
+              closing ? 'nav-to-edge' : 'nav-to-center'
+            } flex max-h-[85dvh] w-full max-w-xs flex-col overflow-hidden rounded-2xl border border-line bg-raised/95 shadow-2xl shadow-black/25 backdrop-blur-xl dark:shadow-black/70`}
             onClick={(e) => e.stopPropagation()}
-            aria-label="Navigation drawer"
+            aria-label="Navigation"
           >
             {content}
           </aside>

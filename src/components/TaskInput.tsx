@@ -46,9 +46,19 @@ export function TaskInput({
   const [tagsInput, setTagsInput] = useState('')
   const [reminder, setReminder] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
 
+  // The form sits at the foot of the list, so opening it has to bring it into
+  // view. Focus without scrolling first, then let one smooth scroll do the
+  // moving — two competing scrolls read as a jolt.
   useEffect(() => {
-    if (open) titleRef.current?.focus()
+    if (!open) return
+    titleRef.current?.focus({ preventScroll: true })
+    const id = window.setTimeout(
+      () => wrapRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+      60,
+    )
+    return () => window.clearTimeout(id)
   }, [open])
 
   useEffect(() => {
@@ -90,24 +100,32 @@ export function TaskInput({
     onCancel?.()
   }
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
- className="group flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-2.5 text-left text-base text-faint transition-colors hover:border-accent hover:text-accent"
-      >
- <Plus className="h-4 w-4" aria-hidden />
-        Add a task
- <kbd className="ml-auto hidden rounded-md border border-line px-1.5 py-0.5 font-mono text-3xs text-faint group-hover:border-accent sm:inline">
-          N
-        </kbd>
-      </button>
-    )
-  }
-
+  // Both states live in one tree so the form can grow out of the button rather
+  // than replace it: swapping two elements cannot be animated, a disclosure
+  // that opens from zero height can. The form stays mounted while closed — and
+  // inert, so nothing inside it can be tabbed into or read out.
   return (
- <div className="anim-scale-in rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40">
+    <div ref={wrapRef}>
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+ className="group flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-2.5 text-left text-base text-faint transition-colors hover:border-accent hover:text-accent"
+        >
+ <Plus className="h-4 w-4" aria-hidden />
+          Add a task
+ <kbd className="ml-auto hidden rounded-md border border-line px-1.5 py-0.5 font-mono text-3xs text-faint group-hover:border-accent sm:inline">
+            N
+          </kbd>
+        </button>
+      )}
+
+      <div className="disclosure" data-open={open}>
+        <div>
+          <div
+            inert={!open}
+ className="rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
+          >
  <div className="p-3">
         <input
           ref={titleRef}
@@ -290,6 +308,9 @@ export function TaskInput({
         >
           Add task
         </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -267,23 +267,6 @@ function AppShell() {
             </div>
           )}
 
-          {/* Quick add */}
- <div className="mb-4">
-            {view !== 'completed' && view !== 'trash' && (
-              <TaskInput
-                key={`${view}-${quickAddOpen}`}
-                lists={lists}
-                defaultListId={defaultListId}
-                defaultDueDate={defaultDueDate}
-                autoFocus={quickAddOpen}
-                onCancel={() => setQuickAddOpen(false)}
-                // The form stays open after Enter so several tasks can be
-                // captured in a row; Esc (or the close button) dismisses it.
-                onSubmit={(input) => store.addTask(input)}
-              />
-            )}
-          </div>
-
           {/* Task list */}
           {visibleTasks.length === 0 ? (
             filtered ? (
@@ -307,6 +290,24 @@ function AppShell() {
           {/* Completed section (non-completed views) */}
           {view !== 'completed' && view !== 'trash' && (
             <CompletedSection lists={lists} onEdit={setEditingTask} store={store} view={view} />
+          )}
+
+          {/* Quick add. Under the list rather than over it, so the page reads
+              top to bottom as what is already there, then the place to add. */}
+          {view !== 'completed' && view !== 'trash' && (
+ <div className="mt-6">
+              <TaskInput
+                key={`${view}-${quickAddOpen}`}
+                lists={lists}
+                defaultListId={defaultListId}
+                defaultDueDate={defaultDueDate}
+                autoFocus={quickAddOpen}
+                onCancel={() => setQuickAddOpen(false)}
+                // The form stays open after Enter so several tasks can be
+                // captured in a row; Esc (or the close button) dismisses it.
+                onSubmit={(input) => store.addTask(input)}
+              />
+            </div>
           )}
 
           {view === 'completed' && tasks.some((t) => t.completed && t.deletedAt === null) && (

@@ -3,10 +3,12 @@ import {
   ALargeSmall,
   BellRing,
   CalendarDays,
+  Check,
   ChevronDown,
   Cloud,
   CloudOff,
   Moon,
+  Palette,
   Sun,
   Type,
   X,
@@ -17,6 +19,7 @@ import { FONT_SIZE_LABELS, useTheme, type FontSize } from '../store/theme'
 import type { WeekStart } from '../utils/habitUtils'
 import { permissionState, requestPermission, type PermissionState } from '../store/notifications'
 import { DEFAULT_FONT, FONTS, FONT_KEYS, ensureFontLoaded, type FontKey } from '../store/fonts'
+import { ACCENTS, ACCENT_KEYS, accentSwatch } from '../store/accents'
 
 const SHORTCUTS: [string, string][] = [
   ['N', 'New task'],
@@ -48,6 +51,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
     setFontFamily,
     weekStartsOn,
     setWeekStartsOn,
+    accent,
+    setAccent,
   } = useTheme()
   const [notifyState, setNotifyState] = useState<PermissionState>(() => permissionState())
   const { user, signOut } = useAuth()
@@ -141,6 +146,53 @@ export function Settings({ onClose }: { onClose: () => void }) {
               The theme is being set by the dashboard this is embedded in.
             </p>
           )}
+
+          <div className="mt-4">
+            <div className="mb-2 flex items-center gap-1.5 text-xs text-muted">
+              <Palette className="h-3.5 w-3.5 text-faint" aria-hidden />
+              Accent colour
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="Accent colour"
+              className="flex flex-wrap gap-1.5"
+            >
+              {ACCENT_KEYS.map((key) => {
+                const on = accent === key
+                // The swatch shows the tone for the theme in use, because the
+                // two members of a hue look quite different from each other.
+                const colour = accentSwatch(key, theme)
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    aria-label={ACCENTS[key].label}
+                    title={ACCENTS[key].label}
+                    onClick={() => setAccent(key)}
+                    className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-transform hover:scale-105 ${
+                      on ? 'border-ink/25' : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: colour }}
+                  >
+                    {on && (
+                      <Check
+                        className="h-4 w-4"
+                        strokeWidth={3}
+                        style={{ color: ACCENTS[key][theme].ink }}
+                      />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-2 text-xs text-faint">
+              {ACCENTS[accent].label}
+              {ACCENTS[accent].pastel ? ' · pastel' : ''} — recoloured per theme so it stays
+              readable as text as well as a button.
+            </p>
+          </div>
 
           <div className="mt-4">
             <div className="mb-2 flex items-center gap-1.5 text-xs text-muted">

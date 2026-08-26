@@ -20,6 +20,7 @@ const THEME_KEY = 'clarity.theme.v1'
 const FONT_KEY = 'clarity.fontsize.v1'
 const FONT_FAMILY_KEY = 'clarity.fontfamily.v1'
 const WEEK_START_KEY = 'clarity.weekstart.v1'
+const ACCENT_KEY = 'clarity.accent.v1'
 
 const tasksKey = (scope: string) => `${PREFIX}.tasks:${scope}`
 const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
@@ -184,6 +185,23 @@ export function loadWeekStart(): number | null {
 export function saveWeekStart(day: number): void {
   try {
     localStorage.setItem(WEEK_START_KEY, String(day))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Accent colour preference. Validated by the caller against the registry. */
+export function loadAccent(): string | null {
+  try {
+    return localStorage.getItem(ACCENT_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function saveAccent(key: string): void {
+  try {
+    localStorage.setItem(ACCENT_KEY, key)
   } catch {
     /* ignore */
   }

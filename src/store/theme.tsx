@@ -9,16 +9,19 @@ import {
   type ReactNode,
 } from 'react'
 import {
+  loadAccent,
   loadFontFamily,
   loadFontScale,
   loadTheme,
   loadWeekStart,
+  saveAccent,
   saveFontFamily,
   saveFontScale,
   saveTheme,
   saveWeekStart,
 } from './storage'
 import { DEFAULT_FONT, FONTS, applyFont, type FontKey } from './fonts'
+import { ACCENTS, DEFAULT_ACCENT, applyAccent, type AccentKey } from './accents'
 import type { WeekStart } from '../utils/habitUtils'
 
 export type Theme = 'light' | 'dark'
@@ -57,6 +60,8 @@ interface AppearanceState {
   /** 0 = weeks start on Sunday, 1 = on Monday. */
   weekStartsOn: WeekStart
   setWeekStartsOn: (d: WeekStart) => void
+  accent: AccentKey
+  setAccent: (a: AccentKey) => void
 }
 
 const ThemeContext = createContext<AppearanceState | null>(null)
@@ -85,12 +90,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [weekStartsOn, setWeekStartsOnState] = useState<WeekStart>(
     () => (loadWeekStart() === 1 ? 1 : 0),
   )
+  const [accent, setAccentState] = useState<AccentKey>(() => {
+    const saved = loadAccent()
+    return saved && saved in ACCENTS ? (saved as AccentKey) : DEFAULT_ACCENT
+  })
   const [controlledByHost, setControlledByHost] = useState(false)
   const hostControlled = useRef(false)
 
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
+
+  // Depends on the theme as well as the accent: the two tones of a hue are not
+  // interchangeable, so flipping the theme has to repaint the accent.
+  useEffect(() => {
+    applyAccent(accent, theme)
+  }, [accent, theme])
 
   useEffect(() => {
     applyFontSize(fontSize)
@@ -138,6 +153,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setWeekStartsOnState(d)
   }, [])
 
+  const setAccent = useCallback((a: AccentKey) => {
+    saveAccent(a)
+    setAccentState(a)
+  }, [])
+
   const value = useMemo<AppearanceState>(
     () => ({
       theme,
@@ -150,6 +170,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setFontFamily,
       weekStartsOn,
       setWeekStartsOn,
+      accent,
+      setAccent,
     }),
     [
       theme,
@@ -161,6 +183,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setFontFamily,
       weekStartsOn,
       setWeekStartsOn,
+      accent,
+      setAccent,
     ],
   )
 
