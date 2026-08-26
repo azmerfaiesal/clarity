@@ -362,6 +362,20 @@ body {
   }
 }
 
+/*
+ * Settings arrives as a drawer off the left edge and stays there, against the
+ * sidebar it was opened from — the same reading as the mobile navigation, so
+ * the two panels behave as one family rather than a drawer and a dialog.
+ */
+@keyframes drawer-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -516,6 +530,9 @@ body {
 }
 .anim-scale-in {
   animation: scale-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.anim-drawer-in-left {
+  animation: drawer-in-left 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .anim-toast-in {
   animation: toast-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

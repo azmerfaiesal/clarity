@@ -7,6 +7,18 @@
     <meta name="description" content="Clarity — a minimalist to-do list that syncs across your devices." />
     <meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#070809" media="(prefers-color-scheme: dark)" />
+    <!--
+      Installability. On iOS this is not cosmetic: Safari only exposes the
+      Notification API to a web app that has been added to the Home Screen, so
+      without a manifest and an apple-touch-icon a reminder can never reach the
+      phone at all.
+    -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Clarity" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Clarity</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -186,7 +186,7 @@ export function BrainDump({
 
   return (
     <>
-      <header className="flex items-center gap-2 pt-6 pb-6 sm:pt-10">
+      <header className="flex items-center gap-2 pt-6 pb-4 sm:pt-10">
         <button
           type="button"
           onClick={onOpenMobileNav}
@@ -207,7 +207,7 @@ export function BrainDump({
 
       {/* History */}
       {notes.length > 0 && (
-        <div className="mt-9">
+        <div className="mt-3">
           <div className="mb-2 flex items-center gap-2">
             <span className="label shrink-0">Earlier</span>
             <div className="ml-auto flex min-w-0 items-center gap-1.5 rounded-md border border-line px-2 py-1 focus-within:border-accent">
@@ -265,10 +265,15 @@ export function BrainDump({
                       editingId === note.id ? 'opacity-50' : ''
                     }`}
                   >
+                    {/* The stamp carries the accent: it is the one line that
+                        dates the note, and in faint grey it disappeared into
+                        the rules between rows. */}
                     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-3xs">
-                      <span className="text-faint">{formatDateTime(note.createdAt)}</span>
+                      <span className="text-accent">{formatDateTime(note.createdAt)}</span>
                       {wasEdited(note) && (
-                        <span className="text-faint">· edited {formatRelative(note.updatedAt)}</span>
+                        <span className="text-accent/70">
+                          · edited {formatRelative(note.updatedAt)}
+                        </span>
                       )}
                       {note.tags.map((tag) => (
                         <span key={tag} className="rounded border border-line px-1.5 py-px text-muted">

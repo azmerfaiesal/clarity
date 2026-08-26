@@ -94,9 +94,29 @@ notification when a task reminder comes due, or when a habit is still open at
 its time. Firing is deduplicated in `localStorage`, so a reload does not
 re-announce and a habit nags once a day rather than every sweep.
 
-> **They fire while a Clarity tab is open** — foreground or background — and not
-> when the browser is closed. That would need a service worker with a push
-> subscription and a server to send from, which this app does not have.
+The page decides *when* a reminder is due; `public/sw.js` is *how* it is shown.
+That split is not decoration — `new Notification(...)` throws `Illegal
+constructor` on Android Chrome and does not exist at all in an iOS home-screen
+app, so both platforms need `registration.showNotification()`. The old code
+caught that throw and moved on, which is why a phone showed nothing and said
+nothing about why. The constructor is now only the desktop fallback, and the
+dedupe entry is written after a notification actually reaches the screen rather
+than after the attempt.
+
+The worker has **no `fetch` handler** on purpose. Caching the app there would be
+a second cache to invalidate on every deploy, and a stale one is how a static
+site starts serving last week's bundle. Without a fetch listener the browser
+skips the worker entirely for loading — this adds a delivery channel and changes
+nothing else.
+
+On iPhone, Safari hides the notification API from an ordinary tab: Clarity has to
+be added to the Home Screen first, which is what `public/manifest.webmanifest`
+and the apple-touch-icon are for. Settings detects that case and says so instead
+of claiming the browser cannot do notifications.
+
+> **They fire while Clarity is running** — a foreground tab, a background tab, or
+> the installed app — and not once it is closed entirely. That last step needs a
+> push subscription and a server to send from, which this app does not have.
 
 ## Sync
 
@@ -106,6 +126,8 @@ Sign in with email + password (Supabase Auth). Everything then lives in four Pos
 - **Push** — changed rows only are upserted 400ms after an edit settles; rows removed locally are deleted server-side by the same pass.
 - **Pull** — the account's rows are read once at sign-in, then Postgres realtime streams other devices' changes in. Server rows win per id; rows only this device knows about (created offline) survive the merge.
 - **Per-account cache** — the `localStorage` cache is namespaced by user id and cleared on sign out, so one account's tasks are never visible to the next person signing in on the same browser.
+- **Never anonymous** — supabase-js falls back to sending the publishable key as the bearer when it cannot produce a session token. `src/lib/supabase.ts` refuses to send a `/rest/v1/` request in that state. This is not tidiness: the project's edge logs showed 39 writes refused in one second with `42501` because they went out unauthenticated, and the matching reads came back `200 []` — an empty snapshot the store cannot tell from a real one, and rows missing from a snapshot are treated as deleted elsewhere. A refused request keeps its rows queued; a believed empty one wipes the cache.
+- **One retry on a rejected token** — a `401` from `/rest/v1/` triggers a single `refreshSession()` and one retry on the new token. The lone `PGRST303` on a page load was a device coming back from sleep and revalidating in the same instant its token was being refreshed; there is nothing wrong with that request except its token, so it is worth asking again.
 
 `supabase/schema.sql` is the full setup: tables, indexes, RLS policies, and the realtime publication.
 

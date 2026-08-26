@@ -96,16 +96,19 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
   return (
     <div
- className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
+ className="anim-fade-in fixed inset-0 z-50 flex justify-start bg-[var(--scrim)] backdrop-blur-[3px]"
       onClick={onClose}
       role="presentation"
     >
+      {/* A drawer pinned to the left edge, full height. The panel stops short of
+          the viewport width on purpose, so there is always a strip of the app
+          left to click on to dismiss it. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
         onClick={(e) => e.stopPropagation()}
- className="anim-scale-in max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+ className="anim-drawer-in-left h-full w-[86vw] max-w-md overflow-y-auto rounded-r-xl border-r border-line bg-raised shadow-xl shadow-black/20 dark:shadow-black/70"
       >
  <div className="flex items-center justify-between px-5 pt-5 pb-1">
  <h2 className="text-md font-semibold tracking-tight text-ink">
@@ -276,6 +279,20 @@ export function Settings({ onClose }: { onClose: () => void }) {
             <p className="mt-3 text-sm text-muted">
               This browser does not support notifications.
             </p>
+          ) : notifyState === 'needs-install' ? (
+            // iOS hides the notification API from an ordinary Safari tab
+            // entirely. Saying "unsupported" here was true of the tab and
+            // wrong about the phone, and left nothing to do about it.
+            <>
+              <span className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-faint">
+                <BellRing className="h-3.5 w-3.5" aria-hidden />
+                Add Clarity to your Home Screen first
+              </span>
+              <p className="mt-2 text-xs text-faint">
+                iOS only offers notifications to an installed web app. Tap Share, then “Add to Home
+                Screen”, and open Clarity from there — this panel will offer the permission prompt.
+              </p>
+            </>
           ) : notifyState === 'granted' ? (
             // The control stays put once permission is given and simply reads
             // as done — a button that vanishes leaves you wondering whether the
@@ -305,9 +322,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
             </button>
           )}
           <p className="mt-2 text-xs text-faint">
-            Reminders fire while a Clarity tab is open, in the foreground or the background. They
-            cannot reach you with the browser closed — that needs a push server this app does not
-            have.
+            Reminders fire while Clarity is running — a foreground tab, a background tab, or the
+            installed app. They cannot reach you once it is closed entirely; that needs a push
+            server this app does not have.
           </p>
         </Section>
 
