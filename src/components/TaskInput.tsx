@@ -91,7 +91,9 @@ export function TaskInput({
       reminder: fromDateTimeLocal(reminder),
     })
     reset()
-    titleRef.current?.focus()
+    // Adding is the end of the errand, so the composer gets out of the way.
+    setOpen(false)
+    onCancel?.()
   }
 
   const close = () => {
@@ -161,43 +163,45 @@ export function TaskInput({
         />
 
  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {/* Due date */}
+          {/* Due date. The field itself is visible rather than an invisible
+              overlay on a label: a transparent date input gives no sign it can
+              be typed into, and Safari has no calendar popup to fall back on,
+              so from any view without a date already set the control read as
+              dead. The two shortcuts show whether or not a date is set, so one
+              tap is enough. */}
           <label
- className={`relative inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
+ className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
               dueDate
                 ? 'border-accent/40 bg-accent-soft text-accent'
                 : 'border-line text-muted hover:bg-surface'
             }`}
           >
- <Calendar className="h-3.5 w-3.5" aria-hidden />
-            {dueDate ?? 'Due date'}
+ <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <input
               type="date"
               aria-label="Due date"
               value={dueDate ?? ''}
               onChange={(e) => setDueDate(e.target.value || null)}
- className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+ className="cursor-pointer bg-transparent text-xs outline-none dark:[color-scheme:dark]"
             />
           </label>
+          <QuickDate label="Today" value={todayStr()} current={dueDate} onPick={setDueDate} />
+          <QuickDate
+            label="Tomorrow"
+            value={addDays(todayStr(), 1)}
+            current={dueDate}
+            onPick={setDueDate}
+          />
           {dueDate && (
-            <>
-              <QuickDate label="Today" value={todayStr()} current={dueDate} onPick={setDueDate} />
-              <QuickDate
-                label="Tomorrow"
-                value={addDays(todayStr(), 1)}
-                current={dueDate}
-                onPick={setDueDate}
-              />
-              <button
-                type="button"
-                aria-label="Clear due date"
-                title="Clear due date"
-                onClick={() => setDueDate(null)}
-                className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
-              >
+            <button
+              type="button"
+              aria-label="Clear due date"
+              title="Clear due date"
+              onClick={() => setDueDate(null)}
+              className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
+            >
  <X className="h-3.5 w-3.5" />
-              </button>
-            </>
+            </button>
           )}
 
           {/* Priority */}
@@ -324,7 +328,7 @@ function QuickDate({
 }: {
   label: string
   value: string
-  current: string
+  current: string | null
   onPick: (v: string) => void
 }) {
   return (

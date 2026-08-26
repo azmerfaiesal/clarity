@@ -1,10 +1,11 @@
 import { Menu, Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Habit, HabitFilter } from '../types'
+import type { Habit, HabitFilter, HabitTemplate } from '../types'
 import { useHabits, type HabitDraft } from '../store/habitStore'
 import { todayStr } from '../utils/dateUtils'
 import { currentStreak, habitStats, isCompletedOn, requiredPerDay } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
+import { SUGGESTED_TEMPLATES } from '../store/habitTemplates'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
 import { HabitCard } from './HabitCard'
 import { HabitIcon } from './HabitIcon'
@@ -12,20 +13,20 @@ import { DayDetail } from './DayDetail'
 import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
 
-/** One-tap starting points so the empty state is not a blank wall. */
-const SUGGESTIONS: { name: string; icon: string; color: string }[] = [
-  { name: 'Exercise', icon: 'lucide:dumbbell', color: '#fecaca' },
-  { name: 'Read', icon: 'lucide:book', color: '#a5f3fc' },
-  { name: 'Meditate', icon: 'lucide:brain', color: '#e9d5ff' },
-  { name: 'Drink water', icon: 'lucide:water', color: '#bfdbfe' },
-]
-
 export function HabitTracker({
   onOpenMobileNav,
   filter = 'all',
+  seedTemplate = null,
+  editTemplate = null,
+  onTemplateHandled,
 }: {
   onOpenMobileNav: () => void
   filter?: HabitFilter
+  /** A template chosen in the sidebar, to start a new habit from. */
+  seedTemplate?: HabitTemplate | null
+  /** A saved template chosen in the sidebar, to edit in place. */
+  editTemplate?: HabitTemplate | null
+  onTemplateHandled?: () => void
 }) {
   const {
     habits,
@@ -40,6 +41,7 @@ export function HabitTracker({
     setLogNotes,
     templates,
     saveAsTemplate,
+    updateTemplate,
     deleteTemplate,
     addWritingHabit,
   } = useHabits()
@@ -180,22 +182,30 @@ export function HabitTracker({
     [editing, updateHabit, addHabit],
   )
 
-  const quickAdd = (s: (typeof SUGGESTIONS)[number]) =>
+  const quickAdd = (t: HabitTemplate) =>
     addHabit({
-      name: s.name,
-      description: '',
-      repetitionType: 'daily',
-      daysOfWeek: [],
-      datesOfMonth: [],
-      color: s.color,
-      icon: s.icon,
+      name: t.name,
+      description: t.description,
+      repetitionType: t.repetitionType,
+      daysOfWeek: t.daysOfWeek,
+      datesOfMonth: t.datesOfMonth,
+      color: t.color,
+      icon: t.icon,
       targetStreak: null,
       reminderTime: null,
-      timesPerWeek: null,
-      trackBy: 'checkoff',
-      dailyTarget: null,
+      timesPerWeek: t.timesPerWeek,
+      trackBy: t.trackBy,
+      dailyTarget: t.dailyTarget,
       source: 'manual',
     })
+
+  // A template arriving from the sidebar opens the dialog: seeded for a new
+  // habit, or on the template itself.
+  useEffect(() => {
+    if (!seedTemplate && !editTemplate) return
+    setEditing(null)
+    setFormOpen(true)
+  }, [seedTemplate, editTemplate])
 
   // HTML5 drag, so no dependency and pointer/keyboard fall back to the menu.
   const onDrop = (targetId: string) => {
@@ -222,7 +232,7 @@ export function HabitTracker({
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">
-            Your Habits
+            My Habits
           </h1>
           <p className="mt-1 font-mono text-2xs tracking-[0.06em] text-faint uppercase">
             {dueToday.length > 0
@@ -269,9 +279,9 @@ export function HabitTracker({
                 <span className="text-3xs text-faint">auto</span>
               </span>
             </button>
-            {SUGGESTIONS.map((s) => (
+            {SUGGESTED_TEMPLATES.map((s) => (
               <button
-                key={s.name}
+                key={s.id}
                 type="button"
                 onClick={() => quickAdd(s)}
                 className="cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
@@ -376,16 +386,29 @@ export function HabitTracker({
 
       {formOpen && (
         <HabitForm
+          key={editTemplate?.id ?? seedTemplate?.id ?? editing?.id ?? 'new'}
           habit={editing ?? undefined}
+          seed={editTemplate ?? seedTemplate ?? undefined}
+          templateMode={editTemplate !== null}
           templates={templates}
           onSaveTemplate={(draft) =>
             saveAsTemplate({ ...(editing ?? ({} as Habit)), ...draft } as Habit)
           }
           onDeleteTemplate={deleteTemplate}
-          onSave={handleSave}
+          onSave={(draft) => {
+            if (editTemplate) {
+              updateTemplate(editTemplate.id, draft)
+              setFormOpen(false)
+              onTemplateHandled?.()
+              return
+            }
+            handleSave(draft)
+            onTemplateHandled?.()
+          }}
           onClose={() => {
             setFormOpen(false)
             setEditing(null)
+            onTemplateHandled?.()
           }}
         />
       )}

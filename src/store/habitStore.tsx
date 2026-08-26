@@ -65,6 +65,8 @@ interface HabitStore {
   setLogNotes: (id: string, date: string, notes: string[]) => void
   templates: HabitTemplate[]
   saveAsTemplate: (habit: Habit) => void
+  /** Rewrite a saved template in place, keeping its id and creation date. */
+  updateTemplate: (id: string, draft: HabitDraft) => void
   deleteTemplate: (id: string) => void
   /** Create the built-in Writing habit if the account has none. */
   addWritingHabit: () => void
@@ -313,6 +315,36 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     [userId],
   )
 
+  const updateTemplate = useCallback<HabitStore['updateTemplate']>(
+    (id, draft) => {
+      setTemplates((prev) => {
+        const next = prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                name: draft.name,
+                description: draft.description,
+                icon: draft.icon,
+                color: draft.color,
+                repetitionType: draft.repetitionType,
+                daysOfWeek: draft.daysOfWeek,
+                datesOfMonth: draft.datesOfMonth,
+                timesPerWeek: draft.timesPerWeek,
+                trackBy: draft.trackBy,
+                dailyTarget: draft.dailyTarget,
+              }
+            : t,
+        )
+        const changed = next.find((t) => t.id === id)
+        // Upsert rather than a second update path: the row already exists, and
+        // the same call created it.
+        if (changed && userId) upsertTemplate(changed, userId).catch(() => {})
+        return next
+      })
+    },
+    [userId],
+  )
+
   const deleteTemplate = useCallback<HabitStore['deleteTemplate']>(
     (id) => {
       setTemplates((prev) => prev.filter((t) => t.id !== id))
@@ -416,6 +448,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       setLogNotes,
       templates,
       saveAsTemplate,
+      updateTemplate,
       deleteTemplate,
       addWritingHabit,
     }),
@@ -433,6 +466,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       setLogNotes,
       templates,
       saveAsTemplate,
+      updateTemplate,
       deleteTemplate,
       addWritingHabit,
     ],

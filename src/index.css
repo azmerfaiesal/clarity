@@ -305,6 +305,27 @@ body {
   }
 }
 
+/*
+ * Worn by the root element only while the theme is changing. It outranks the
+ * `transition-colors` utilities on specificity, so for those few hundred
+ * milliseconds every surface, rule and label crosses over together.
+ */
+.theme-shift,
+.theme-shift *,
+.theme-shift *::before,
+.theme-shift *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 280ms;
+  transition-timing-function: ease;
+}
+
+/* The one rule above that would cost something: a disclosure opened inside the
+   cross-fade would snap rather than grow, having had its own property list
+   overwritten. Give it back. */
+.theme-shift .disclosure {
+  transition-property: grid-template-rows, opacity, background-color, border-color, color;
+}
+
 @keyframes fade-out {
   from {
     opacity: 1;

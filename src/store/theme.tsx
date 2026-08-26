@@ -66,9 +66,28 @@ interface AppearanceState {
 
 const ThemeContext = createContext<AppearanceState | null>(null)
 
+/** Length of the cross-fade, and of the class that enables it. */
+const THEME_SHIFT_MS = 280
+let shiftTimer: number | undefined
+let painted = false
+
+/**
+ * Flipping the theme swaps every colour token at once, which the browser would
+ * otherwise repaint on a single frame. A class on the root lends every element
+ * a colour transition for the length of the change and is then taken away
+ * again, so the rest of the app keeps its own timings. Skipped on the very
+ * first paint, where there is no previous colour to come from.
+ */
 function applyTheme(t: Theme) {
-  document.documentElement.setAttribute('data-theme', t)
-  document.documentElement.style.colorScheme = t
+  const root = document.documentElement
+  if (painted) {
+    root.classList.add('theme-shift')
+    window.clearTimeout(shiftTimer)
+    shiftTimer = window.setTimeout(() => root.classList.remove('theme-shift'), THEME_SHIFT_MS)
+  }
+  painted = true
+  root.setAttribute('data-theme', t)
+  root.style.colorScheme = t
 }
 
 function applyFontSize(f: FontSize) {

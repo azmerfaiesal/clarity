@@ -21,6 +21,7 @@ import {
   DEFAULT_FILTERS,
   type Filters,
   type HabitFilter,
+  type HabitTemplate,
   type SortMode,
   type Task,
   type ViewId,
@@ -52,7 +53,7 @@ function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string 
     case 'notes':
       return 'Notes'
     case 'habits':
-      return 'Your Habits'
+      return 'My Habits'
     case 'home':
       return 'Home'
     default:
@@ -71,11 +72,16 @@ function AppShell() {
     for (const n of notes) for (const t of n.tags) counts.set(t, (counts.get(t) ?? 0) + 1)
     return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   }, [notes])
-  const { habits } = useHabits()
+  const { habits, templates, deleteTemplate } = useHabits()
 
   const [view, setView] = useState<ViewId>('home')
   const [habitFilter, setHabitFilter] = useState<HabitFilter>('all')
   const [noteTag, setNoteTag] = useState<string | null>(null)
+  // A template picked in the sidebar: either the seed for a new habit, or the
+  // template itself opened for editing. Held here because the sidebar raises
+  // it and the habit view is what shows the dialog.
+  const [seedTemplate, setSeedTemplate] = useState<HabitTemplate | null>(null)
+  const [editTemplate, setEditTemplate] = useState<HabitTemplate | null>(null)
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [sort, setSort] = useState<SortMode>('manual')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -205,6 +211,22 @@ function AppShell() {
         habitCount={habits.filter((h) => h.archivedAt === null).length}
         habitFilter={habitFilter}
         onHabitFilter={setHabitFilter}
+        templates={templates}
+        onUseTemplate={(t) => {
+          setEditTemplate(null)
+          setSeedTemplate(t)
+          setView('habits')
+        }}
+        onEditTemplate={(t) => {
+          setSeedTemplate(null)
+          setEditTemplate(t)
+          setView('habits')
+        }}
+        onDeleteTemplate={(t) => {
+          if (window.confirm(`Delete the “${t.name}” template? Habits built from it are kept.`)) {
+            deleteTemplate(t.id)
+          }
+        }}
         noteTags={noteTags}
         noteTag={noteTag}
         onNoteTag={setNoteTag}
@@ -229,6 +251,12 @@ function AppShell() {
             <HabitTracker
               onOpenMobileNav={() => setMobileNavOpen(true)}
               filter={habitFilter}
+              seedTemplate={seedTemplate}
+              editTemplate={editTemplate}
+              onTemplateHandled={() => {
+                setSeedTemplate(null)
+                setEditTemplate(null)
+              }}
             />
           ) : view === 'notes' ? (
             <BrainDump
@@ -303,8 +331,6 @@ function AppShell() {
                 defaultDueDate={defaultDueDate}
                 autoFocus={quickAddOpen}
                 onCancel={() => setQuickAddOpen(false)}
-                // The form stays open after Enter so several tasks can be
-                // captured in a row; Esc (or the close button) dismisses it.
                 onSubmit={(input) => store.addTask(input)}
               />
             </div>

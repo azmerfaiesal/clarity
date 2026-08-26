@@ -27,6 +27,8 @@ type Preset = 'daily' | 'weekdays' | 'weekends' | 'pick' | 'perweek' | 'monthly'
  */
 export function HabitForm({
   habit,
+  seed,
+  templateMode = false,
   templates,
   onSave,
   onSaveTemplate,
@@ -34,24 +36,35 @@ export function HabitForm({
   onClose,
 }: {
   habit?: Habit
+  /** Values to start from when this is not an edit — a template being used. */
+  seed?: HabitTemplate
+  /** Editing the template itself rather than a habit built from one. */
+  templateMode?: boolean
   templates: HabitTemplate[]
   onSave: (draft: HabitDraft) => void
   onSaveTemplate: (draft: HabitDraft) => void
   onDeleteTemplate: (id: string) => void
   onClose: () => void
 }) {
-  const [name, setName] = useState(habit?.name ?? '')
-  const [description, setDescription] = useState(habit?.description ?? '')
+  // Everything below reads from one source: the habit being edited, or the
+  // template being used or edited, or nothing at all.
+  const from = habit ?? seed
+  const [name, setName] = useState(from?.name ?? '')
+  const [description, setDescription] = useState(from?.description ?? '')
   const [repetitionType, setRepetitionType] = useState<RepetitionType>(
-    habit?.repetitionType ?? 'daily',
+    from?.repetitionType ?? 'daily',
   )
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(habit?.daysOfWeek ?? [1, 3, 5])
-  const [datesOfMonth, setDatesOfMonth] = useState<number[]>(habit?.datesOfMonth ?? [1])
-  const [timesPerWeek, setTimesPerWeek] = useState(habit?.timesPerWeek ?? 3)
-  const [trackBy, setTrackBy] = useState<TrackBy>(habit?.trackBy ?? 'checkoff')
-  const [dailyTarget, setDailyTarget] = useState(habit?.dailyTarget ? String(habit.dailyTarget) : '')
-  const [color, setColor] = useState(habit?.color ?? HABIT_COLORS[0])
-  const [icon, setIcon] = useState(habit?.icon ?? '')
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
+    from?.daysOfWeek?.length ? from.daysOfWeek : [1, 3, 5],
+  )
+  const [datesOfMonth, setDatesOfMonth] = useState<number[]>(
+    from?.datesOfMonth?.length ? from.datesOfMonth : [1],
+  )
+  const [timesPerWeek, setTimesPerWeek] = useState(from?.timesPerWeek ?? 3)
+  const [trackBy, setTrackBy] = useState<TrackBy>(from?.trackBy ?? 'checkoff')
+  const [dailyTarget, setDailyTarget] = useState(from?.dailyTarget ? String(from.dailyTarget) : '')
+  const [color, setColor] = useState(from?.color ?? HABIT_COLORS[0])
+  const [icon, setIcon] = useState(from?.icon ?? '')
   const [targetStreak, setTargetStreak] = useState(
     habit?.targetStreak ? String(habit.targetStreak) : '',
   )
@@ -154,6 +167,7 @@ export function HabitForm({
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
 
   const targetLabel = trackBy === 'duration' ? 'minutes' : 'times'
+  const title = templateMode ? 'Edit template' : habit ? 'Edit habit' : 'New habit'
 
   return (
     <div
@@ -164,12 +178,12 @@ export function HabitForm({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={habit ? 'Edit habit' : 'New habit'}
+        aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className="anim-scale-in max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-          <span className="text-sm font-medium text-muted">{habit ? 'Edit habit' : 'New habit'}</span>
+          <span className="text-sm font-medium text-muted">{title}</span>
           <button
             type="button"
             onClick={onClose}
@@ -233,6 +247,7 @@ export function HabitForm({
           </div>
 
           {/* Templates */}
+          {!templateMode && (
           <div>
             <button
               type="button"
@@ -289,6 +304,7 @@ export function HabitForm({
               </div>
             )}
           </div>
+          )}
 
           {/* Repeat */}
           <div>
@@ -554,19 +570,21 @@ export function HabitForm({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3">
-          <button
-            type="button"
-            disabled={!name.trim()}
-            onClick={() => {
-              onSaveTemplate(buildDraft())
-              setSavedTemplate(true)
-              window.setTimeout(() => setSavedTemplate(false), 2000)
-            }}
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-2.5 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <BookmarkPlus className="h-3.5 w-3.5" />
-            {savedTemplate ? 'Saved' : 'Save as template'}
-          </button>
+          {!templateMode && (
+            <button
+              type="button"
+              disabled={!name.trim()}
+              onClick={() => {
+                onSaveTemplate(buildDraft())
+                setSavedTemplate(true)
+                window.setTimeout(() => setSavedTemplate(false), 2000)
+              }}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-2.5 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <BookmarkPlus className="h-3.5 w-3.5" />
+              {savedTemplate ? 'Saved' : 'Save as template'}
+            </button>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
@@ -580,7 +598,7 @@ export function HabitForm({
               onClick={submit}
               className="cursor-pointer rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm"
             >
-              {habit ? 'Save changes' : 'Create'}
+              {templateMode ? 'Save template' : habit ? 'Save changes' : 'Create'}
             </button>
           </div>
         </div>

@@ -2,6 +2,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Inbox,
+  LayoutTemplate,
   ListPlus,
   Moon,
   ChevronRight,
@@ -17,9 +18,11 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { HabitFilter, Task, TaskList, ViewId } from '../types'
+import type { HabitFilter, HabitTemplate, Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
 import { useTheme } from '../store/theme'
+import { SUGGESTED_TEMPLATES } from '../store/habitTemplates'
+import { HabitIcon } from './HabitIcon'
 
 const LIST_COLORS = ['#3ddbf0', '#3bff9e', '#ffb020', '#ff4d5e', '#4aa8ff', '#a78bfa', '#f472b6']
 
@@ -84,6 +87,64 @@ function NavItem({
   )
 }
 
+
+/**
+ * One template in the sidebar: tap to start a habit from it. Saved templates
+ * also carry edit and remove, revealed on hover so the resting list stays a
+ * plain list of names.
+ */
+function TemplateRow({
+  template,
+  onUse,
+  onEdit,
+  onDelete,
+}: {
+  template: HabitTemplate
+  onUse: () => void
+  onEdit?: () => void
+  onDelete?: () => void
+}) {
+  return (
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={onUse}
+        title={`Start a habit from ${template.name}`}
+        className={`flex w-full cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left text-xs text-muted transition-colors hover:bg-surface hover:text-ink ${
+          onEdit ? 'pr-12' : 'pr-2.5'
+        }`}
+      >
+        <span
+          className="flex h-4 w-4 shrink-0 items-center justify-center"
+          style={{ color: template.color }}
+        >
+          <HabitIcon icon={template.icon} className="h-3.5 w-3.5" />
+        </span>
+        <span className="truncate">{template.name}</span>
+      </button>
+      {onEdit && onDelete && (
+        <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`Edit template ${template.name}`}
+            className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-accent"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label={`Delete template ${template.name}`}
+            className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 /**
  * Name + colour editor, shared by "new list" and "edit list" so both behave the
@@ -198,6 +259,10 @@ export function Sidebar({
   habitCount,
   habitFilter,
   onHabitFilter,
+  templates,
+  onUseTemplate,
+  onEditTemplate,
+  onDeleteTemplate,
   noteTags,
   noteTag,
   onNoteTag,
@@ -216,6 +281,11 @@ export function Sidebar({
   habitCount: number
   habitFilter: HabitFilter
   onHabitFilter: (f: HabitFilter) => void
+  /** The user's saved templates. Suggestions are built in and listed above. */
+  templates: HabitTemplate[]
+  onUseTemplate: (t: HabitTemplate) => void
+  onEditTemplate: (t: HabitTemplate) => void
+  onDeleteTemplate: (t: HabitTemplate) => void
   /** Tags in use across the notes, with counts, most used first. */
   noteTags: [string, number][]
   noteTag: string | null
@@ -226,6 +296,7 @@ export function Sidebar({
   const [editingListId, setEditingListId] = useState<string | null>(null)
   const [tasksOpen, setTasksOpen] = useState(false)
   const [habitsOpen, setHabitsOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
 
   const count = (v: ViewId) => tasksForView(tasks, v).filter((t) => !t.completed).length
@@ -527,6 +598,53 @@ export function Sidebar({
                   {label}
                 </button>
               ))}
+
+              {/* Templates. Suggestions and saved ones sit in one list because
+                  they do the same job; only the saved ones can be changed. */}
+              <button
+                type="button"
+                onClick={() => setTemplatesOpen((v) => !v)}
+                aria-expanded={templatesOpen}
+                className="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2.5 pt-2.5 pb-1 text-left text-2xs font-semibold tracking-wider text-faint uppercase transition-colors hover:text-ink"
+              >
+                <LayoutTemplate className="h-3 w-3" aria-hidden />
+                Templates
+                <ChevronRight
+                  className="ml-auto h-3 w-3 transition-transform duration-200"
+                  style={{ transform: templatesOpen ? 'rotate(90deg)' : 'none' }}
+                  aria-hidden
+                />
+              </button>
+              <div className="disclosure" data-open={templatesOpen}>
+                <div>
+                  <div className="space-y-0.5 pb-1">
+                    <span className="block px-2.5 pt-1 pb-0.5 font-mono text-3xs text-faint">
+                      Suggestions
+                    </span>
+                    {SUGGESTED_TEMPLATES.map((t) => (
+                      <TemplateRow key={t.id} template={t} onUse={() => onUseTemplate(t)} />
+                    ))}
+                    <span className="block px-2.5 pt-2 pb-0.5 font-mono text-3xs text-faint">
+                      Saved
+                    </span>
+                    {templates.length === 0 ? (
+                      <p className="px-2.5 py-1 text-3xs text-faint">
+                        Save a habit as a template and it lands here.
+                      </p>
+                    ) : (
+                      templates.map((t) => (
+                        <TemplateRow
+                          key={t.id}
+                          template={t}
+                          onUse={() => onUseTemplate(t)}
+                          onEdit={() => onEditTemplate(t)}
+                          onDelete={() => onDeleteTemplate(t)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
