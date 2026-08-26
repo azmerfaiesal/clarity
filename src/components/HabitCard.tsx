@@ -20,7 +20,7 @@ import { AmountSlider } from './AmountSlider'
 import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
-import { HabitHeatmap, HeatmapLegend } from './HabitHeatmap'
+import { HabitHeatmap, HabitMonthRow, HeatmapLegend } from './HabitHeatmap'
 
 /**
  * One habit: a large check to log today on the left, the streak and lifetime
@@ -59,6 +59,9 @@ export function HabitCard({
   dragging?: boolean
 }) {
   const [sliderOpen, setSliderOpen] = useState(false)
+  // Which span of history the card is showing. Per card, not global: one habit
+  // is worth reading a year of while another only matters this month.
+  const [range, setRange] = useState<'year' | 'month'>('year')
   const holdTimer = useRef<number | null>(null)
   const heldRef = useRef(false)
   const today = todayStr()
@@ -323,13 +326,41 @@ export function HabitCard({
         </div>
       </div>
 
-      {/* A year of history */}
+      {/* History */}
       <div className="mt-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <span className="font-mono text-3xs text-faint">Last 365 days</span>
+          <div
+            role="radiogroup"
+            aria-label="History range"
+            className="inline-flex rounded-md border border-line p-0.5"
+          >
+            {(
+              [
+                ['year', 'Last 365 days'],
+                ['month', 'This month'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={range === value}
+                onClick={() => setRange(value)}
+                className={`cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
+                  range === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <HeatmapLegend habit={habit} />
         </div>
-        <HabitHeatmap habit={habit} onPickDay={onPickDay} />
+        {range === 'year' ? (
+          <HabitHeatmap habit={habit} onPickDay={onPickDay} />
+        ) : (
+          <HabitMonthRow habit={habit} onPickDay={onPickDay} />
+        )}
       </div>
 
       {/* Secondary stats */}

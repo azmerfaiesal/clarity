@@ -21,6 +21,105 @@ type CellState = 'future' | 'untracked' | 'notdue' | 'missed' | 'done'
 const RAMP = [0, 0.3, 0.5, 0.75, 1]
 
 /**
+ * How one day should read. Shared by the year grid and the month row so the
+ * two views cannot drift into disagreeing about the same date.
+ */
+function cellFor(habit: Habit, date: string, today: string) {
+  const count = amountOn(habit, date)
+  const created = habit.createdAt.slice(0, 10)
+  let state: CellState
+  // Days before the habit existed still draw, faintly — a grid with a hole in
+  // it reads as broken rather than as "not tracked yet".
+  if (date > today) state = 'future'
+  else if (date < created) state = 'untracked'
+  // A partial day still shows colour: it was worked on, just not finished.
+  else if (count > 0) state = 'done'
+  else if (isScheduled(habit, date)) state = 'missed'
+  else state = 'notdue'
+  return { date, state, level: intensityOn(habit, date), count }
+}
+
+function cellTitle(
+  habit: Habit,
+  { date, state, count }: ReturnType<typeof cellFor>,
+): string | undefined {
+  if (state === 'future') return undefined
+  const what =
+    state === 'done'
+      ? habit.trackBy !== 'checkoff'
+        ? `${formatAmount(habit, count)}${
+            habit.dailyTarget ? ` / ${formatAmount(habit, habit.dailyTarget)}` : ''
+          }${isCompletedOn(habit, date) ? '' : ' (partial)'}`
+        : 'done'
+      : state === 'missed'
+        ? 'missed'
+        : state === 'untracked'
+          ? 'not tracked'
+          : 'not due'
+  return `${date} · ${what}`
+}
+
+/** One day. Everything visual about a cell lives here and nowhere else. */
+function HeatCell({
+  habit,
+  cell,
+  size,
+  radius,
+  today,
+  showFuture = false,
+  onPickDay,
+}: {
+  habit: Habit
+  cell: ReturnType<typeof cellFor>
+  size: number
+  radius: number
+  today: string
+  /** Draw days still to come faintly rather than not at all. */
+  showFuture?: boolean
+  onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+}) {
+  const { date, state, level } = cell
+  return (
+    <button
+      type="button"
+      disabled={state === 'future'}
+      onClick={(e) => {
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+        onPickDay?.(date, { x: r.left + r.width / 2, y: r.top })
+      }}
+      aria-label={`${date} — open day`}
+      title={cellTitle(habit, cell)}
+      style={
+        {
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: `${radius}px`,
+          ...(date === today ? { '--cell-glow': habit.color } : {}),
+          ...(state === 'done' ? { backgroundColor: habit.color, opacity: RAMP[level] } : {}),
+        } as React.CSSProperties
+      }
+      className={`transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
+        // Today wears a ring that breathes, so the eye finds the live end of
+        // the range without reading the labels.
+        date === today ? 'cell-today' : ''
+      } ${
+        state === 'future'
+          ? showFuture
+            ? 'bg-line/25'
+            : 'opacity-0'
+          : state === 'done'
+            ? ''
+            : state === 'missed'
+              ? 'bg-line-strong/60'
+              : state === 'untracked'
+                ? 'bg-line/35'
+                : 'bg-line/60'
+      }`}
+    />
+  )
+}
+
+/**
  * A year of the habit at a glance, laid out the way contribution graphs are:
  * one column per week, oldest on the left, the first day of the week — Sunday
  * or Monday, per the setting — at the top.
@@ -45,25 +144,13 @@ export function HabitHeatmap({
   const { weeks, months } = useMemo(() => {
     // 53 columns ending on the week containing today.
     const start = weekStart(addDays(today, -364), firstDay)
-    const created = habit.createdAt.slice(0, 10)
 
-    const weeks: { date: string; state: CellState; level: number; count: number }[][] = []
+    const weeks: ReturnType<typeof cellFor>[][] = []
     let cursor = start
     while (cursor <= today || parseDate(cursor).getDay() !== firstDay) {
-      const week: { date: string; state: CellState; level: number; count: number }[] = []
+      const week: ReturnType<typeof cellFor>[] = []
       for (let d = 0; d < 7; d++) {
-        const date = cursor
-        const count = amountOn(habit, date)
-        let state: CellState
-        // Days before the habit existed still draw, faintly — a grid with a
-        // hole in it reads as broken rather than as "not tracked yet".
-        if (date > today) state = 'future'
-        else if (date < created) state = 'untracked'
-        // A partial day still shows colour: it was worked on, just not finished.
-        else if (count > 0) state = 'done'
-        else if (isScheduled(habit, date)) state = 'missed'
-        else state = 'notdue'
-        week.push({ date, state, level: intensityOn(habit, date), count })
+        week.push(cellFor(habit, cursor, today))
         cursor = addDays(cursor, 1)
       }
       weeks.push(week)
@@ -146,61 +233,15 @@ export function HabitHeatmap({
                   marginLeft: months[i] && i > 0 ? `${monthGap}px` : undefined,
                 }}
               >
-                {week.map(({ date, state, level, count }) => (
-                  <button
-                    key={date}
-                    type="button"
-                    disabled={state === 'future'}
-                    onClick={(e) => {
-                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                      onPickDay?.(date, { x: r.left + r.width / 2, y: r.top })
-                    }}
-                    aria-label={`${date} — open day`}
-                    title={
-                      state === 'future'
-                        ? undefined
-                        : `${date} · ${
-                            state === 'done'
-                              ? habit.trackBy !== 'checkoff'
-                                ? `${formatAmount(habit, count)}${
-                                    habit.dailyTarget
-                                      ? ` / ${formatAmount(habit, habit.dailyTarget)}`
-                                      : ''
-                                  }${isCompletedOn(habit, date) ? '' : ' (partial)'}`
-                                : 'done'
-                              : state === 'missed'
-                                ? 'missed'
-                                : state === 'untracked'
-                                  ? 'not tracked'
-                                  : 'not due'
-                          }`
-                    }
-                    style={
-                      {
-                        width: col,
-                        height: col,
-                        borderRadius: `${radius}px`,
-                        ...(date === today ? { '--cell-glow': habit.color } : {}),
-                        ...(state === 'done'
-                          ? { backgroundColor: habit.color, opacity: RAMP[level] }
-                          : {}),
-                      } as React.CSSProperties
-                    }
-                    className={`transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
-                      // Today wears a ring that breathes, so the eye finds the
-                      // live end of the year without reading the month labels.
-                      date === today ? 'cell-today' : ''
-                    } ${
-                      state === 'future'
-                        ? 'opacity-0'
-                        : state === 'done'
-                          ? ''
-                          : state === 'missed'
-                            ? 'bg-line-strong/60'
-                            : state === 'untracked'
-                              ? 'bg-line/35'
-                              : 'bg-line/60'
-                    }`}
+                {week.map((c) => (
+                  <HeatCell
+                    key={c.date}
+                    habit={habit}
+                    cell={c}
+                    size={cell}
+                    radius={radius}
+                    today={today}
+                    onPickDay={onPickDay}
                   />
                 ))}
               </div>
@@ -220,6 +261,79 @@ export function HabitHeatmap({
 function gutterLabels(firstDay: WeekStart): string[] {
   const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   return weekdayOrder(firstDay).map((d, i) => (i % 2 === 1 ? names[d] : ''))
+}
+
+/**
+ * The current month as a single row, one box per day, numbered underneath.
+ *
+ * The year grid answers "how has this gone"; this answers "where am I now",
+ * which is a different question and reads badly off a 53-column ribbon. Cells
+ * are larger here because there are thirty of them rather than three hundred.
+ */
+export function HabitMonthRow({
+  habit,
+  cell = 16,
+  onPickDay,
+}: {
+  habit: Habit
+  cell?: number
+  onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+}) {
+  const today = todayStr()
+
+  const days = useMemo(() => {
+    const d = parseDate(today)
+    const first = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+    const count = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    return Array.from({ length: count }, (_, i) => cellFor(habit, addDays(first, i), today))
+  }, [habit, today])
+
+  const gap = Math.max(2, Math.round(cell / 4))
+  const radius = Math.max(3, Math.round(cell / 3))
+  const label = parseDate(today).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-flex flex-col gap-1 pb-1">
+        <div className="flex" style={{ gap: `${gap}px` }} aria-label={label}>
+          {days.map((c) => (
+            <HeatCell
+              key={c.date}
+              habit={habit}
+              cell={c}
+              size={cell}
+              radius={radius}
+              today={today}
+              // The rest of the month is drawn, faintly. Dropping it would end
+              // the row at today and read as a month cut short.
+              showFuture
+              onPickDay={onPickDay}
+            />
+          ))}
+        </div>
+        <div className="flex" style={{ gap: `${gap}px` }} aria-hidden>
+          {days.map((c) => {
+            const n = Number(c.date.slice(8))
+            const isToday = c.date === today
+            const todayN = Number(today.slice(8))
+            // A number every five days, plus today — dropping any that would
+            // land next to today, where two labels would collide.
+            const show =
+              isToday || ((n === 1 || n % 5 === 0) && Math.abs(n - todayN) > 1)
+            return (
+              <span
+                key={c.date}
+                className={`text-center font-mono ${c.date === today ? 'text-accent' : 'text-faint'}`}
+                style={{ width: `${cell}px`, fontSize: Math.max(8, cell - 8), lineHeight: 1.2 }}
+              >
+                {show ? n : ''}
+              </span>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function HeatmapLegend({ habit }: { habit: Habit }) {
