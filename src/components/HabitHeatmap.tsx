@@ -264,66 +264,96 @@ function gutterLabels(firstDay: WeekStart): string[] {
 }
 
 /**
- * The current month as a single row, one box per day, numbered underneath.
+ * The current month, or the three months of the current quarter, as one row of
+ * days each — numbered underneath.
  *
- * The year grid answers "how has this gone"; this answers "where am I now",
- * which is a different question and reads badly off a 53-column ribbon. Cells
- * are larger here because there are thirty of them rather than three hundred.
+ * The year grid answers "how has this gone"; these answer "where am I now",
+ * which reads badly off a fifty-three column ribbon. Every row starts at the
+ * 1st, so the columns line up by day of the month and a single number strip
+ * serves all three.
  */
-export function HabitMonthRow({
+export function HabitMonthRows({
   habit,
+  span = 'month',
   cell = 16,
   onPickDay,
 }: {
   habit: Habit
+  span?: 'month' | 'quarter'
   cell?: number
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const today = todayStr()
 
-  const days = useMemo(() => {
+  const rows = useMemo(() => {
     const d = parseDate(today)
-    const first = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-    const count = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
-    return Array.from({ length: count }, (_, i) => cellFor(habit, addDays(first, i), today))
-  }, [habit, today])
+    const year = d.getFullYear()
+    // The quarter is the three-month block containing today, so the current
+    // month is always the first, middle or last row rather than a moving one.
+    const first = span === 'quarter' ? Math.floor(d.getMonth() / 3) * 3 : d.getMonth()
+    const count = span === 'quarter' ? 3 : 1
+    return Array.from({ length: count }, (_, i) => {
+      const m = first + i
+      const start = `${year}-${String(m + 1).padStart(2, '0')}-01`
+      const days = new Date(year, m + 1, 0).getDate()
+      return {
+        label: MONTHS[m],
+        current: m === d.getMonth(),
+        days: Array.from({ length: days }, (_, k) => cellFor(habit, addDays(start, k), today)),
+      }
+    })
+  }, [habit, today, span])
 
   const gap = Math.max(2, Math.round(cell / 4))
   const radius = Math.max(3, Math.round(cell / 3))
-  const label = parseDate(today).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  const longest = Math.max(...rows.map((r) => r.days.length))
+  const todayN = Number(today.slice(8))
+  const todayInView = rows.some((r) => r.current)
 
   return (
     <div className="overflow-x-auto">
       <div className="inline-flex flex-col gap-1 pb-1">
-        <div className="flex" style={{ gap: `${gap}px` }} aria-label={label}>
-          {days.map((c) => (
-            <HeatCell
-              key={c.date}
-              habit={habit}
-              cell={c}
-              size={cell}
-              radius={radius}
-              today={today}
-              // The rest of the month is drawn, faintly. Dropping it would end
-              // the row at today and read as a month cut short.
-              showFuture
-              onPickDay={onPickDay}
-            />
-          ))}
-        </div>
+        {rows.map((row) => (
+          <div key={row.label} className="flex items-center" style={{ gap: `${gap}px` }}>
+            <span
+              className={`w-7 shrink-0 pr-1 text-right font-mono ${
+                row.current ? 'text-muted' : 'text-faint'
+              }`}
+              style={{ fontSize: Math.max(8, cell - 7), lineHeight: 1 }}
+            >
+              {row.label}
+            </span>
+            {row.days.map((c) => (
+              <HeatCell
+                key={c.date}
+                habit={habit}
+                cell={c}
+                size={cell}
+                radius={radius}
+                today={today}
+                // The rest of the month is drawn, faintly. Dropping it would
+                // end the row at today and read as a month cut short.
+                showFuture
+                onPickDay={onPickDay}
+              />
+            ))}
+          </div>
+        ))}
+
         <div className="flex" style={{ gap: `${gap}px` }} aria-hidden>
-          {days.map((c) => {
-            const n = Number(c.date.slice(8))
-            const isToday = c.date === today
-            const todayN = Number(today.slice(8))
+          <span className="w-7 shrink-0" />
+          {Array.from({ length: longest }, (_, i) => {
+            const n = i + 1
+            const isToday = todayInView && n === todayN
             // A number every five days, plus today — dropping any that would
             // land next to today, where two labels would collide.
             const show =
-              isToday || ((n === 1 || n % 5 === 0) && Math.abs(n - todayN) > 1)
+              isToday ||
+              ((n === 1 || n % 5 === 0) && (!todayInView || Math.abs(n - todayN) > 1))
             return (
               <span
-                key={c.date}
-                className={`text-center font-mono ${c.date === today ? 'text-accent' : 'text-faint'}`}
+                key={n}
+                className={`text-center font-mono ${isToday ? 'text-accent' : 'text-faint'}`}
                 style={{ width: `${cell}px`, fontSize: Math.max(8, cell - 8), lineHeight: 1.2 }}
               >
                 {show ? n : ''}

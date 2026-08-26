@@ -20,6 +20,7 @@ import {
 } from './storage'
 import { useAuth } from './auth'
 import { deleteNoteRow, loadNotesFromServer, subscribeToNotes, upsertNote } from './sync'
+import { onRevalidate } from './revalidate'
 
 /**
  * Brain Dump notes.
@@ -106,10 +107,10 @@ export function NoteProvider({ children }: { children: ReactNode }) {
     }
   }, [authLoading, userId, ready])
 
-  // ---- realtime: subscribe once per account ----
+  // ---- realtime, plus a re-read whenever the socket cannot have kept up ----
   useEffect(() => {
     if (!userId || !ready) return
-    return subscribeToNotes(userId, (serverNotes) => {
+    const sub = subscribeToNotes(userId, (serverNotes) => {
       const ids = new Set(serverNotes.map((n) => n.id))
       const removed = [...seen.current].filter((id) => !ids.has(id))
       removed.forEach((id) => seen.current.delete(id))
@@ -119,6 +120,11 @@ export function NoteProvider({ children }: { children: ReactNode }) {
         return [...serverNotes, ...localOnly].sort(byNewest)
       })
     })
+    const off = onRevalidate(sub.refresh)
+    return () => {
+      off()
+      sub.stop()
+    }
   }, [userId, ready])
 
   // ---- local cache ----

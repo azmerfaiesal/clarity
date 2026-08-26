@@ -21,6 +21,7 @@ import {
   seedTasks,
 } from './storage'
 import { useAuth } from './auth'
+import { onRevalidate } from './revalidate'
 import {
   deleteListRow,
   deleteTaskRow,
@@ -384,10 +385,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, userId, ready])
 
-  // ---- realtime: subscribe once per account, tear down on account change ----
+  // ---- realtime, plus a re-read whenever the socket cannot have kept up ----
   useEffect(() => {
     if (!userId || !ready) return
-    return subscribeToChanges(
+    const sub = subscribeToChanges(
       userId,
       (serverTasks) => {
         const removeTaskIds = reconcile(syncedTasks.current, serverTasks)
@@ -398,6 +399,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'MERGE_SERVER', scope: userId, tasks: [], lists: serverLists, removeListIds })
       },
     )
+    const off = onRevalidate(sub.refresh)
+    return () => {
+      off()
+      sub.stop()
+    }
   }, [userId, ready])
 
   // ---- local cache ----
@@ -405,9 +411,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   useEffect(() => saveLists(scope, state.lists), [scope, state.lists])
 
   // ---- push changed rows to the server (debounced) ----
+  // Held in a ref as well as run on a timer, so the tab going away can force
+  // it. Safe to run twice: it compares each row against what the server is
+  // known to have and sends nothing when they match.
+  const pushNow = useRef<() => void>(() => {})
+
   useEffect(() => {
     if (!userId || !ready) return
-    const timer = setTimeout(() => {
+    const flush = () => {
       const liveTaskIds = new Set<string>()
       for (const t of state.tasks) {
         liveTaskIds.add(t.id)
@@ -433,9 +444,27 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         syncedLists.current.delete(id)
         deleteListRow(id).catch(() => {})
       }
-    }, 400)
+    }
+    pushNow.current = flush
+    const timer = setTimeout(flush, 400)
     return () => clearTimeout(timer)
   }, [state.tasks, state.lists, userId, ready])
+
+  // Ticking something off and immediately switching apps is the ordinary case
+  // on a phone, and it takes far less than the debounce — without this the
+  // edit lives on locally and never reaches the other devices.
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') pushNow.current()
+    }
+    const onPageHide = () => pushNow.current()
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', onPageHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      window.removeEventListener('pagehide', onPageHide)
+    }
+  }, [])
 
   const addTask: TaskStore['addTask'] = useCallback((input) => {
     const stamp = new Date().toISOString()

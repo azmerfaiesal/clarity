@@ -20,7 +20,7 @@ import { AmountSlider } from './AmountSlider'
 import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
-import { HabitHeatmap, HabitMonthRow, HeatmapLegend } from './HabitHeatmap'
+import { HabitHeatmap, HabitMonthRows, HeatmapLegend } from './HabitHeatmap'
 
 /**
  * One habit: a large check to log today on the left, the streak and lifetime
@@ -61,7 +61,7 @@ export function HabitCard({
   const [sliderOpen, setSliderOpen] = useState(false)
   // Which span of history the card is showing. Per card, not global: one habit
   // is worth reading a year of while another only matters this month.
-  const [range, setRange] = useState<'year' | 'month'>('year')
+  const [range, setRange] = useState<'month' | 'quarter' | 'year'>('year')
   const holdTimer = useRef<number | null>(null)
   const heldRef = useRef(false)
   const today = todayStr()
@@ -336,8 +336,9 @@ export function HabitCard({
           >
             {(
               [
-                ['year', 'Last 365 days'],
                 ['month', 'This month'],
+                ['quarter', 'This quarter'],
+                ['year', 'Last 365 days'],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -359,7 +360,7 @@ export function HabitCard({
         {range === 'year' ? (
           <HabitHeatmap habit={habit} onPickDay={onPickDay} />
         ) : (
-          <HabitMonthRow habit={habit} onPickDay={onPickDay} />
+          <HabitMonthRows habit={habit} span={range} onPickDay={onPickDay} />
         )}
       </div>
 

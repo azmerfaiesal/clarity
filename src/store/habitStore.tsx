@@ -20,6 +20,7 @@ import {
   saveTemplates,
 } from './storage'
 import { useAuth } from './auth'
+import { onRevalidate } from './revalidate'
 import { useNotes } from './noteStore'
 import {
   deleteHabitRow,
@@ -132,18 +133,30 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     }
   }, [authLoading, userId, ready])
 
+  // Realtime, plus a re-read whenever the socket cannot have kept up.
   useEffect(() => {
     if (!userId || !ready) return
-    return subscribeToHabits(userId, (server) => {
-      const ids = new Set(server.map((h) => h.id))
-      const removed = [...seen.current].filter((id) => !ids.has(id))
-      removed.forEach((id) => seen.current.delete(id))
-      ids.forEach((id) => seen.current.add(id))
-      setHabits((local) => [
-        ...server,
-        ...local.filter((h) => !ids.has(h.id) && !removed.includes(h.id)),
-      ])
-    })
+    const sub = subscribeToHabits(
+      userId,
+      (server) => {
+        const ids = new Set(server.map((h) => h.id))
+        const removed = [...seen.current].filter((id) => !ids.has(id))
+        removed.forEach((id) => seen.current.delete(id))
+        ids.forEach((id) => seen.current.add(id))
+        setHabits((local) => [
+          ...server,
+          ...local.filter((h) => !ids.has(h.id) && !removed.includes(h.id)),
+        ])
+      },
+      // Templates have no local-only lifecycle to protect: the server list is
+      // the list, so a snapshot replaces it outright.
+      (server) => setTemplates(server),
+    )
+    const off = onRevalidate(sub.refresh)
+    return () => {
+      off()
+      sub.stop()
+    }
   }, [userId, ready])
 
   useEffect(() => {

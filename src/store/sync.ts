@@ -7,7 +7,19 @@ import { supabase } from '../lib/supabase'
  * Strategy: last-write-wins keyed on `updatedAt`. Local storage remains the
  * offline cache. On load we pull the server rows; on every local mutation we
  * upsert the affected rows. Realtime keeps other devices in sync.
+ *
+ * Every subscription hands back a `refresh` alongside its teardown, and pulls
+ * a full snapshot whenever the channel reports itself SUBSCRIBED — which the
+ * client does on every reconnect, not only the first time. Between them those
+ * close the hole realtime leaves: a device that was asleep or offline hears
+ * nothing about what it missed, so it has to ask. See ./revalidate.
  */
+
+/** What a subscription hands back: how to stop it, and how to re-read now. */
+export interface Subscription {
+  stop: () => void
+  refresh: () => void
+}
 
 const TASKS_TABLE = 'clarity_tasks'
 const LISTS_TABLE = 'clarity_lists'
@@ -86,25 +98,53 @@ export async function deleteHabitRow(id: string): Promise<void> {
   if (error) throw error
 }
 
-export function subscribeToHabits(userId: string, onHabits: (habits: Habit[]) => void) {
-  const channel = supabase
+export function subscribeToHabits(
+  userId: string,
+  onHabits: (habits: Habit[]) => void,
+  onTemplates: (templates: HabitTemplate[]) => void,
+): Subscription {
+  const pullHabits = async () => {
+    const { habits, fromServer } = await loadHabitsFromServer(userId)
+    if (fromServer) onHabits(habits)
+  }
+  const pullTemplates = async () => {
+    const { templates, fromServer } = await loadTemplatesFromServer(userId)
+    if (fromServer) onTemplates(templates)
+  }
+
+  const habitsCh = supabase
     .channel(`clarity-habits-${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: HABITS_TABLE, filter: `user_id=eq.${userId}` },
-      async () => {
-        const { data } = await supabase
-          .from(HABITS_TABLE)
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: true })
-        if (data) onHabits(data.map(rowToHabit))
-      },
+      () => void pullHabits(),
     )
-    .subscribe()
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') void pullHabits()
+    })
 
-  return () => {
-    supabase.removeChannel(channel)
+  // Templates were the one table with no live channel, so a template saved on
+  // the laptop stayed invisible on the phone until a sign-out and back in.
+  const templatesCh = supabase
+    .channel(`clarity-habit-templates-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: TEMPLATES_TABLE, filter: `user_id=eq.${userId}` },
+      () => void pullTemplates(),
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') void pullTemplates()
+    })
+
+  return {
+    stop: () => {
+      supabase.removeChannel(habitsCh)
+      supabase.removeChannel(templatesCh)
+    },
+    refresh: () => {
+      void pullHabits()
+      void pullTemplates()
+    },
   }
 }
 
@@ -263,25 +303,29 @@ export async function deleteNoteRow(id: string): Promise<void> {
   if (error) throw error
 }
 
-export function subscribeToNotes(userId: string, onNotes: (notes: BrainDump[]) => void) {
+export function subscribeToNotes(
+  userId: string,
+  onNotes: (notes: BrainDump[]) => void,
+): Subscription {
+  const pull = async () => {
+    const { notes, fromServer } = await loadNotesFromServer(userId)
+    if (fromServer) onNotes(notes)
+  }
+
   const channel = supabase
     .channel(`clarity-notes-${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: NOTES_TABLE, filter: `user_id=eq.${userId}` },
-      async () => {
-        const { data } = await supabase
-          .from(NOTES_TABLE)
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-        if (data) onNotes(data.map(rowToNote))
-      },
+      () => void pull(),
     )
-    .subscribe()
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') void pull()
+    })
 
-  return () => {
-    supabase.removeChannel(channel)
+  return {
+    stop: () => supabase.removeChannel(channel),
+    refresh: () => void pull(),
   }
 }
 
@@ -374,33 +418,46 @@ export function subscribeToChanges(
   userId: string,
   onTasks: (tasks: Task[]) => void,
   onLists: (lists: TaskList[]) => void,
-) {
+): Subscription {
+  const pullTasks = async () => {
+    const { data, error } = await supabase.from(TASKS_TABLE).select('*').eq('user_id', userId)
+    if (!error && data) onTasks(data.map(rowToTask))
+  }
+  const pullLists = async () => {
+    const { data, error } = await supabase.from(LISTS_TABLE).select('*').eq('user_id', userId)
+    if (!error && data) onLists(data.map(rowToList))
+  }
+
   const tasksCh = supabase
     .channel(`clarity-tasks-${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: TASKS_TABLE, filter: `user_id=eq.${userId}` },
-      async () => {
-        const { data } = await supabase.from(TASKS_TABLE).select('*').eq('user_id', userId)
-        if (data) onTasks(data.map(rowToTask))
-      },
+      () => void pullTasks(),
     )
-    .subscribe()
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') void pullTasks()
+    })
 
   const listsCh = supabase
     .channel(`clarity-lists-${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: LISTS_TABLE, filter: `user_id=eq.${userId}` },
-      async () => {
-        const { data } = await supabase.from(LISTS_TABLE).select('*').eq('user_id', userId)
-        if (data) onLists(data.map(rowToList))
-      },
+      () => void pullLists(),
     )
-    .subscribe()
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') void pullLists()
+    })
 
-  return () => {
-    supabase.removeChannel(tasksCh)
-    supabase.removeChannel(listsCh)
+  return {
+    stop: () => {
+      supabase.removeChannel(tasksCh)
+      supabase.removeChannel(listsCh)
+    },
+    refresh: () => {
+      void pullTasks()
+      void pullLists()
+    },
   }
 }
