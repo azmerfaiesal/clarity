@@ -14,8 +14,10 @@ import {
   LOCAL_SCOPE,
   clearScope,
   loadLists,
+  loadSyncedIds,
   loadTasks,
   saveLists,
+  saveSyncedIds,
   saveTasks,
   seedLists,
   seedTasks,
@@ -88,12 +90,24 @@ function mergeById<T extends { id: string }>(server: T[], local: T[]): T[] {
 /**
  * Refresh the synced-row bookkeeping against a fresh server snapshot and return
  * the ids that vanished — rows another device deleted for good.
+ *
+ * `known` outlives the page, which is the whole point: a row present locally
+ * and absent from the server is either one created here offline or one deleted
+ * elsewhere while this device was closed, and nothing in the cache itself tells
+ * those apart. Starting empty on every load makes every deletion look like an
+ * offline creation, so the device quietly resurrects them.
  */
-function reconcile<T extends { id: string }>(synced: Map<string, T>, server: T[]): string[] {
+function reconcile<T extends { id: string }>(
+  known: Set<string>,
+  synced: Map<string, T>,
+  server: T[],
+): string[] {
   const serverIds = new Set(server.map((r) => r.id))
-  const removed = [...synced.keys()].filter((id) => !serverIds.has(id))
+  const removed = [...known].filter((id) => !serverIds.has(id))
   for (const id of removed) synced.delete(id)
   for (const row of server) synced.set(row.id, row)
+  known.clear()
+  for (const id of serverIds) known.add(id)
   return removed
 }
 
@@ -327,6 +341,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // against these tells us exactly which rows changed since the last push.
   const syncedTasks = useRef(new Map<string, Task>())
   const syncedLists = useRef(new Map<string, TaskList>())
+  // The ids half of the same bookkeeping, persisted so it survives a reload.
+  const knownTasks = useRef(new Set<string>(loadSyncedIds(LOCAL_SCOPE, 'tasks') ?? []))
+  const knownLists = useRef(new Set<string>(loadSyncedIds(LOCAL_SCOPE, 'lists') ?? []))
 
   // ---- scope switching (sign in / sign out / account switch) ----
   useEffect(() => {
@@ -335,6 +352,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     if (next === scope) return
     syncedTasks.current = new Map()
     syncedLists.current = new Map()
+    knownTasks.current = new Set(loadSyncedIds(next, 'tasks') ?? [])
+    knownLists.current = new Set(loadSyncedIds(next, 'lists') ?? [])
     // Signing out must not leave the account's tasks readable on the device.
     if (scope !== LOCAL_SCOPE) clearScope(scope)
     dispatch({
@@ -363,9 +382,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const { tasks, lists, fromServer } = await loadFromServer(userId)
       if (cancelled) return
       if (fromServer) {
-        for (const t of tasks) syncedTasks.current.set(t.id, t)
-        for (const l of lists) syncedLists.current.set(l.id, l)
-        dispatch({ type: 'MERGE_SERVER', scope: userId, tasks, lists })
+        // The first snapshot has to drop rows deleted elsewhere too — it is
+        // the one most likely to be carrying a stale cache.
+        const removeTaskIds = reconcile(knownTasks.current, syncedTasks.current, tasks)
+        const removeListIds = reconcile(knownLists.current, syncedLists.current, lists)
+        saveSyncedIds(userId, 'tasks', [...knownTasks.current])
+        saveSyncedIds(userId, 'lists', [...knownLists.current])
+        dispatch({ type: 'MERGE_SERVER', scope: userId, tasks, lists, removeTaskIds, removeListIds })
         // A brand-new account with nothing cached locally gets the samples.
         if (!tasks.length && !lists.length && !state.tasks.length && !state.lists.length) {
           dispatch({ type: 'SEED', scope: userId })
@@ -391,11 +414,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const sub = subscribeToChanges(
       userId,
       (serverTasks) => {
-        const removeTaskIds = reconcile(syncedTasks.current, serverTasks)
+        const removeTaskIds = reconcile(knownTasks.current, syncedTasks.current, serverTasks)
+        saveSyncedIds(userId, 'tasks', [...knownTasks.current])
         dispatch({ type: 'MERGE_SERVER', scope: userId, tasks: serverTasks, lists: [], removeTaskIds })
       },
       (serverLists) => {
-        const removeListIds = reconcile(syncedLists.current, serverLists)
+        const removeListIds = reconcile(knownLists.current, syncedLists.current, serverLists)
+        saveSyncedIds(userId, 'lists', [...knownLists.current])
         dispatch({ type: 'MERGE_SERVER', scope: userId, tasks: [], lists: serverLists, removeListIds })
       },
     )

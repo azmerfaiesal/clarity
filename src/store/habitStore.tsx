@@ -15,12 +15,15 @@ import { makeId } from '../utils/taskUtils'
 import {
   LOCAL_SCOPE,
   loadHabits,
+  loadSyncedIds,
   loadTemplates,
   saveHabits,
+  saveSyncedIds,
   saveTemplates,
 } from './storage'
 import { useAuth } from './auth'
 import { onRevalidate } from './revalidate'
+import { mergeSnapshot } from './merge'
 import { useNotes } from './noteStore'
 import {
   deleteHabitRow,
@@ -89,7 +92,11 @@ export function HabitProvider({ children }: { children: ReactNode }) {
   )
   const [ready, setReady] = useState(false)
 
-  const seen = useRef(new Set<string>())
+  // Ids the server is known to have. Persisted, because on a cold start an
+  // empty set makes every locally cached habit look like one created offline —
+  // including the ones another device deleted while this one was closed, which
+  // is how a device ends up showing habits that no longer exist.
+  const seen = useRef(new Set<string>(loadSyncedIds(LOCAL_SCOPE, 'habits') ?? []))
   // Lets the log helpers read the latest habits without depending on them.
   const habitsRef = useRef<Habit[]>(habits)
   habitsRef.current = habits
@@ -98,12 +105,37 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     if (authLoading) return
     const next = userId ?? LOCAL_SCOPE
     if (next === scope) return
-    seen.current = new Set()
+    seen.current = new Set(loadSyncedIds(next, 'habits') ?? [])
     setScope(next)
     setHabits(loadHabits(next) ?? [])
     setTemplates(loadTemplates(next) ?? [])
     setReady(false)
   }, [authLoading, userId, scope])
+
+  /**
+   * Take a server snapshot as the truth, and decide what to do with anything
+   * local that is not in it.
+   *
+   * A local row the server has never had is one created here, offline: keep it,
+   * and push it so it stops being orphaned. A local row the server *did* have
+   * is one another device deleted: let it go. `seen` is the only thing that
+   * tells those two apart, which is why it outlives the page.
+   */
+  const applySnapshot = useCallback(
+    (server: Habit[]) => {
+      const known = seen.current
+      setHabits((local) => {
+        const { rows, orphans } = mergeSnapshot(server, local, known)
+        // Re-push, in case the original push is what failed and left it here.
+        if (userId) for (const h of orphans) upsertHabit(h, userId).catch(() => {})
+        return rows
+      })
+      const ids = new Set(server.map((h) => h.id))
+      seen.current = ids
+      saveSyncedIds(userId ?? LOCAL_SCOPE, 'habits', [...ids])
+    },
+    [userId],
+  )
 
   useEffect(() => {
     if (authLoading || ready) return
@@ -119,13 +151,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       ])
       if (cancelled) return
       if (serverTemplates.length) setTemplates(serverTemplates)
-      if (fromServer) {
-        for (const h of server) seen.current.add(h.id)
-        setHabits((local) => {
-          const ids = new Set(server.map((h) => h.id))
-          return [...server, ...local.filter((h) => !ids.has(h.id))]
-        })
-      }
+      if (fromServer) applySnapshot(server)
       setReady(true)
     })()
     return () => {
@@ -138,16 +164,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
     if (!userId || !ready) return
     const sub = subscribeToHabits(
       userId,
-      (server) => {
-        const ids = new Set(server.map((h) => h.id))
-        const removed = [...seen.current].filter((id) => !ids.has(id))
-        removed.forEach((id) => seen.current.delete(id))
-        ids.forEach((id) => seen.current.add(id))
-        setHabits((local) => [
-          ...server,
-          ...local.filter((h) => !ids.has(h.id) && !removed.includes(h.id)),
-        ])
-      },
+      applySnapshot,
       // Templates have no local-only lifecycle to protect: the server list is
       // the list, so a snapshot replaces it outright.
       (server) => setTemplates(server),
@@ -157,7 +174,7 @@ export function HabitProvider({ children }: { children: ReactNode }) {
       off()
       sub.stop()
     }
-  }, [userId, ready])
+  }, [userId, ready, applySnapshot])
 
   useEffect(() => {
     saveHabits(scope, habits)

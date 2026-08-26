@@ -29,6 +29,9 @@ const notesKey = (scope: string) => `${PREFIX}.notes:${scope}`
 const habitsKey = (scope: string) => `${PREFIX}.habits:${scope}`
 const templatesKey = (scope: string) => `${PREFIX}.habitTemplates:${scope}`
 const draftKey = (scope: string) => `${PREFIX}.draft:${scope}`
+const syncedKey = (scope: string, kind: SyncedKind) => `${PREFIX}.synced.${kind}:${scope}`
+
+export type SyncedKind = 'tasks' | 'lists' | 'notes' | 'habits'
 
 function read<T>(key: string): T | null {
   try {
@@ -116,9 +119,30 @@ export function clearScope(scope: string): void {
     localStorage.removeItem(habitsKey(scope))
     localStorage.removeItem(templatesKey(scope))
     localStorage.removeItem(draftKey(scope))
+    for (const kind of ['tasks', 'lists', 'notes', 'habits'] as SyncedKind[]) {
+      localStorage.removeItem(syncedKey(scope, kind))
+    }
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * Ids the cache believes the server already had when it was last written.
+ *
+ * This is what separates "created here while offline, hold on to it" from
+ * "deleted on another device while this one was closed, let it go". Both look
+ * identical in the cache alone — a row present locally and absent from the
+ * server — and without the distinction a device resurrects everything it ever
+ * lost track of, which is how two devices end up disagreeing about how many
+ * habits there are.
+ */
+export function loadSyncedIds(scope: string, kind: SyncedKind): string[] | null {
+  return read<string[]>(syncedKey(scope, kind))
+}
+
+export function saveSyncedIds(scope: string, kind: SyncedKind, ids: string[]): void {
+  write(syncedKey(scope, kind), ids)
 }
 
 export function loadTheme(): 'light' | 'dark' | null {

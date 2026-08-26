@@ -15,12 +15,15 @@ import {
   clearDraft as clearStoredDraft,
   loadDraft,
   loadNotes,
+  loadSyncedIds,
   saveDraft as saveStoredDraft,
   saveNotes,
+  saveSyncedIds,
 } from './storage'
 import { useAuth } from './auth'
 import { deleteNoteRow, loadNotesFromServer, subscribeToNotes, upsertNote } from './sync'
 import { onRevalidate } from './revalidate'
+import { mergeSnapshot } from './merge'
 
 /**
  * Brain Dump notes.
@@ -65,20 +68,42 @@ export function NoteProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
   const [saveState, setSaveState] = useState<SaveState>('idle')
 
-  // Ids the server is known to have, so a realtime snapshot can drop rows
-  // deleted elsewhere without discarding ones created offline here.
-  const seen = useRef(new Set<string>())
+  // Ids the server is known to have, so a snapshot can drop rows deleted
+  // elsewhere without discarding ones created offline here. Persisted: on a
+  // cold start an empty set makes both look the same, and everything the cache
+  // still holds gets resurrected.
+  const seen = useRef(new Set<string>(loadSyncedIds(LOCAL_SCOPE, 'notes') ?? []))
 
   // ---- scope switching (sign in / sign out / account switch) ----
   useEffect(() => {
     if (authLoading) return
     const next = userId ?? LOCAL_SCOPE
     if (next === scope) return
-    seen.current = new Set()
+    seen.current = new Set(loadSyncedIds(next, 'notes') ?? [])
     setScope(next)
     setNotes(loadNotes(next) ?? [])
     setReady(false)
   }, [authLoading, userId, scope])
+
+  /**
+   * Take a server snapshot as the truth. A local note the server never had was
+   * written here offline — keep it, and push it again in case the first push
+   * is what failed. One the server *did* have was deleted elsewhere: let it go.
+   */
+  const applySnapshot = useCallback(
+    (serverNotes: BrainDump[]) => {
+      const known = seen.current
+      setNotes((local) => {
+        const { rows, orphans } = mergeSnapshot(serverNotes, local, known)
+        if (userId) for (const n of orphans) void upsertNote(n, userId)
+        return rows.sort(byNewest)
+      })
+      const ids = new Set(serverNotes.map((n) => n.id))
+      seen.current = ids
+      saveSyncedIds(userId ?? LOCAL_SCOPE, 'notes', [...ids])
+    },
+    [userId],
+  )
 
   // ---- initial server read ----
   useEffect(() => {
@@ -91,13 +116,7 @@ export function NoteProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const { notes: serverNotes, fromServer } = await loadNotesFromServer(userId)
       if (cancelled) return
-      if (fromServer) {
-        for (const n of serverNotes) seen.current.add(n.id)
-        setNotes((local) => {
-          const ids = new Set(serverNotes.map((n) => n.id))
-          return [...serverNotes, ...local.filter((n) => !ids.has(n.id))].sort(byNewest)
-        })
-      }
+      if (fromServer) applySnapshot(serverNotes)
       // A failed read leaves us offline-only: local edits still work and are
       // pushed when the next save succeeds.
       setReady(true)
@@ -110,22 +129,13 @@ export function NoteProvider({ children }: { children: ReactNode }) {
   // ---- realtime, plus a re-read whenever the socket cannot have kept up ----
   useEffect(() => {
     if (!userId || !ready) return
-    const sub = subscribeToNotes(userId, (serverNotes) => {
-      const ids = new Set(serverNotes.map((n) => n.id))
-      const removed = [...seen.current].filter((id) => !ids.has(id))
-      removed.forEach((id) => seen.current.delete(id))
-      ids.forEach((id) => seen.current.add(id))
-      setNotes((local) => {
-        const localOnly = local.filter((n) => !ids.has(n.id) && !removed.includes(n.id))
-        return [...serverNotes, ...localOnly].sort(byNewest)
-      })
-    })
+    const sub = subscribeToNotes(userId, applySnapshot)
     const off = onRevalidate(sub.refresh)
     return () => {
       off()
       sub.stop()
     }
-  }, [userId, ready])
+  }, [userId, ready, applySnapshot])
 
   // ---- local cache ----
   useEffect(() => {
