@@ -22,6 +22,17 @@ type CellState = 'future' | 'untracked' | 'notdue' | 'missed' | 'done'
 const RAMP = [0, 0.3, 0.5, 0.75, 1]
 
 /**
+ * One cell size for all three ranges. A month drawn larger than the year it
+ * sits beside reads as a different instrument rather than the same one zoomed
+ * in, and switching between them jumps.
+ */
+const CELL = 12
+
+/** Gap and corner, derived so every grid keeps the same rhythm. */
+const gapFor = (cell: number) => Math.max(2, Math.round(cell / 4))
+const radiusFor = (cell: number) => Math.max(3, Math.round(cell / 3))
+
+/**
  * How one day should read. Shared by the year grid and the month row so the
  * two views cannot drift into disagreeing about the same date.
  */
@@ -69,12 +80,10 @@ function HeatCell({
   today,
   showFuture = false,
   bursting = false,
-  fluid = false,
   onPickDay,
 }: {
   habit: Habit
   cell: ReturnType<typeof cellFor>
-  /** Ignored when `fluid`, where the cell takes its width from the grid. */
   size: number
   radius: number
   today: string
@@ -82,8 +91,6 @@ function HeatCell({
   showFuture?: boolean
   /** This day was just finished — set off the firework. */
   bursting?: boolean
-  /** Fill the column it is placed in rather than take a fixed size. */
-  fluid?: boolean
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const { date, state, level } = cell
@@ -99,15 +106,14 @@ function HeatCell({
       title={cellTitle(habit, cell)}
       style={
         {
-          ...(fluid ? {} : { width: `${size}px`, height: `${size}px` }),
+          width: `${size}px`,
+          height: `${size}px`,
           borderRadius: `${radius}px`,
           ...(date === today || bursting ? { '--cell-glow': habit.color } : {}),
           ...(state === 'done' ? { backgroundColor: habit.color, opacity: RAMP[level] } : {}),
         } as React.CSSProperties
       }
-      className={`relative transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-110 ${
-        fluid ? 'aspect-square w-full' : ''
-      } ${
+      className={`relative transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
         // Today wears a ring that breathes, so the eye finds the live end of
         // the range without reading the labels.
         date === today ? 'cell-today' : ''
@@ -139,7 +145,7 @@ function HeatCell({
  */
 export function HabitHeatmap({
   habit,
-  cell = 12,
+  cell = CELL,
   burstDate = null,
   onPickDay,
 }: {
@@ -190,12 +196,10 @@ export function HabitHeatmap({
     return { weeks, months }
   }, [habit, today, firstDay])
 
-  const gap = Math.max(2, Math.round(cell / 4))
+  const gap = gapFor(cell)
   // Months read as separate blocks rather than one continuous ribbon.
   const monthGap = gap + 3
-  // Rounded almost to a squircle, stopping short of a circle so the grid still
-  // reads as a grid.
-  const radius = Math.max(3, Math.round(cell / 3))
+  const radius = radiusFor(cell)
   const col = `${cell}px`
 
   return (
@@ -305,7 +309,7 @@ function MonthCalendar({
   month,
   today,
   firstDay,
-  compact = false,
+  cell = CELL,
   burstDate,
   onPickDay,
 }: {
@@ -314,8 +318,7 @@ function MonthCalendar({
   month: number
   today: string
   firstDay: WeekStart
-  /** Three of these stacked need smaller cells or the card runs off the page. */
-  compact?: boolean
+  cell?: number
   burstDate?: string | null
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
@@ -333,16 +336,23 @@ function MonthCalendar({
     return { label: MONTHS[month], weeks }
   }, [habit, year, month, today, firstDay])
 
+  const gap = gapFor(cell)
+  const radius = radiusFor(cell)
+
   return (
     <div>
       <div className="mb-1 font-mono text-3xs text-faint">{label}</div>
+      {/* Fixed tracks rather than fractions: the cells are the same size here
+          as in every other range, so the block is as wide as it needs to be. */}
       <div
-        className={`grid grid-cols-7 ${compact ? 'max-w-[15rem] gap-[3px]' : 'max-w-[21rem] gap-1'}`}
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(7, ${cell}px)`, gap: `${gap}px` }}
       >
         {weekdayOrder(firstDay).map((d, i) => (
           <span
             key={i}
-            className="text-center font-mono text-3xs text-faint"
+            className="text-center font-mono text-faint"
+            style={{ fontSize: Math.max(8, cell - 2), lineHeight: 1.2 }}
             aria-hidden
           >
             {WEEKDAY_INITIALS[d]}
@@ -356,11 +366,10 @@ function MonthCalendar({
               key={c.date}
               habit={habit}
               cell={c}
-              size={0}
-              radius={6}
+              size={cell}
+              radius={radius}
               today={today}
               showFuture
-              fluid
               bursting={c.date === burstDate}
               onPickDay={onPickDay}
             />
@@ -383,7 +392,7 @@ function MonthCalendar({
 export function HabitMonthRows({
   habit,
   span = 'month',
-  cell = 16,
+  cell = CELL,
   burstDate = null,
   onPickDay,
 }: {
@@ -437,7 +446,7 @@ export function HabitMonthRows({
             month={m.month}
             today={today}
             firstDay={firstDay}
-            compact={span === 'quarter'}
+            cell={cell}
             burstDate={burstDate}
             onPickDay={onPickDay}
           />
@@ -446,8 +455,8 @@ export function HabitMonthRows({
     )
   }
 
-  const gap = Math.max(2, Math.round(cell / 4))
-  const radius = Math.max(3, Math.round(cell / 3))
+  const gap = gapFor(cell)
+  const radius = radiusFor(cell)
   const longest = Math.max(...rows.map((r) => r.days.length))
   const todayN = Number(today.slice(8))
   const todayInView = rows.some((r) => r.current)
