@@ -256,7 +256,10 @@ function AppShell() {
         onDeleteList={(id) => store.deleteList(id)}
         onOpenSettings={() => setSettingsOpen(true)}
         noteCount={notes.length}
-        habitCount={habits.filter((h) => h.archivedAt === null).length}
+        habitCount={
+          // Writing is counted under Notes, where its grid now lives.
+          habits.filter((h) => h.archivedAt === null && h.source !== 'notes').length
+        }
         habitFilter={habitFilter}
         onHabitFilter={setHabitFilter}
         templates={templates}

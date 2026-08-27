@@ -1,9 +1,42 @@
 import { Menu, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { BrainDump as Note } from '../types'
+import type { BrainDump as Note, Habit } from '../types'
 import { useNotes } from '../store/noteStore'
-import { formatDateTime, formatRelative } from '../utils/dateUtils'
+import { useHabits } from '../store/habitStore'
+import { HabitHeatmap, HabitMonthRows } from './HabitHeatmap'
+import { FlameIcon } from './FlameIcon'
+import { NoteDayDetail } from './NoteDayDetail'
+import { formatDateTime, formatRelative, todayStr } from '../utils/dateUtils'
+import { habitStats } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
+
+/**
+ * Stats are derived, so they need a habit even when there is not one yet. This
+ * stands in for the writing habit until it is created, and reads as zero.
+ */
+const EMPTY_HABIT: Habit = {
+  id: '',
+  name: 'Writing',
+  description: '',
+  repetitionType: 'daily',
+  daysOfWeek: [],
+  datesOfMonth: [],
+  timesPerWeek: null,
+  trackBy: 'checkoff',
+  dailyTarget: null,
+  color: '#c084fc',
+  icon: '',
+  targetStreak: null,
+  reminderTime: null,
+  createdAt: new Date(0).toISOString(),
+  logs: {},
+  logNotes: {},
+  lastCompleted: null,
+  archivedAt: null,
+  sortOrder: 0,
+  source: 'notes',
+}
 
 /** A note counts as edited once its stamps drift apart by more than a second. */
 function wasEdited(note: Note): boolean {
@@ -54,6 +87,17 @@ export function BrainDump({
   // afterwards brings it back. Simpler than tracking focus, and it behaves the
   // same way, since typing is the only thing that fills the field.
   const [suggestDismissed, setSuggestDismissed] = useState(false)
+  // The writing habit and its grid live here now rather than under Habits: it
+  // is a picture of these notes, so this is where it belongs.
+  const { habits, addWritingHabit } = useHabits()
+  const writing = habits.find((h) => h.source === 'notes' && h.archivedAt === null)
+  const [writingRange, setWritingRange] = useState<'month' | 'year'>('month')
+  const [day, setDay] = useState<{ date: string; anchor: { x: number; y: number } } | null>(null)
+  const firstDay = useWeekStart()
+  const writingStats = useMemo(
+    () => habitStats(writing ?? EMPTY_HABIT, todayStr(), firstDay),
+    [writing, firstDay],
+  )
   const [highlight, setHighlight] = useState(0)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -230,6 +274,17 @@ export function BrainDump({
     [suggestions, highlight, tagDraft, tags, commitTag],
   )
 
+  const byDay = useMemo(() => {
+    const map = new Map<string, Note[]>()
+    for (const n of notes) {
+      const key = n.createdAt.slice(0, 10)
+      const list = map.get(key)
+      if (list) list.push(n)
+      else map.set(key, [n])
+    }
+    return map
+  }, [notes])
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return notes.filter((n) => {
@@ -273,6 +328,99 @@ export function BrainDump({
           </p>
         </div>
       </header>
+
+      {/* Writing streak. A picture of the notes below it, so it reads as part
+          of this page rather than a habit that happens to mention them. */}
+      {writing ? (
+        <section className="mb-8 rounded-lg border border-line bg-raised px-4 py-3.5">
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="label">Writing streak</span>
+            <span className="flex items-center gap-1.5">
+              <FlameIcon
+                className="h-3.5 w-3.5"
+                beaming={writingStats.current > 0}
+                color={writing.color}
+                streak={writingStats.current}
+                peak={writing.targetStreak ?? 30}
+              />
+              <span
+                className="font-mono text-sm font-semibold tabular-nums"
+                style={{ color: writing.color }}
+              >
+                {writingStats.current}
+              </span>
+              <span className="text-3xs text-faint">
+                day{writingStats.current === 1 ? '' : 's'}
+              </span>
+            </span>
+            <div
+              role="radiogroup"
+              aria-label="Writing history range"
+              className="ml-auto inline-flex rounded-md border border-line p-0.5"
+            >
+              {(
+                [
+                  ['month', 'This month'],
+                  ['year', 'Last 365 days'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={writingRange === value}
+                  onClick={() => setWritingRange(value)}
+                  className={`cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
+                    writingRange === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {writingRange === 'year' ? (
+            <HabitHeatmap
+              habit={writing}
+              onPickDay={(date, anchor) => setDay({ date, anchor })}
+            />
+          ) : (
+            <HabitMonthRows
+              habit={writing}
+              span="month"
+              onPickDay={(date, anchor) => setDay({ date, anchor })}
+            />
+          )}
+          <p className="mt-2 font-mono text-3xs text-faint">
+            {writingStats.total} day{writingStats.total === 1 ? '' : 's'} written ·{' '}
+            {writingStats.best} best streak
+          </p>
+        </section>
+      ) : (
+        <div className="mb-8">
+          <button
+            type="button"
+            onClick={addWritingHabit}
+            title="Tracks a streak of the days you write something"
+            className="cursor-pointer rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
+          >
+            + Track a writing streak
+          </button>
+        </div>
+      )}
+
+      {day && (
+        <NoteDayDetail
+          date={day.date}
+          notes={byDay.get(day.date) ?? []}
+          anchor={day.anchor}
+          onOpenNote={(note) => {
+            setDay(null)
+            openForEdit(note)
+          }}
+          onClose={() => setDay(null)}
+        />
+      )}
 
       {/* History */}
       {notes.length > 0 && (

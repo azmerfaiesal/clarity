@@ -130,6 +130,13 @@ export function Guide({
             across the week rather than on fixed days, so a streak survives moving a session from
             Tuesday to Wednesday.
           </Feature>
+          <Feature name="Timing a session">
+            A habit measured in minutes gets a stopwatch: open today's box in
+            the grid and start it. It keeps running if you close the popup or the
+            tab — the elapsed time comes from the clock rather than a counter — and
+            stopping logs the whole session to the day, rounded to the nearest
+            minute. Reset throws the session away without logging it.
+          </Feature>
           <Feature name="What counts as done">
             A simple tick, a target count (eight glasses of water), or a target duration (thirty
             minutes of reading). A partial day still shows colour in the grid — it was worked on —
@@ -150,11 +157,7 @@ export function Guide({
             template yourself, which you can then edit or remove. A template is a blueprint: it
             makes new habits and is not linked to the ones already made from it.
           </Feature>
-          <Feature name="Writing">
-            A special habit that ticks itself on any day you add a note. It is derived rather than
-            recorded, so notes written before you created it still count, and deleting a note
-            takes its day back.
-          </Feature>
+
         </div>
       </Part>
 
@@ -168,6 +171,13 @@ export function Guide({
             The only organisation there is. Start typing and Clarity offers the tags you already
             use, so “work” does not quietly become “Work” and “werk”. The sidebar lists every tag
             with a count, as a way back in.
+          </Feature>
+          <Feature name="The writing streak">
+            A grid of the days you wrote something, at the top of this page rather than under
+            Habits, since it is a picture of these notes. It ticks itself and is derived rather
+            than recorded, so notes written before you started tracking still count and deleting
+            one takes its day back. Click any day to see what you wrote then — four at a time,
+            with pages if there were more.
           </Feature>
           <Feature name="Nothing is lost">
             A note in progress is kept as you type, so closing the tab mid-thought costs nothing.

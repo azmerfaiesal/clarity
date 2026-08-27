@@ -5,6 +5,7 @@ import { parseDate } from '../utils/dateUtils'
 import { amountOn, formatAmount, isCompletedOn, isScheduled, runContaining } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
 import { LogNotes } from './LogNotes'
+import { HabitTimer } from './HabitTimer'
 
 /**
  * One day's record, opened from a heatmap cell: what happened, where it sits in
@@ -20,6 +21,7 @@ export function DayDetail({
   anchor,
   editable,
   onSetNotes,
+  onLogMinutes,
   onClose,
 }: {
   habit: Habit
@@ -29,6 +31,8 @@ export function DayDetail({
   /** Writing habits are derived from Notes, so their days are not annotatable. */
   editable: boolean
   onSetNotes: (notes: string[]) => void
+  /** Add minutes to this day, from the timer. */
+  onLogMinutes?: (minutes: number) => void
   onClose: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -41,6 +45,8 @@ export function DayDetail({
   const run = runContaining(habit, date, today, firstDay)
   const notes = habit.logNotes[date] ?? []
   const counted = habit.trackBy !== 'checkoff'
+  // Timing only makes sense for minutes, and only for the day being lived.
+  const canTime = habit.trackBy === 'duration' && date === today && editable && !!onLogMinutes
 
   useEffect(() => {
     const el = ref.current
@@ -144,6 +150,8 @@ export function DayDetail({
           )}
         </p>
       )}
+
+      {canTime && <HabitTimer habit={habit} date={date} onLog={onLogMinutes} />}
 
       {(notes.length > 0 || (editable && amount > 0)) && (
         <div className="mt-2 border-t border-line pt-2">
