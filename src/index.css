@@ -347,11 +347,17 @@ body {
   transition-timing-function: ease;
 }
 
-/* The one rule above that would cost something: a disclosure opened inside the
-   cross-fade would snap rather than grow, having had its own property list
-   overwritten. Give it back. */
+/* The one rule above that would cost something: a disclosure moved inside the
+   cross-fade would snap rather than slide, having had its own property list
+   overwritten. Give it back — including the two that close it, whose delay is
+   what lets the collapse play before the panel is taken away. */
 .theme-shift .disclosure {
-  transition-property: grid-template-rows, opacity, background-color, border-color, color;
+  transition-property:
+    grid-template-rows, opacity, max-height, visibility, background-color, border-color, color;
+  transition-delay: 0s, 0s, 220ms, 220ms, 0s, 0s, 0s;
+}
+.theme-shift .disclosure[data-open='true'] {
+  transition-delay: 0s;
 }
 
 @keyframes fade-out {
