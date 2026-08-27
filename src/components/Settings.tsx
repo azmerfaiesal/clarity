@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ALargeSmall,
   BellRing,
+  BookOpen,
   CalendarDays,
   Check,
   ChevronDown,
@@ -25,14 +26,6 @@ import { ACCENTS, ACCENT_KEYS, accentSwatch } from '../store/accents'
 import { clearSyncError, useSyncHealth } from '../store/syncHealth'
 import { formatRelative } from '../utils/dateUtils'
 
-const SHORTCUTS: [string, string][] = [
-  ['N', 'New task'],
-  ['/', 'Search'],
-  ['⌘ / Ctrl + K', 'Search palette'],
-  ['Enter', 'Save task'],
-  ['Esc', 'Close dialog'],
-]
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
  <section className="border-t border-line px-5 py-4 first:border-t-0">
@@ -44,7 +37,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export function Settings({ onClose }: { onClose: () => void }) {
+export function Settings({
+  onClose,
+  onOpenGuide,
+}: {
+  onClose: () => void
+  onOpenGuide: () => void
+}) {
   const {
     theme,
     setTheme,
@@ -105,7 +104,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label="Settings"
         onClick={(e) => e.stopPropagation()}
- className="anim-scale-in max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+ className="anim-settings-in max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
  <div className="flex items-center justify-between px-5 pt-5 pb-1">
  <h2 className="text-md font-semibold tracking-tight text-ink">
@@ -454,19 +453,22 @@ export function Settings({ onClose }: { onClose: () => void }) {
           </div>
         </Section>
 
-        <Section title="Keyboard shortcuts">
- <dl className="space-y-1.5">
-            {SHORTCUTS.map(([key, action]) => (
- <div key={key} className="flex items-center justify-between">
- <dt className="text-sm text-muted">{action}</dt>
-                <dd>
- <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-2xs text-muted">
-                    {key}
-                  </kbd>
-                </dd>
-              </div>
-            ))}
-          </dl>
+        <Section title="Help">
+          <p className="text-sm text-muted">
+            What Clarity is, what it can do, how to get the most out of it, and the keyboard
+            shortcuts — all on one page.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              onClose()
+              onOpenGuide()
+            }}
+ className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+          >
+ <BookOpen className="h-3.5 w-3.5" aria-hidden />
+            How Clarity works
+          </button>
         </Section>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   CheckCircle2,
+  BookOpen,
   Inbox,
   LayoutTemplate,
   ListPlus,
@@ -733,6 +734,20 @@ export function Sidebar({
 
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-line p-2.5">
+        <button
+          type="button"
+          onClick={() => nav('guide')}
+          aria-current={view === 'guide' ? 'page' : undefined}
+          title="How Clarity works"
+          aria-label="How Clarity works"
+          className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors ${
+            view === 'guide'
+              ? 'bg-accent-soft text-accent'
+              : 'text-faint hover:bg-accent-soft hover:text-accent'
+          }`}
+        >
+          <BookOpen className="h-4 w-4" />
+        </button>
         <button
           type="button"
           onClick={() => {
