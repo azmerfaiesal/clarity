@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { Habit } from '../types'
 import { addDays, parseDate, todayStr } from '../utils/dateUtils'
 import {
@@ -12,6 +12,7 @@ import {
   type WeekStart,
 } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
+import { useMediaQuery } from '../utils/useMediaQuery'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -68,10 +69,12 @@ function HeatCell({
   today,
   showFuture = false,
   bursting = false,
+  fluid = false,
   onPickDay,
 }: {
   habit: Habit
   cell: ReturnType<typeof cellFor>
+  /** Ignored when `fluid`, where the cell takes its width from the grid. */
   size: number
   radius: number
   today: string
@@ -79,6 +82,8 @@ function HeatCell({
   showFuture?: boolean
   /** This day was just finished — set off the firework. */
   bursting?: boolean
+  /** Fill the column it is placed in rather than take a fixed size. */
+  fluid?: boolean
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const { date, state, level } = cell
@@ -94,14 +99,15 @@ function HeatCell({
       title={cellTitle(habit, cell)}
       style={
         {
-          width: `${size}px`,
-          height: `${size}px`,
+          ...(fluid ? {} : { width: `${size}px`, height: `${size}px` }),
           borderRadius: `${radius}px`,
           ...(date === today || bursting ? { '--cell-glow': habit.color } : {}),
           ...(state === 'done' ? { backgroundColor: habit.color, opacity: RAMP[level] } : {}),
         } as React.CSSProperties
       }
-      className={`relative transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
+      className={`relative transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-110 ${
+        fluid ? 'aspect-square w-full' : ''
+      } ${
         // Today wears a ring that breathes, so the eye finds the live end of
         // the range without reading the labels.
         date === today ? 'cell-today' : ''
@@ -146,6 +152,15 @@ export function HabitHeatmap({
 }) {
   const today = todayStr()
   const firstDay = useWeekStart()
+  const scroller = useRef<HTMLDivElement>(null)
+
+  // A year is wider than a phone, so it opens at the end — where today is.
+  // Scrolling back through the year is a choice; scrolling forward to find
+  // today should not be the price of opening the card.
+  useEffect(() => {
+    const el = scroller.current
+    if (el) el.scrollLeft = el.scrollWidth
+  }, [habit.id])
 
   const { weeks, months } = useMemo(() => {
     // 53 columns ending on the week containing today.
@@ -186,7 +201,7 @@ export function HabitHeatmap({
   return (
     // `overflow-x-auto` clips vertically too, so the scroller needs a little
     // headroom or the firework on an edge cell is guillotined.
-    <div className="overflow-x-auto">
+    <div ref={scroller} className="overflow-x-auto">
       <div className="inline-flex gap-1.5 py-1.5">
         {/* Weekday gutter */}
         <div
@@ -272,6 +287,90 @@ function gutterLabels(firstDay: WeekStart): string[] {
   return weekdayOrder(firstDay).map((d, i) => (i % 2 === 1 ? names[d] : ''))
 }
 
+/** Sun…Sat, in the order the week is set to run. */
+const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+/**
+ * One month as a calendar: seven columns, a row per week.
+ *
+ * The flat row is the better shape when there is room for it, but on a phone
+ * thirty-one cells is about twice the width of the screen, so today sat off the
+ * right-hand edge and had to be scrolled to — on the one view whose whole
+ * purpose is to show you where you are now. Folded into weeks it fits, and the
+ * columns line up by weekday, which a flat row never gave you.
+ */
+function MonthCalendar({
+  habit,
+  year,
+  month,
+  today,
+  firstDay,
+  compact = false,
+  burstDate,
+  onPickDay,
+}: {
+  habit: Habit
+  year: number
+  month: number
+  today: string
+  firstDay: WeekStart
+  /** Three of these stacked need smaller cells or the card runs off the page. */
+  compact?: boolean
+  burstDate?: string | null
+  onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+}) {
+  const { label, weeks } = useMemo(() => {
+    const start = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    const days = new Date(year, month + 1, 0).getDate()
+    // Blank slots before the 1st so it lands under the right weekday.
+    const lead = (parseDate(start).getDay() - firstDay + 7) % 7
+    const cells: (ReturnType<typeof cellFor> | null)[] = Array.from({ length: lead }, () => null)
+    for (let i = 0; i < days; i++) cells.push(cellFor(habit, addDays(start, i), today))
+    while (cells.length % 7 !== 0) cells.push(null)
+
+    const weeks: (ReturnType<typeof cellFor> | null)[][] = []
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+    return { label: MONTHS[month], weeks }
+  }, [habit, year, month, today, firstDay])
+
+  return (
+    <div>
+      <div className="mb-1 font-mono text-3xs text-faint">{label}</div>
+      <div
+        className={`grid grid-cols-7 ${compact ? 'max-w-[15rem] gap-[3px]' : 'max-w-[21rem] gap-1'}`}
+      >
+        {weekdayOrder(firstDay).map((d, i) => (
+          <span
+            key={i}
+            className="text-center font-mono text-3xs text-faint"
+            aria-hidden
+          >
+            {WEEKDAY_INITIALS[d]}
+          </span>
+        ))}
+        {weeks.flat().map((c, i) =>
+          c === null ? (
+            <span key={`pad-${i}`} aria-hidden />
+          ) : (
+            <HeatCell
+              key={c.date}
+              habit={habit}
+              cell={c}
+              size={0}
+              radius={6}
+              today={today}
+              showFuture
+              fluid
+              bursting={c.date === burstDate}
+              onPickDay={onPickDay}
+            />
+          ),
+        )}
+      </div>
+    </div>
+  )
+}
+
 /**
  * The current month, or the three months of the current quarter, as one row of
  * days each — numbered underneath.
@@ -296,6 +395,17 @@ export function HabitMonthRows({
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const today = todayStr()
+  const firstDay = useWeekStart()
+  // Below this the flat row is wider than the screen, which is the whole
+  // problem: today ends up off the right-hand edge of a view meant to show it.
+  const narrow = useMediaQuery('(max-width: 639px)')
+
+  const months = useMemo(() => {
+    const d = parseDate(today)
+    const first = span === 'quarter' ? Math.floor(d.getMonth() / 3) * 3 : d.getMonth()
+    const count = span === 'quarter' ? 3 : 1
+    return Array.from({ length: count }, (_, i) => ({ year: d.getFullYear(), month: first + i }))
+  }, [today, span])
 
   const rows = useMemo(() => {
     const d = parseDate(today)
@@ -315,6 +425,26 @@ export function HabitMonthRows({
       }
     })
   }, [habit, today, span])
+
+  if (narrow) {
+    return (
+      <div className="space-y-3">
+        {months.map((m) => (
+          <MonthCalendar
+            key={`${m.year}-${m.month}`}
+            habit={habit}
+            year={m.year}
+            month={m.month}
+            today={today}
+            firstDay={firstDay}
+            compact={span === 'quarter'}
+            burstDate={burstDate}
+            onPickDay={onPickDay}
+          />
+        ))}
+      </div>
+    )
+  }
 
   const gap = Math.max(2, Math.round(cell / 4))
   const radius = Math.max(3, Math.round(cell / 3))
