@@ -104,8 +104,8 @@ export function TaskInput({
 
   // Both states live in one tree so the form can grow out of the button rather
   // than replace it: swapping two elements cannot be animated, a disclosure
-  // that opens from zero height can. The form stays mounted while closed — and
-  // inert, so nothing inside it can be tabbed into or read out.
+  // that opens from zero height can. The panel is inert while closed, so the
+  // form stays mounted without anything in it being tabbable or read out.
   return (
     <div ref={wrapRef}>
       {!open && (
@@ -122,12 +122,9 @@ export function TaskInput({
         </button>
       )}
 
-      <div className="disclosure" data-open={open}>
+      <div className="disclosure" data-open={open} inert={!open}>
         <div>
-          <div
-            inert={!open}
- className="rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
-          >
+ <div className="rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40">
  <div className="p-3">
         <input
           ref={titleRef}

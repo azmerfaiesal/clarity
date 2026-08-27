@@ -422,7 +422,7 @@ export function Sidebar({
         />
         {/* Task views and lists are ways of slicing tasks, so they live under
             Tasks rather than competing with the sections. */}
-        <div className="disclosure" data-open={tasksOpen}>
+        <div className="disclosure" data-open={tasksOpen} inert={!tasksOpen}>
           <div>
             <div className="space-y-0.5 pt-0.5 pl-3.5">
               <NavItem
@@ -496,7 +496,7 @@ export function Sidebar({
           </button>
         </div>
 
-        <div className="disclosure" data-open={categoriesOpen}>
+        <div className="disclosure" data-open={categoriesOpen} inert={!categoriesOpen}>
           <div>
         <div className="space-y-0.5 pt-0.5">
           {lists.map((l, i) => {
@@ -616,7 +616,7 @@ export function Sidebar({
           }}
         />
         {/* Filter the habit list by how often it repeats. */}
-        <div className="disclosure" data-open={habitsOpen}>
+        <div className="disclosure" data-open={habitsOpen} inert={!habitsOpen}>
           <div>
             <div className="space-y-0.5 pt-0.5 pl-3.5">
               {(
@@ -661,7 +661,7 @@ export function Sidebar({
                   aria-hidden
                 />
               </button>
-              <div className="disclosure" data-open={templatesOpen}>
+              <div className="disclosure" data-open={templatesOpen} inert={!templatesOpen}>
                 <div>
                   <div className="space-y-0.5 pb-1">
                     <span className="block px-2.5 pt-1 pb-0.5 font-mono text-3xs text-faint">
@@ -707,7 +707,7 @@ export function Sidebar({
           }}
         />
         {/* Tags in use across the notes, as a way in. */}
-        <div className="disclosure" data-open={notesOpen}>
+        <div className="disclosure" data-open={notesOpen} inert={!notesOpen}>
           <div>
             <div className="space-y-0.5 pt-0.5 pl-3.5">
               <button

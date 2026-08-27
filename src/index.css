@@ -235,17 +235,45 @@ body {
  * where height:auto cannot, so the panel can size itself to its content and
  * still slide rather than snap.
  */
+/*
+ * A panel that grows from nothing, since height:auto cannot be transitioned.
+ *
+ * The row sizes are the usual 0fr → 1fr pair, and `overflow: hidden` on the
+ * child is what lets the closed row reach zero: a grid item that clips has an
+ * automatic minimum size of zero, where one that does not is floored at its
+ * min-content height.
+ *
+ * That much is the standard trick, and it is where this went wrong — a panel
+ * that had been opened would not close again in Safari, however plainly the
+ * chevron said it had. Rather than guess at which part of the sizing it
+ * disagreed on, the closed state now also says so in ways nothing has to
+ * infer: `max-height: 0`, its own `overflow: hidden`, and `visibility:
+ * hidden`, with `inert` in the markup. The last two switch only once the
+ * collapse has played, hence the delay one way and none coming back.
+ */
 .disclosure {
   display: grid;
   grid-template-rows: 0fr;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
   transition:
     grid-template-rows 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 160ms ease-out;
-  opacity: 0;
+    opacity 160ms ease-out,
+    max-height 0s 220ms,
+    visibility 0s 220ms;
 }
 .disclosure[data-open='true'] {
   grid-template-rows: 1fr;
+  max-height: none;
   opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 160ms ease-out,
+    max-height 0s,
+    visibility 0s;
 }
 .disclosure > * {
   overflow: hidden;
