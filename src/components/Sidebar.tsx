@@ -27,6 +27,19 @@ import { HabitIcon } from './HabitIcon'
 
 const LIST_COLORS = ['#3ddbf0', '#3bff9e', '#ffb020', '#ff4d5e', '#4aa8ff', '#a78bfa', '#f472b6']
 
+/**
+ * A nav row, with an optional disclosure toggle beside it.
+ *
+ * The toggle is a sibling of the row rather than a control nested inside it.
+ * It used to be a `role="button"` span within the row's own `<button>`, which
+ * is invalid — a button may not contain another — and browsers do not agree on
+ * which one a tap belongs to. iOS Safari hands it to the outer one, so tapping
+ * the chevron on a phone ran the row's handler instead: the panel opened and
+ * could never be closed again.
+ *
+ * The row also toggles when it is already the view you are on, so the target
+ * is the whole row rather than a chevron a few pixels wide.
+ */
 function NavItem({
   icon,
   label,
@@ -46,15 +59,9 @@ function NavItem({
   onToggle?: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? 'page' : undefined}
-      aria-expanded={onToggle ? expanded : undefined}
-      className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
-        active
-          ? 'bg-accent-soft font-medium text-ink'
-          : 'text-muted hover:bg-surface hover:text-ink'
+    <div
+      className={`relative flex w-full items-center rounded-md transition-colors ${
+        active ? 'bg-accent-soft font-medium text-ink' : 'text-muted hover:bg-surface hover:text-ink'
       }`}
     >
       {/* Active rail — the one place the accent reads as "you are here". */}
@@ -64,30 +71,44 @@ function NavItem({
           aria-hidden
         />
       )}
-      <span className={active ? 'text-accent' : 'text-faint'}>{icon}</span>
-      <span className="flex-1 truncate">{label}</span>
-      {count !== undefined && count > 0 && (
-        <span className="font-mono text-2xs text-faint tabular-nums">{count}</span>
-      )}
+      <button
+        type="button"
+        onClick={() => {
+          // Already here: the only thing left for this row to do is fold.
+          if (active && onToggle) onToggle()
+          else onClick()
+        }}
+        aria-current={active ? 'page' : undefined}
+        className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 py-2 pl-2.5 text-left text-sm ${
+          onToggle ? 'pr-1' : 'pr-2.5'
+        }`}
+      >
+        <span className={active ? 'text-accent' : 'text-faint'}>{icon}</span>
+        <span className="flex-1 truncate">{label}</span>
+        {count !== undefined && count > 0 && (
+          <span className="font-mono text-2xs text-faint tabular-nums">{count}</span>
+        )}
+      </button>
       {onToggle && (
-        <span
-          role="button"
-          tabIndex={-1}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
           aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggle()
-          }}
-          className="-mr-1 rounded p-0.5 text-faint transition-transform duration-200 hover:text-ink"
-          style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
+          // Padded well past the size of the glyph: a 14px chevron is not
+          // something a thumb can be expected to find.
+          className="mr-0.5 shrink-0 cursor-pointer rounded p-2.5 text-faint transition-colors hover:text-ink"
         >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </span>
+          <ChevronRight
+            className="h-3.5 w-3.5 transition-transform duration-200"
+            style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
+            aria-hidden
+          />
+        </button>
       )}
-    </button>
+    </div>
   )
 }
-
 
 /**
  * One template in the sidebar: tap to start a habit from it. Saved templates
