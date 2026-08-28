@@ -9,8 +9,8 @@ import type { ViewId } from '../types'
 
 const SHORTCUTS: [string, string][] = [
   ['N', 'New task, in any task view'],
-  ['/', 'Search'],
-  ['⌘ / Ctrl + K', 'Open the search palette'],
+  ['/', 'Jump to the search bar'],
+  ['⌘ / Ctrl + K', 'Jump to the search bar'],
   ['Enter', 'Save a task, or add a tag while writing a note'],
   ['⌘ / Ctrl + Enter', 'Save the note you are writing'],
   ['↑ ↓', 'Move through tag suggestions'],
@@ -116,8 +116,13 @@ export function Guide({
             the limitation under Notifications below.
           </Feature>
           <Feature name="Priority, tags and search">
-            Three priority flags, free-form tags, and a search palette (⌘K) that looks across
-            titles, descriptions, tags and category names at once.
+            Three priority flags, free-form tags, and a search bar docked to the foot of every
+            page — press{' '}
+            <kbd className="rounded border border-line bg-surface px-1 py-0.5 font-mono text-2xs text-muted">
+              /
+            </kbd>{' '}
+            to jump to it. It looks across task titles, descriptions,
+            tags and category names, and across your notes, at once.
           </Feature>
         </div>
       </Part>

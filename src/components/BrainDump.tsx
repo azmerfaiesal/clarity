@@ -59,20 +59,26 @@ function normalizeTag(raw: string): string {
 /**
  * Brain Dump — a blank sheet rather than a form.
  *
- * The composer sits at the foot of the page, under what has already been
- * written, so the flow is read back, then add. Editing reuses that same
- * composer inline instead of opening a dialog, which keeps the writing surface
- * constant — picking a note scrolls down to it.
+ * The composer sits at the top, under the streak that measures it, so writing
+ * something is the first thing the page offers rather than the last thing you
+ * scroll to. Editing reuses that same composer inline instead of opening a
+ * dialog, which keeps the writing surface constant — picking a note scrolls
+ * back up to it.
  */
 export function BrainDump({
   onOpenMobileNav,
   tagFilter,
   onTagFilter,
+  openNoteId,
+  onNoteOpened,
 }: {
   onOpenMobileNav: () => void
   /** Owned by App so the sidebar's tag list can drive it. */
   tagFilter: string | null
   onTagFilter: (tag: string | null) => void
+  /** A note chosen in the global search; opened here for editing. */
+  openNoteId?: string | null
+  onNoteOpened?: () => void
 }) {
   const { notes, saveState, createNote, updateNote, deleteNote, readDraft, writeDraft, discardDraft } =
     useNotes()
@@ -196,6 +202,16 @@ export function BrainDump({
     },
     [deleteNote, editingId, reset],
   )
+
+  // A note picked in the global search. Waits for the note to actually be in
+  // hand — search can land here before this account's notes have loaded.
+  useEffect(() => {
+    if (!openNoteId) return
+    const note = notes.find((n) => n.id === openNoteId)
+    if (!note) return
+    openForEdit(note)
+    onNoteOpened?.()
+  }, [openNoteId, notes, openForEdit, onNoteOpened])
 
   // Esc cancels an edit; it never clears a new note in progress.
   useEffect(() => {
@@ -422,6 +438,157 @@ export function BrainDump({
         />
       )}
 
+      {/* Writing area */}
+      <div
+        ref={composerRef}
+        className="anim-fade-in mb-8 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
+      >
+        {editing && (
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2 font-mono text-2xs text-faint">
+            <span className="truncate">Editing · {formatDateTime(editing.createdAt)}</span>
+            <button
+              type="button"
+              onClick={reset}
+              className="ml-auto shrink-0 cursor-pointer rounded px-1.5 py-0.5 font-sans text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value)
+            setDirty(true)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              void save()
+            }
+          }}
+          placeholder="What's on your mind?"
+          aria-label="Brain dump"
+          rows={6}
+          className="block max-h-[60vh] w-full resize-none bg-transparent px-4 py-3.5 text-base leading-relaxed text-ink outline-none placeholder:text-faint"
+        />
+
+        <div className="border-t border-line px-3 py-2.5">
+          {tags.length > 0 && (
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-muted"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTags((prev) => prev.filter((t) => t !== tag))
+                      setDirty(true)
+                    }}
+                    aria-label={`Remove tag ${tag}`}
+                    className="cursor-pointer text-faint transition-colors hover:text-danger"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* The field gets a row of its own. Sharing one with the chips meant
+              it was whatever sliver of space they left over, in a position that
+              moved every time a tag was added — which is where the caret kept
+              turning up somewhere unexpected. */}
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <input
+                ref={tagRef}
+                value={tagDraft}
+                onChange={(e) => {
+                  setTagDraft(e.target.value)
+                  setSuggestDismissed(false)
+                  setHighlight(0)
+                }}
+                onKeyDown={onTagKeyDown}
+                onBlur={() => {
+                  // A click on a suggestion blurs first; that path commits the
+                  // suggestion itself, so there is nothing to do here.
+                  if (pickingRef.current) return
+                  setSuggestDismissed(true)
+                  commitTag(tagDraft)
+                }}
+                onFocus={() => setSuggestDismissed(false)}
+                placeholder={tags.length ? 'Add tag' : 'Add tags…'}
+                aria-label="Add tag"
+                role="combobox"
+                aria-expanded={suggestions.length > 0}
+                aria-controls="tag-suggestions"
+                aria-autocomplete="list"
+                className="w-full bg-transparent py-1 font-mono text-2xs text-ink outline-none placeholder:text-faint"
+              />
+
+              {suggestions.length > 0 && (
+                <ul
+                  id="tag-suggestions"
+                  role="listbox"
+                  aria-label="Matching tags"
+                  // Downward, now that the composer sits near the top of the
+                  // page: opening upward from here would run off the screen.
+                  className="anim-fade-in absolute top-full left-0 z-20 mt-1 max-h-44 w-44 overflow-y-auto rounded-lg border border-line bg-raised py-1 shadow-xl shadow-black/15 dark:shadow-black/60"
+                >
+                  {suggestions.map(([tag, count], i) => (
+                    <li key={tag}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={i === highlight}
+                        // Keep focus in the field so blur cannot commit the
+                        // half-typed draft before the click lands.
+                        onMouseDown={() => {
+                          pickingRef.current = true
+                        }}
+                        onClick={() => {
+                          commitTag(tag)
+                          pickingRef.current = false
+                          tagRef.current?.focus()
+                        }}
+                        onMouseEnter={() => setHighlight(i)}
+                        className={`flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left font-mono text-2xs transition-colors ${
+                          i === highlight ? 'bg-accent-soft text-ink' : 'text-muted'
+                        }`}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{tag}</span>
+                        <span className="shrink-0 text-3xs text-faint tabular-nums">{count}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <span
+              aria-live="polite"
+              className="shrink-0 font-mono text-3xs text-faint tabular-nums"
+            >
+              {status}
+            </span>
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={!canSave}
+              className="shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {editingId ? 'Save changes' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* History */}
       {notes.length > 0 && (
         <div className="mt-3">
@@ -526,154 +693,6 @@ export function BrainDump({
         <EmptyState {...EMPTY_PRESETS.braindump} />
       )}
 
-      {/* Writing area */}
-      <div
-        ref={composerRef}
-        className="anim-fade-in mt-8 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
-      >
-        {editing && (
-          <div className="flex items-center gap-2 border-b border-line px-3 py-2 font-mono text-2xs text-faint">
-            <span className="truncate">Editing · {formatDateTime(editing.createdAt)}</span>
-            <button
-              type="button"
-              onClick={reset}
-              className="ml-auto shrink-0 cursor-pointer rounded px-1.5 py-0.5 font-sans text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value)
-            setDirty(true)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault()
-              void save()
-            }
-          }}
-          placeholder="What's on your mind?"
-          aria-label="Brain dump"
-          rows={6}
-          className="block max-h-[60vh] w-full resize-none bg-transparent px-4 py-3.5 text-base leading-relaxed text-ink outline-none placeholder:text-faint"
-        />
-
-        <div className="border-t border-line px-3 py-2.5">
-          {tags.length > 0 && (
-            <div className="mb-2 flex flex-wrap items-center gap-1.5">
-              {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-muted"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTags((prev) => prev.filter((t) => t !== tag))
-                      setDirty(true)
-                    }}
-                    aria-label={`Remove tag ${tag}`}
-                    className="cursor-pointer text-faint transition-colors hover:text-danger"
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* The field gets a row of its own. Sharing one with the chips meant
-              it was whatever sliver of space they left over, in a position that
-              moved every time a tag was added — which is where the caret kept
-              turning up somewhere unexpected. */}
-          <div className="flex items-center gap-2">
-            <div className="relative min-w-0 flex-1">
-              <input
-                ref={tagRef}
-                value={tagDraft}
-                onChange={(e) => {
-                  setTagDraft(e.target.value)
-                  setSuggestDismissed(false)
-                  setHighlight(0)
-                }}
-                onKeyDown={onTagKeyDown}
-                onBlur={() => {
-                  // A click on a suggestion blurs first; that path commits the
-                  // suggestion itself, so there is nothing to do here.
-                  if (pickingRef.current) return
-                  setSuggestDismissed(true)
-                  commitTag(tagDraft)
-                }}
-                onFocus={() => setSuggestDismissed(false)}
-                placeholder={tags.length ? 'Add tag' : 'Add tags…'}
-                aria-label="Add tag"
-                role="combobox"
-                aria-expanded={suggestions.length > 0}
-                aria-controls="tag-suggestions"
-                aria-autocomplete="list"
-                className="w-full bg-transparent py-1 font-mono text-2xs text-ink outline-none placeholder:text-faint"
-              />
-
-              {suggestions.length > 0 && (
-                <ul
-                  id="tag-suggestions"
-                  role="listbox"
-                  aria-label="Matching tags"
-                  className="anim-fade-in absolute bottom-full left-0 z-20 mb-1 max-h-44 w-44 overflow-y-auto rounded-lg border border-line bg-raised py-1 shadow-xl shadow-black/15 dark:shadow-black/60"
-                >
-                  {suggestions.map(([tag, count], i) => (
-                    <li key={tag}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={i === highlight}
-                        // Keep focus in the field so blur cannot commit the
-                        // half-typed draft before the click lands.
-                        onMouseDown={() => {
-                          pickingRef.current = true
-                        }}
-                        onClick={() => {
-                          commitTag(tag)
-                          pickingRef.current = false
-                          tagRef.current?.focus()
-                        }}
-                        onMouseEnter={() => setHighlight(i)}
-                        className={`flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left font-mono text-2xs transition-colors ${
-                          i === highlight ? 'bg-accent-soft text-ink' : 'text-muted'
-                        }`}
-                      >
-                        <span className="min-w-0 flex-1 truncate">{tag}</span>
-                        <span className="shrink-0 text-3xs text-faint tabular-nums">{count}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <span
-              aria-live="polite"
-              className="shrink-0 font-mono text-3xs text-faint tabular-nums"
-            >
-              {status}
-            </span>
-            <button
-              type="button"
-              onClick={() => void save()}
-              disabled={!canSave}
-              className="shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {editingId ? 'Save changes' : 'Save'}
-            </button>
-          </div>
-        </div>
-      </div>
 
     </>
   )

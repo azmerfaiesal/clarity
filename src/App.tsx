@@ -6,7 +6,7 @@ import { Home } from './components/Home'
 import { HabitTracker } from './components/HabitTracker'
 import { EMPTY_PRESETS, EmptyState } from './components/EmptyState'
 import { Header } from './components/Header'
-import { SearchPalette } from './components/SearchPalette'
+import { GlobalSearch } from './components/GlobalSearch'
 import { Settings } from './components/Settings'
 import { Sidebar } from './components/Sidebar'
 import { TaskEditor } from './components/TaskEditor'
@@ -125,7 +125,11 @@ function AppShell() {
   const [editTemplate, setEditTemplate] = useState<HabitTemplate | null>(null)
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [sort, setSort] = useState<SortMode>('manual')
-  const [searchOpen, setSearchOpen] = useState(false)
+  // The docked search bar is always mounted, so "opening" search is only ever a
+  // matter of putting the caret in it.
+  const searchRef = useRef<HTMLInputElement>(null)
+  // A note picked from search: the Notes view opens it in the composer.
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null)
   const [inlineQuery, setInlineQuery] = useState('')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -190,7 +194,10 @@ function AppShell() {
   }, [view])
 
   const openQuickAdd = useCallback(() => setQuickAddOpen(true), [])
-  const openSearch = useCallback(() => setSearchOpen(true), [])
+  const openSearch = useCallback(() => {
+    searchRef.current?.focus()
+    searchRef.current?.select()
+  }, [])
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -201,13 +208,14 @@ function AppShell() {
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setSearchOpen((o) => !o)
+        searchRef.current?.focus()
+        searchRef.current?.select()
         return
       }
       if (typing) return
       if (e.key === '/') {
         e.preventDefault()
-        setSearchOpen(true)
+        searchRef.current?.focus()
       } else if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         if (viewRef.current !== 'inbox' && viewRef.current !== 'today' && viewRef.current !== 'upcoming' && !viewRef.current.startsWith('list:')) return
         e.preventDefault()
@@ -283,9 +291,14 @@ function AppShell() {
         onNoteTag={setNoteTag}
       />
 
- <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+      {/* The column scrolls; the search bar below it does not. Keeping the bar
+          a flex child rather than a fixed overlay is what makes it docked
+          instead of floating — it can never cover the page's last row, and on a
+          wide screen it stops at the sidebar rather than running under it. */}
+ <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
  <div
-            className={`mx-auto w-full flex-1 px-4 pb-28 sm:px-6 sm:pb-16 ${
+            className={`mx-auto w-full px-4 pb-20 sm:px-6 sm:pb-12 ${
               view === 'habits' ? 'max-w-5xl' : 'max-w-2xl'
             }`}
           >
@@ -316,6 +329,8 @@ function AppShell() {
               onOpenMobileNav={() => setMobileNavOpen(true)}
               tagFilter={noteTag}
               onTagFilter={setNoteTag}
+              openNoteId={openNoteId}
+              onNoteOpened={() => setOpenNoteId(null)}
             />
           ) : (
             <>
@@ -418,28 +433,35 @@ function AppShell() {
           )}
             </>
           )}
+          </div>
         </div>
+
+        <GlobalSearch
+          tasks={tasks}
+          lists={lists}
+          notes={notes}
+          inputRef={searchRef}
+          onSelectTask={(task) => setEditingTask(task)}
+          onSelectNote={(note) => {
+            setNoteTag(null)
+            setView('notes')
+            setOpenNoteId(note.id)
+          }}
+        />
       </main>
 
-      {/* Mobile FAB. Only where a new task would land somewhere sensible. */}
+      {/* Mobile FAB. Only where a new task would land somewhere sensible.
+          It clears the search bar rather than sitting on top of it. */}
       {acceptsNewTask(view) && (
         <button
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}
           aria-label="Add task"
- className="fixed right-5 bottom-5 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
+ className="fixed right-5 bottom-20 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
         >
  <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
       )}
-
-      <SearchPalette
-        tasks={tasks}
-        lists={lists}
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onSelect={(task) => setEditingTask(task)}
-      />
 
       {editingTask && (
         <TaskEditor

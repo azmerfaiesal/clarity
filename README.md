@@ -13,8 +13,8 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
 - **Home** — today at a glance: habits due (tickable in place), tasks due, recent notes, each linking through to the section that owns it.
 - **Habits** — daily, weekdays, weekends, picked days, X-per-week or monthly habits, each with a 365-day contribution heatmap, a colour, emoji and optional target streak. One tap logs today. Track by a tick, a **target count** (eight glasses of water) or a **target duration** (thirty minutes reading); the heatmap ramps in four steps as the day fills. Tap the button to add a step, hold it for a slider that sets an exact amount and takes a note on what the session was. Habits can be reordered by dragging, saved as reusable **templates**, given a daily reminder, and a **Writing** habit is derived from the notes themselves, so its history reflects when each note was written and a deleted note takes its day back. Clicking a habit opens a read-only summary of its record; clicking a day in its heatmap opens that day — what happened, where it sits in its streak, and notes describing the day's logs. Each card shows current streak, lifetime total, best streak, completion rate and progress through the current period. Habits can be paused (keeping their history) or deleted.
-- **Notes** — a blank sheet for whatever is on your mind: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history with two-line previews, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. Unsaved text survives a refresh.
-- **Search** — global palette (`Cmd/Ctrl + K` or `/`) matching title, description, list, and tags, with keyboard navigation.
+- **Notes** — a blank sheet for whatever is on your mind, at the top of the page under the writing streak that measures it: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history with two-line previews, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. Unsaved text survives a refresh.
+- **Search** — a bar docked to the foot of every page, always there rather than summoned. It searches **tasks and notes together**: task titles, descriptions, lists and tags, and note text and tags, grouped under two headings and walkable with the arrow keys. Picking a task opens its editor; picking a note opens it in the Notes composer. `/` or `Cmd/Ctrl + K` puts the caret in it.
 - **Filters** — status, priority, due date, list, favorites-only, with active-count badge and one-click clear.
 - **Sorting** — manual, due date, priority, date created, alphabetical.
 - **Settings** — appearance, account and sync status, task counts, bulk actions, and the keyboard-shortcut reference.
@@ -136,8 +136,8 @@ Sign in with email + password (Supabase Auth). Everything then lives in four Pos
 | Key | Action |
 | --- | --- |
 | `N` | New task |
-| `/` | Search |
-| `Cmd/Ctrl + K` | Search palette |
+| `/` | Jump to the search bar |
+| `Cmd/Ctrl + K` | Jump to the search bar |
 | `Enter` | Create/save task |
 | `Esc` | Close dialog / menu |
 
@@ -176,7 +176,7 @@ Pushing to `main` runs `.github/workflows/deploy.yml`, which builds and publishe
 ```
 src/
   components/    Sidebar, Header, TaskItem, TaskInput (quick add),
-                 TaskEditor (modal), SearchPalette, FilterMenu, SortMenu,
+                 TaskEditor (modal), GlobalSearch, FilterMenu, SortMenu,
                  Settings, BrainDump, EmptyState, UndoToast, Dropdown,
                  TaskCheckbox, AuthGate
   store/         taskStore.tsx (reducer + sync orchestration), noteStore.tsx
