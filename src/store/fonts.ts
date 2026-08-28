@@ -1,15 +1,32 @@
 /**
- * UI typeface options.
+ * UI typeface options, in two families.
  *
- * Chosen to sit with the theme — geometric, technical, or terminal — while
- * staying readable at 11–13px, which is where most of this app lives. Display
- * faces that look the part at 40px but fall apart in a task list (Orbitron and
- * friends) are deliberately excluded.
+ * The first five sit with the theme — geometric, technical, or terminal. The
+ * next five are for reading and writing at length, which is what the Notes page
+ * actually is: book faces, where a long entry reads as prose rather than as
+ * interface.
+ *
+ * Both groups have to clear the same bar: readable at 11–13px, which is where
+ * most of this app lives. That is what rules out the obvious journal faces —
+ * EB Garamond and friends have small x-heights that turn a task list to mush at
+ * this size, however handsome they look at 40px. The ones here were picked for
+ * holding up small: Literata and Source Serif were drawn for screen body text,
+ * and Lora and Newsreader keep enough weight in the thin strokes to survive it.
  *
  * The metadata face stays JetBrains Mono throughout; only the UI face changes.
  */
 
-export type FontKey = 'grotesk' | 'chakra' | 'exo' | 'plex' | 'mono'
+export type FontKey =
+  | 'grotesk'
+  | 'chakra'
+  | 'exo'
+  | 'plex'
+  | 'mono'
+  | 'lora'
+  | 'literata'
+  | 'newsreader'
+  | 'sourceserif'
+  | 'karla'
 
 interface FontOption {
   label: string
@@ -56,9 +73,50 @@ export const FONTS: Record<FontKey, FontOption> = {
     // index.html only requests 400/500; headings need the heavier cuts.
     query: 'JetBrains+Mono:wght@400;500;600;700',
   },
+
+  // ---- for writing at length ----
+  literata: {
+    label: 'Literata',
+    note: 'Drawn for reading on screen. The steadiest of the serifs here.',
+    stack: '"Literata", Georgia, "Times New Roman", serif',
+    query: 'Literata:opsz,wght@7..72,400;7..72,500;7..72,600;7..72,700',
+  },
+  lora: {
+    label: 'Lora',
+    note: 'A serif with brushed strokes. Warm without being ornate.',
+    stack: '"Lora", Georgia, "Times New Roman", serif',
+    query: 'Lora:wght@400;500;600;700',
+  },
+  newsreader: {
+    label: 'Newsreader',
+    note: 'Literary and slightly old-fashioned. Long entries read as prose.',
+    stack: '"Newsreader", Georgia, "Times New Roman", serif',
+    query: 'Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700',
+  },
+  sourceserif: {
+    label: 'Source Serif 4',
+    note: 'Plain and even. A notebook rather than a novel.',
+    stack: '"Source Serif 4", Georgia, "Times New Roman", serif',
+    query: 'Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700',
+  },
+  karla: {
+    label: 'Karla',
+    note: 'Humanist sans — the journalling feel without the serifs.',
+    stack: '"Karla", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+    query: 'Karla:wght@400;500;600;700',
+  },
 }
 
 export const FONT_KEYS = Object.keys(FONTS) as FontKey[]
+
+/**
+ * The two families, for a picker that shows them as two. A flat list of ten
+ * asks the reader to work out which half is which from the names alone.
+ */
+export const FONT_GROUPS: { label: string; keys: FontKey[] }[] = [
+  { label: 'Interface', keys: ['grotesk', 'chakra', 'exo', 'plex', 'mono'] },
+  { label: 'For writing', keys: ['literata', 'lora', 'newsreader', 'sourceserif', 'karla'] },
+]
 
 export const DEFAULT_FONT: FontKey = 'grotesk'
 

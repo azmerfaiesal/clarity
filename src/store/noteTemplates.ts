@@ -23,6 +23,10 @@ export interface NoteTemplate {
   /** Tags applied along with the body, so a log is filterable from day one. */
   tags: string[]
   body: string
+  /** False for the six shipped here; true for anything the reader wrote. */
+  custom?: boolean
+  /** True when this one has been edited away from the shape it shipped with. */
+  edited?: boolean
 }
 
 export const NOTE_TEMPLATES: NoteTemplate[] = [
@@ -113,3 +117,72 @@ export const NOTE_TEMPLATES: NoteTemplate[] = [
     ].join('\n'),
   },
 ]
+
+/** A stored row: an edit of a built-in, or one the reader wrote themselves. */
+export interface NoteTemplateRow {
+  id: string
+  name: string
+  blurb: string
+  tags: string[]
+  body: string
+  /** Set on a built-in that has been put away rather than edited. */
+  hidden: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+const BUILT_IN_IDS = new Set(NOTE_TEMPLATES.map((t) => t.id))
+
+export function isBuiltIn(id: string): boolean {
+  return BUILT_IN_IDS.has(id)
+}
+
+/**
+ * What the picker shows: the built-ins, each replaced by its stored edit and
+ * skipped where it has been put away, then anything written from scratch.
+ *
+ * Overriding by id rather than storing the whole list is what lets a built-in
+ * be repaired or added to in a later release without stepping on an edit — and
+ * makes "reset" nothing more than deleting the row.
+ */
+export function mergeTemplates(rows: NoteTemplateRow[]): NoteTemplate[] {
+  const byId = new Map(rows.map((r) => [r.id, r]))
+
+  const builtIns: NoteTemplate[] = []
+  for (const template of NOTE_TEMPLATES) {
+    const row = byId.get(template.id)
+    if (!row) {
+      builtIns.push(template)
+      continue
+    }
+    if (row.hidden) continue
+    builtIns.push({
+      id: row.id,
+      name: row.name,
+      blurb: row.blurb,
+      tags: row.tags,
+      body: row.body,
+      edited: true,
+    })
+  }
+
+  const custom = rows
+    .filter((r) => !isBuiltIn(r.id) && !r.hidden)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt))
+    .map<NoteTemplate>((r) => ({
+      id: r.id,
+      name: r.name,
+      blurb: r.blurb,
+      tags: r.tags,
+      body: r.body,
+      custom: true,
+    }))
+
+  return [...builtIns, ...custom]
+}
+
+/** The shape a built-in shipped with, for "reset" and for the edit form. */
+export function builtInById(id: string): NoteTemplate | undefined {
+  return NOTE_TEMPLATES.find((t) => t.id === id)
+}

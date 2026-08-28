@@ -1,6 +1,7 @@
 import type { BrainDump, Habit, HabitTemplate, Task, TaskList } from '../types'
 import { addDays, todayStr } from '../utils/dateUtils'
 import { makeId } from '../utils/taskUtils'
+import type { NoteTemplateRow } from './noteTemplates'
 
 /**
  * Local persistence layer.
@@ -29,6 +30,7 @@ const listsKey = (scope: string) => `${PREFIX}.lists:${scope}`
 const notesKey = (scope: string) => `${PREFIX}.notes:${scope}`
 const habitsKey = (scope: string) => `${PREFIX}.habits:${scope}`
 const templatesKey = (scope: string) => `${PREFIX}.habitTemplates:${scope}`
+const noteTemplatesKey = (scope: string) => `${PREFIX}.noteTemplates:${scope}`
 const draftKey = (scope: string) => `${PREFIX}.draft:${scope}`
 const syncedKey = (scope: string, kind: SyncedKind) => `${PREFIX}.synced.${kind}:${scope}`
 
@@ -75,6 +77,14 @@ export function saveNotes(scope: string, notes: BrainDump[]): void {
   write(notesKey(scope), notes)
 }
 
+export function loadNoteTemplates(scope: string): NoteTemplateRow[] | null {
+  return read<NoteTemplateRow[]>(noteTemplatesKey(scope))
+}
+
+export function saveNoteTemplates(scope: string, rows: NoteTemplateRow[]): void {
+  write(noteTemplatesKey(scope), rows)
+}
+
 export function loadHabits(scope: string): Habit[] | null {
   return read<Habit[]>(habitsKey(scope))
 }
@@ -119,6 +129,7 @@ export function clearScope(scope: string): void {
     localStorage.removeItem(notesKey(scope))
     localStorage.removeItem(habitsKey(scope))
     localStorage.removeItem(templatesKey(scope))
+    localStorage.removeItem(noteTemplatesKey(scope))
     localStorage.removeItem(draftKey(scope))
     for (const kind of ['tasks', 'lists', 'notes', 'habits'] as SyncedKind[]) {
       localStorage.removeItem(syncedKey(scope, kind))

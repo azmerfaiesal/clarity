@@ -13,7 +13,7 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
 - **Home** — today at a glance: habits due (tickable in place), tasks due, recent notes, each linking through to the section that owns it.
 - **Habits** — daily, weekdays, weekends, picked days, X-per-week or monthly habits, each with a 365-day contribution heatmap, a colour, emoji and optional target streak. One tap logs today. Track by a tick, a **target count** (eight glasses of water) or a **target duration** (thirty minutes reading); the heatmap ramps in four steps as the day fills. Tap the button to add a step, hold it for a slider that sets an exact amount and takes a note on what the session was. Habits can be reordered by dragging, saved as reusable **templates**, given a daily reminder, and a **Writing** habit is derived from the notes themselves, so its history reflects when each note was written and a deleted note takes its day back. Clicking a habit opens a read-only summary of its record; clicking a day in its heatmap opens that day — what happened, where it sits in its streak, and notes describing the day's logs. Each card shows current streak, lifetime total, best streak, completion rate and progress through the current period. Habits can be paused (keeping their history) or deleted.
-- **Notes** — a blank sheet for whatever is on your mind, at the top of the page under the writing streak that measures it: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history with two-line previews, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. Unsaved text survives a refresh.
+- **Notes** — a blank sheet for whatever is on your mind, at the top of the page under the writing streak that measures it: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history in a panel that scrolls on its own, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. **Templates** give the entries that repeat a starting shape — a list, shopping, a daily log, reading, coffee, spending — and every one of them can be rewritten, put away or joined by your own, syncing like everything else. Unsaved text survives a refresh.
 - **Search** — a bar docked to the foot of every page, always there rather than summoned. It searches **tasks and notes together**: task titles, descriptions, lists and tags, and note text and tags, grouped under two headings and walkable with the arrow keys. Picking a task opens its editor; picking a note opens it in the Notes composer. `/` or `Cmd/Ctrl + K` puts the caret in it.
 - **Filters** — status, priority, due date, list, favorites-only, with active-count badge and one-click clear.
 - **Sorting** — manual, due date, priority, date created, alphabetical.
@@ -54,7 +54,7 @@ backgrounds, in both themes.
 
 ### Typeface
 
-Settings → Appearance offers five UI faces, each row previewed in itself:
+Settings → Appearance offers ten UI faces in two groups, the closed control previewed in whichever is chosen. Five that sit with the theme:
 
 | Face | Feel |
 | --- | --- |
@@ -64,10 +64,22 @@ Settings → Appearance offers five UI faces, each row previewed in itself:
 | **IBM Plex Sans** | Engineered and neutral. Easiest to read for long lists. |
 | **JetBrains Mono** | Everything monospaced — one instrument panel. |
 
-All five stay readable at 11–13px, which is where most of this app lives.
+And five for writing at length, which is what the Notes page actually is:
+
+| Face | Feel |
+| --- | --- |
+| **Literata** | Drawn for reading on screen. The steadiest of the serifs. |
+| **Lora** | A serif with brushed strokes. Warm without being ornate. |
+| **Newsreader** | Literary and slightly old-fashioned. Long entries read as prose. |
+| **Source Serif 4** | Plain and even. A notebook rather than a novel. |
+| **Karla** | Humanist sans — the journalling feel without the serifs. |
+
+All ten stay readable at 11–13px, which is where most of this app lives.
 Display faces that look the part at 40px but fall apart in a task list
-(Orbitron and similar) were left out on purpose. The metadata face stays
-JetBrains Mono regardless; only the UI face changes.
+(Orbitron and similar) were left out on purpose — and so were the obvious
+journal serifs like EB Garamond, whose small x-height turns a task list to mush
+at this size. The metadata face stays JetBrains Mono regardless; only the UI
+face changes.
 
 Only the default pair is requested in `index.html`. Other faces load on demand
 — and when one is already chosen, the request is issued from the pre-paint
@@ -120,7 +132,7 @@ of claiming the browser cannot do notifications.
 
 ## Sync
 
-Sign in with email + password (Supabase Auth). Everything then lives in four Postgres tables — `clarity_tasks`, `clarity_lists`, `clarity_notes` and `clarity_habits` — behind row-level security that scopes every row to `auth.uid()`.
+Sign in with email + password (Supabase Auth). Everything then lives in six Postgres tables — `clarity_tasks`, `clarity_lists`, `clarity_notes`, `clarity_habits`, `clarity_habit_templates` and `clarity_note_templates` — behind row-level security that scopes every row to `auth.uid()`.
 
 - **Local first** — every edit hits React state immediately and is cached in `localStorage`, so the UI never waits on the network.
 - **Push** — changed rows only are upserted 400ms after an edit settles; rows removed locally are deleted server-side by the same pass.

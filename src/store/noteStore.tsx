@@ -15,13 +15,31 @@ import {
   clearDraft as clearStoredDraft,
   loadDraft,
   loadNotes,
+  loadNoteTemplates,
   loadSyncedIds,
   saveDraft as saveStoredDraft,
+  saveNoteTemplates,
   saveNotes,
   saveSyncedIds,
 } from './storage'
 import { useAuth } from './auth'
-import { deleteNoteRow, loadNotesFromServer, subscribeToNotes, upsertNote } from './sync'
+import {
+  deleteNoteRow,
+  deleteNoteTemplateRow,
+  loadNoteTemplatesFromServer,
+  loadNotesFromServer,
+  subscribeToNoteTemplates,
+  subscribeToNotes,
+  upsertNote,
+  upsertNoteTemplate,
+} from './sync'
+import {
+  builtInById,
+  isBuiltIn,
+  mergeTemplates,
+  type NoteTemplate,
+  type NoteTemplateRow,
+} from './noteTemplates'
 import { onRevalidate } from './revalidate'
 import { mergeSnapshot } from './merge'
 
@@ -38,6 +56,9 @@ import { mergeSnapshot } from './merge'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
+/** What an edit form hands back. Everything else about a row is bookkeeping. */
+export type TemplateEdit = Pick<NoteTemplate, 'name' | 'blurb' | 'tags' | 'body'>
+
 interface NoteStore {
   notes: BrainDump[]
   /** False until the first server read for this account has settled. */
@@ -50,6 +71,15 @@ interface NoteStore {
   readDraft: () => { content: string; tags: string[] } | null
   writeDraft: (draft: { content: string; tags: string[] }) => void
   discardDraft: () => void
+
+  /** The built-ins with any edits applied, then anything written from scratch. */
+  templates: NoteTemplate[]
+  /** Save an edit to a built-in, an edit to a custom one, or a brand new one. */
+  saveTemplate: (id: string | null, edit: TemplateEdit) => Promise<void>
+  /** Put a built-in away, or delete a custom one outright. */
+  removeTemplate: (id: string) => Promise<void>
+  /** Drop the stored edit so a built-in goes back to the shape it shipped with. */
+  resetTemplate: (id: string) => Promise<void>
 }
 
 const NoteContext = createContext<NoteStore | null>(null)
@@ -67,6 +97,9 @@ export function NoteProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<BrainDump[]>(() => loadNotes(LOCAL_SCOPE) ?? [])
   const [ready, setReady] = useState(false)
   const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [templateRows, setTemplateRows] = useState<NoteTemplateRow[]>(
+    () => loadNoteTemplates(LOCAL_SCOPE) ?? [],
+  )
 
   // Ids the server is known to have, so a snapshot can drop rows deleted
   // elsewhere without discarding ones created offline here. Persisted: on a
@@ -82,6 +115,7 @@ export function NoteProvider({ children }: { children: ReactNode }) {
     seen.current = new Set(loadSyncedIds(next, 'notes') ?? [])
     setScope(next)
     setNotes(loadNotes(next) ?? [])
+    setTemplateRows(loadNoteTemplates(next) ?? [])
     setReady(false)
   }, [authLoading, userId, scope])
 
@@ -206,6 +240,125 @@ export function NoteProvider({ children }: { children: ReactNode }) {
     [userId],
   )
 
+  // ---- templates ----
+  //
+  // Only the edits are stored. The six shipped shapes stay constants, and a row
+  // exists solely where one has been changed, put away, or written from
+  // scratch — so an untouched template keeps improving with the app, and
+  // "reset" is nothing more than dropping its row.
+
+  const applyTemplateRows = useCallback(
+    (rows: NoteTemplateRow[]) => {
+      setTemplateRows(rows)
+      saveNoteTemplates(userId ?? LOCAL_SCOPE, rows)
+    },
+    [userId],
+  )
+
+  useEffect(() => {
+    if (!userId || !ready) return
+    let cancelled = false
+    void (async () => {
+      const { rows, fromServer } = await loadNoteTemplatesFromServer(userId)
+      if (!cancelled && fromServer) applyTemplateRows(rows)
+    })()
+    const sub = subscribeToNoteTemplates(userId, applyTemplateRows)
+    const off = onRevalidate(sub.refresh)
+    return () => {
+      cancelled = true
+      off()
+      sub.stop()
+    }
+  }, [userId, ready, applyTemplateRows])
+
+  const templates = useMemo(() => mergeTemplates(templateRows), [templateRows])
+
+  const putTemplateRow = useCallback(
+    async (row: NoteTemplateRow) => {
+      // Computed here rather than inside the updater: writing to storage from
+      // a state updater runs twice under StrictMode and is not what an updater
+      // is for.
+      const next = [...templateRows.filter((r) => r.id !== row.id), row]
+      setTemplateRows(next)
+      saveNoteTemplates(userId ?? LOCAL_SCOPE, next)
+      if (!userId) return
+      try {
+        await upsertNoteTemplate(row, userId)
+      } catch {
+        setSaveState('error')
+      }
+    },
+    [userId, templateRows],
+  )
+
+  const dropTemplateRow = useCallback(
+    async (id: string) => {
+      const next = templateRows.filter((r) => r.id !== id)
+      setTemplateRows(next)
+      saveNoteTemplates(userId ?? LOCAL_SCOPE, next)
+      if (!userId) return
+      try {
+        await deleteNoteTemplateRow(id)
+      } catch {
+        setSaveState('error')
+      }
+    },
+    [userId, templateRows],
+  )
+
+  const saveTemplate = useCallback<NoteStore['saveTemplate']>(
+    async (id, edit) => {
+      const now = new Date().toISOString()
+      const existing = id ? templateRows.find((r) => r.id === id) : undefined
+      await putTemplateRow({
+        id: id ?? makeId(),
+        name: edit.name.trim() || 'Untitled',
+        blurb: edit.blurb.trim(),
+        tags: edit.tags,
+        body: edit.body,
+        hidden: false,
+        // New ones land after everything already there.
+        sortOrder: existing?.sortOrder ?? Date.now(),
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      })
+    },
+    [putTemplateRow, templateRows],
+  )
+
+  const removeTemplate = useCallback<NoteStore['removeTemplate']>(
+    async (id) => {
+      // A built-in cannot be deleted, only put away — the constant is still
+      // there in the next release, so the choice has to be recorded.
+      if (!isBuiltIn(id)) {
+        await dropTemplateRow(id)
+        return
+      }
+      const now = new Date().toISOString()
+      const existing = templateRows.find((r) => r.id === id)
+      const shipped = builtInById(id)
+      await putTemplateRow({
+        id,
+        name: existing?.name ?? shipped?.name ?? '',
+        blurb: existing?.blurb ?? shipped?.blurb ?? '',
+        tags: existing?.tags ?? shipped?.tags ?? [],
+        body: existing?.body ?? shipped?.body ?? '',
+        hidden: true,
+        sortOrder: existing?.sortOrder ?? 0,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      })
+    },
+    [dropTemplateRow, putTemplateRow, templateRows],
+  )
+
+  const resetTemplate = useCallback<NoteStore['resetTemplate']>(
+    async (id) => {
+      await dropTemplateRow(id)
+    },
+    [dropTemplateRow],
+  )
+
   // Draft helpers write straight through to storage; keeping the text out of
   // React state avoids re-rendering the history list on every keystroke.
   const readDraft = useCallback(() => loadDraft(scope), [scope])
@@ -226,6 +379,10 @@ export function NoteProvider({ children }: { children: ReactNode }) {
       readDraft,
       writeDraft,
       discardDraft,
+      templates,
+      saveTemplate,
+      removeTemplate,
+      resetTemplate,
     }),
     [
       notes,
@@ -237,6 +394,10 @@ export function NoteProvider({ children }: { children: ReactNode }) {
       readDraft,
       writeDraft,
       discardDraft,
+      templates,
+      saveTemplate,
+      removeTemplate,
+      resetTemplate,
     ],
   )
 

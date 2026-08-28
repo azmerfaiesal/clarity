@@ -1,4 +1,5 @@
 import type { BrainDump, Habit, HabitTemplate, Task, TaskList } from '../types'
+import type { NoteTemplateRow } from './noteTemplates'
 import { supabase } from '../lib/supabase'
 import { reportSyncError, reportSyncOk } from './syncHealth'
 
@@ -54,6 +55,7 @@ const LISTS_TABLE = 'clarity_lists'
 const NOTES_TABLE = 'clarity_notes'
 const HABITS_TABLE = 'clarity_habits'
 const TEMPLATES_TABLE = 'clarity_habit_templates'
+const NOTE_TEMPLATES_TABLE = 'clarity_note_templates'
 
 export interface LoadedData {
   tasks: Task[]
@@ -364,6 +366,89 @@ export function subscribeToNotes(
   return {
     stop: () => supabase.removeChannel(channel),
     refresh: () => void pull(),
+  }
+}
+
+// ---- note templates ----
+
+export async function loadNoteTemplatesFromServer(
+  userId: string,
+): Promise<{ rows: NoteTemplateRow[]; fromServer: boolean }> {
+  const { data, error } = await supabase
+    .from(NOTE_TEMPLATES_TABLE)
+    .select('*')
+    .eq('user_id', userId)
+  if (error) {
+    reportSyncError('loading note templates', error)
+    return { rows: [], fromServer: false }
+  }
+  reportSyncOk()
+  return { rows: (data ?? []).map(rowToNoteTemplate), fromServer: true }
+}
+
+export async function upsertNoteTemplate(row: NoteTemplateRow, userId: string): Promise<void> {
+  await write('saving a note template', () =>
+    supabase.from(NOTE_TEMPLATES_TABLE).upsert(
+      {
+        id: row.id,
+        user_id: userId,
+        name: row.name,
+        blurb: row.blurb,
+        tags: row.tags,
+        body: row.body,
+        hidden: row.hidden,
+        sort_order: row.sortOrder,
+        created_at: row.createdAt,
+        updated_at: row.updatedAt,
+      },
+      { onConflict: 'id' },
+    ),
+  )
+}
+
+export async function deleteNoteTemplateRow(id: string): Promise<void> {
+  await write('deleting a note template', () =>
+    supabase.from(NOTE_TEMPLATES_TABLE).delete().eq('id', id),
+  )
+}
+
+export function subscribeToNoteTemplates(
+  userId: string,
+  onRows: (rows: NoteTemplateRow[]) => void,
+): Subscription {
+  const pull = async () => {
+    const { rows, fromServer } = await loadNoteTemplatesFromServer(userId)
+    if (fromServer) onRows(rows)
+  }
+
+  const channel = supabase
+    .channel(`clarity-note-templates-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: NOTE_TEMPLATES_TABLE, filter: `user_id=eq.${userId}` },
+      () => void pull(),
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') void pull()
+    })
+
+  return {
+    stop: () => supabase.removeChannel(channel),
+    refresh: () => void pull(),
+  }
+}
+
+function rowToNoteTemplate(r: Record<string, unknown>): NoteTemplateRow {
+  return {
+    id: String(r.id),
+    name: String(r.name ?? ''),
+    blurb: String(r.blurb ?? ''),
+    tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
+    body: String(r.body ?? ''),
+    hidden: Boolean(r.hidden),
+    sortOrder: typeof r.sort_order === 'number' ? r.sort_order : 0,
+    createdAt: String(r.created_at ?? new Date().toISOString()),
+    updatedAt: String(r.updated_at ?? new Date().toISOString()),
   }
 }
 

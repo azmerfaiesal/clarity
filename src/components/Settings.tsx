@@ -21,7 +21,14 @@ import { useTaskStore } from '../store/taskStore'
 import { FONT_SIZE_LABELS, useTheme, type FontSize } from '../store/theme'
 import type { WeekStart } from '../utils/habitUtils'
 import { permissionState, requestPermission, type PermissionState } from '../store/notifications'
-import { DEFAULT_FONT, FONTS, FONT_KEYS, ensureFontLoaded, type FontKey } from '../store/fonts'
+import {
+  DEFAULT_FONT,
+  FONTS,
+  FONT_GROUPS,
+  FONT_KEYS,
+  ensureFontLoaded,
+  type FontKey,
+} from '../store/fonts'
 import { ACCENTS, ACCENT_KEYS, accentSwatch } from '../store/accents'
 import { clearSyncError, useSyncHealth } from '../store/syncHealth'
 import { formatRelative } from '../utils/dateUtils'
@@ -248,10 +255,14 @@ export function Settings({
                 // The closed control previews the face it names.
                 style={{ fontFamily: FONTS[fontFamily].stack }}
               >
-                {FONT_KEYS.map((key) => (
-                  <option key={key} value={key}>
-                    {FONTS[key].label}
-                  </option>
+                {FONT_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.keys.map((key) => (
+                      <option key={key} value={key}>
+                        {FONTS[key].label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               <ChevronDown

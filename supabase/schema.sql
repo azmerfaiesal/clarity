@@ -153,6 +153,32 @@ create policy "clarity_habit_templates_owner" on public.clarity_habit_templates
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+create table if not exists public.clarity_note_templates (
+  id          text primary key,
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  name        text not null default '',
+  blurb       text not null default '',
+  tags        jsonb not null default '[]'::jsonb,
+  body        text not null default '',
+  -- A built-in the reader has put away. The row exists so the choice syncs;
+  -- deleting the row is how a built-in goes back to its shipped shape.
+  hidden      boolean not null default false,
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists clarity_note_templates_user_idx
+  on public.clarity_note_templates (user_id);
+
+alter table public.clarity_note_templates enable row level security;
+
+drop policy if exists "clarity_note_templates_owner" on public.clarity_note_templates;
+create policy "clarity_note_templates_owner" on public.clarity_note_templates
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 -- ---------- REALTIME ----------
 -- Cross-device sync listens on postgres_changes; without these the client
 -- subscribes successfully but never receives an event.
@@ -161,6 +187,7 @@ alter publication supabase_realtime add table public.clarity_tasks;
 alter publication supabase_realtime add table public.clarity_notes;
 alter publication supabase_realtime add table public.clarity_habits;
 alter publication supabase_realtime add table public.clarity_habit_templates;
+alter publication supabase_realtime add table public.clarity_note_templates;
 
 -- REPLICA IDENTITY FULL so DELETE events still carry user_id and the client's
 -- `user_id=eq.<uid>` filter matches them.
@@ -169,3 +196,4 @@ alter table public.clarity_tasks replica identity full;
 alter table public.clarity_notes replica identity full;
 alter table public.clarity_habits replica identity full;
 alter table public.clarity_habit_templates replica identity full;
+alter table public.clarity_note_templates replica identity full;
