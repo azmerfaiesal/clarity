@@ -196,7 +196,10 @@ export function GlobalSearch({
             role="combobox"
             aria-expanded={open}
             aria-autocomplete="list"
-            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+            // The wrapper already lights up on focus. Without suppressing the
+            // global focus ring as well, the field draws a second accent
+            // rectangle just inside the first — two borders where one is meant.
+            className="no-focus-ring w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
           />
           {query ? (
             <button

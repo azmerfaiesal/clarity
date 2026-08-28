@@ -701,7 +701,9 @@ export function BrainDump({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search notes"
               aria-label="Search brain dumps"
-              className="min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-faint"
+              // As in the docked bar: the row already marks focus, so the
+              // field's own ring would only draw a second border inside it.
+              className="no-focus-ring min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-faint"
             />
             {query && (
               <button
