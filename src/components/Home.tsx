@@ -50,7 +50,14 @@ export function Home({
   )
 
   const dueHabits = useMemo(
-    () => habits.filter((h) => h.archivedAt === null && habitStats(h, today, firstDay).dueToday),
+    () =>
+      habits.filter(
+        (h) =>
+          h.archivedAt === null &&
+          // The writing habit lives in Notes now, and ticks itself.
+          h.source !== 'notes' &&
+          habitStats(h, today, firstDay).dueToday,
+      ),
     [habits, today, firstDay],
   )
   const habitsDone = dueHabits.filter((h) => isCompletedOn(h, today)).length

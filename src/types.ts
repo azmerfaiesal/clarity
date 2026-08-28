@@ -35,6 +35,7 @@ export type ViewId =
   | 'trash'
   | 'notes'
   | 'habits'
+  | 'guide'
   | `list:${string}`
 
 /** A Brain Dump note: free-form text, optional tags, nothing required but the body. */

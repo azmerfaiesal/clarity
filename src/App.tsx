@@ -1,6 +1,7 @@
 import { Flag, Plus, RotateCcw, SearchX, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BrainDump } from './components/BrainDump'
+import { Guide } from './components/Guide'
 import { Home } from './components/Home'
 import { HabitTracker } from './components/HabitTracker'
 import { EMPTY_PRESETS, EmptyState } from './components/EmptyState'
@@ -55,11 +56,28 @@ function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string 
       return 'Notes'
     case 'habits':
       return 'My Habits'
+    case 'guide':
+      return 'How Clarity works'
     case 'home':
       return 'Home'
     default:
       return lists.find((l) => `list:${l.id}` === view)?.name ?? 'Inbox'
   }
+}
+
+/**
+ * Where "add a task" means something, and so where the mobile button belongs.
+ * Named rather than a list of exclusions, so a new section does not inherit it
+ * by default — which is how the guide ended up with a button over its text.
+ */
+function acceptsNewTask(view: ViewId): boolean {
+  return (
+    view === 'inbox' ||
+    view === 'today' ||
+    view === 'upcoming' ||
+    view === 'favorites' ||
+    view.startsWith('list:')
+  )
 }
 
 const SECTION_VIEWS: ViewId[] = [
@@ -72,6 +90,7 @@ const SECTION_VIEWS: ViewId[] = [
   'trash',
   'notes',
   'habits',
+  'guide',
 ]
 
 /** A stored view is only trusted if it still names something the app has. */
@@ -237,7 +256,10 @@ function AppShell() {
         onDeleteList={(id) => store.deleteList(id)}
         onOpenSettings={() => setSettingsOpen(true)}
         noteCount={notes.length}
-        habitCount={habits.filter((h) => h.archivedAt === null).length}
+        habitCount={
+          // Writing is counted under Notes, where its grid now lives.
+          habits.filter((h) => h.archivedAt === null && h.source !== 'notes').length
+        }
         habitFilter={habitFilter}
         onHabitFilter={setHabitFilter}
         templates={templates}
@@ -287,6 +309,8 @@ function AppShell() {
                 setEditTemplate(null)
               }}
             />
+          ) : view === 'guide' ? (
+            <Guide onOpenMobileNav={() => setMobileNavOpen(true)} onNavigate={setView} />
           ) : view === 'notes' ? (
             <BrainDump
               onOpenMobileNav={() => setMobileNavOpen(true)}
@@ -397,8 +421,8 @@ function AppShell() {
         </div>
       </main>
 
-      {/* Mobile FAB */}
-      {view !== 'completed' && view !== 'trash' && view !== 'notes' && view !== 'habits' && view !== 'home' && (
+      {/* Mobile FAB. Only where a new task would land somewhere sensible. */}
+      {acceptsNewTask(view) && (
         <button
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}
@@ -427,7 +451,12 @@ function AppShell() {
         />
       )}
 
-      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <Settings
+          onClose={() => setSettingsOpen(false)}
+          onOpenGuide={() => setView('guide')}
+        />
+      )}
 
       {undoVisible && store.lastDeleted && (
         <UndoToast

@@ -43,7 +43,6 @@ export function HabitTracker({
     saveAsTemplate,
     updateTemplate,
     deleteTemplate,
-    addWritingHabit,
   } = useHabits()
   const firstDay = useWeekStart()
   const [dragId, setDragId] = useState<string | null>(null)
@@ -88,6 +87,8 @@ export function HabitTracker({
           h.repetitionType === 'weekly' || h.repetitionType === 'timesPerWeek'
         : h.repetitionType === filter)
     for (const h of [...habits].sort((x, y) => x.sortOrder - y.sortOrder)) {
+      // The writing habit is shown in Notes, where its days come from.
+      if (h.source === 'notes') continue
       if (!matches(h)) continue
       ;(h.archivedAt ? b : a).push(h)
     }
@@ -252,16 +253,6 @@ export function HabitTracker({
               : `${active.length} ${active.length === 1 ? 'habit' : 'habits'}`}
           </p>
         </div>
-        {!habits.some((h) => h.source === 'notes') && (
-          <button
-            type="button"
-            onClick={addWritingHabit}
-            title="Add a Writing habit that ticks itself when you add a note"
-            className="mr-1.5 hidden cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink sm:inline-flex"
-          >
-            + Writing
-          </button>
-        )}
         <button
           type="button"
           onClick={() => {
@@ -279,18 +270,6 @@ export function HabitTracker({
         <div>
           <EmptyState {...EMPTY_PRESETS.habits} />
           <div className="mx-auto flex max-w-sm flex-wrap justify-center gap-1.5">
-            <button
-              type="button"
-              onClick={addWritingHabit}
-              title="Ticks itself whenever you add a note"
-              className="cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <HabitIcon icon="lucide:pen" className="h-3.5 w-3.5" />
-                Writing
-                <span className="text-3xs text-faint">auto</span>
-              </span>
-            </button>
             {SUGGESTED_TEMPLATES.map((s) => (
               <button
                 key={s.id}
@@ -386,6 +365,7 @@ export function HabitTracker({
             // here would be overwritten on the next reconcile.
             editable={h.source !== 'notes'}
             onSetNotes={(notes) => setLogNotes(h.id, day.date, notes)}
+            onLogMinutes={(minutes) => handleAdjust(h, minutes, day.date)}
             onClose={() => setDay(null)}
           />
         )

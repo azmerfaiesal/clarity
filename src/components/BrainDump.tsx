@@ -1,9 +1,42 @@
 import { Menu, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { BrainDump as Note } from '../types'
+import type { BrainDump as Note, Habit } from '../types'
 import { useNotes } from '../store/noteStore'
-import { formatDateTime, formatRelative } from '../utils/dateUtils'
+import { useHabits } from '../store/habitStore'
+import { HabitHeatmap, HabitMonthRows } from './HabitHeatmap'
+import { FlameIcon } from './FlameIcon'
+import { NoteDayDetail } from './NoteDayDetail'
+import { formatDateTime, formatRelative, todayStr } from '../utils/dateUtils'
+import { habitStats } from '../utils/habitUtils'
+import { useWeekStart } from '../store/theme'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
+
+/**
+ * Stats are derived, so they need a habit even when there is not one yet. This
+ * stands in for the writing habit until it is created, and reads as zero.
+ */
+const EMPTY_HABIT: Habit = {
+  id: '',
+  name: 'Writing',
+  description: '',
+  repetitionType: 'daily',
+  daysOfWeek: [],
+  datesOfMonth: [],
+  timesPerWeek: null,
+  trackBy: 'checkoff',
+  dailyTarget: null,
+  color: '#c084fc',
+  icon: '',
+  targetStreak: null,
+  reminderTime: null,
+  createdAt: new Date(0).toISOString(),
+  logs: {},
+  logNotes: {},
+  lastCompleted: null,
+  archivedAt: null,
+  sortOrder: 0,
+  source: 'notes',
+}
 
 /** A note counts as edited once its stamps drift apart by more than a second. */
 function wasEdited(note: Note): boolean {
@@ -50,9 +83,29 @@ export function BrainDump({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
   const [query, setQuery] = useState('')
+  // Escape hides the list without clearing what has been typed; anything typed
+  // afterwards brings it back. Simpler than tracking focus, and it behaves the
+  // same way, since typing is the only thing that fills the field.
+  const [suggestDismissed, setSuggestDismissed] = useState(false)
+  // The writing habit and its grid live here now rather than under Habits: it
+  // is a picture of these notes, so this is where it belongs.
+  const { habits, addWritingHabit } = useHabits()
+  const writing = habits.find((h) => h.source === 'notes' && h.archivedAt === null)
+  const [writingRange, setWritingRange] = useState<'month' | 'year'>('month')
+  const [day, setDay] = useState<{ date: string; anchor: { x: number; y: number } } | null>(null)
+  const firstDay = useWeekStart()
+  const writingStats = useMemo(
+    () => habitStats(writing ?? EMPTY_HABIT, todayStr(), firstDay),
+    [writing, firstDay],
+  )
+  const [highlight, setHighlight] = useState(0)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
+  const tagRef = useRef<HTMLInputElement>(null)
+  // Set for the moment between mousedown on a suggestion and its click, so the
+  // input's blur handler knows not to commit the half-typed draft underneath.
+  const pickingRef = useRef(false)
 
   const editing = editingId ? notes.find((n) => n.id === editingId) : undefined
 
@@ -86,6 +139,8 @@ export function BrainDump({
     setContent('')
     setTags([])
     setTagDraft('')
+    setSuggestDismissed(false)
+    setHighlight(0)
     setEditingId(null)
     setDirty(false)
     discardDraft()
@@ -146,6 +201,10 @@ export function BrainDump({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      // The tag suggestions want Escape first — dismissing a list you can see
+      // should not also throw away the edit behind it. This listener is on the
+      // capture phase, so it has to check rather than wait to be stopped.
+      if (document.getElementById('tag-suggestions')) return
       if (editingId) {
         e.stopPropagation()
         reset()
@@ -159,6 +218,71 @@ export function BrainDump({
     const counts = new Map<string, number>()
     for (const n of notes) for (const t of n.tags) counts.set(t, (counts.get(t) ?? 0) + 1)
     return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  }, [notes])
+
+  /**
+   * Tags already in use that match what is being typed, best first.
+   *
+   * Prefix matches come before matches from the middle of a word — typing "cl"
+   * should offer "clarity" ahead of "spending log" even if that were a match —
+   * and within each group the tag used most often wins. Tags already on this
+   * note are left out: offering one you cannot add is just noise.
+   */
+  const suggestions = useMemo(() => {
+    if (suggestDismissed) return []
+    const q = normalizeTag(tagDraft)
+    if (!q) return []
+    const scored = allTags
+      .filter(([tag]) => !tags.includes(tag) && tag !== q && tag.includes(q))
+      .sort((a, b) => {
+        const byPrefix = Number(b[0].startsWith(q)) - Number(a[0].startsWith(q))
+        return byPrefix || b[1] - a[1] || a[0].localeCompare(b[0])
+      })
+    return scored.slice(0, 6)
+  }, [allTags, tagDraft, tags, suggestDismissed])
+
+  const onTagKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      const open = suggestions.length > 0
+      if (open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault()
+        const step = e.key === 'ArrowDown' ? 1 : -1
+        setHighlight((h) => (h + step + suggestions.length) % suggestions.length)
+        return
+      }
+      if (e.key === 'Escape' && open) {
+        // Dismiss the list without giving up what has been typed so far.
+        e.preventDefault()
+        e.stopPropagation()
+        setSuggestDismissed(true)
+        return
+      }
+      if (e.key === 'Enter' || e.key === ',' || (e.key === 'Tab' && open)) {
+        // Tab only means "take the suggestion"; with the list closed it should
+        // still move on to the next control.
+        if (e.key === 'Tab' && !open) return
+        e.preventDefault()
+        commitTag(open ? suggestions[highlight][0] : tagDraft)
+        setHighlight(0)
+        return
+      }
+      if (e.key === 'Backspace' && !tagDraft && tags.length) {
+        setTags((prev) => prev.slice(0, -1))
+        setDirty(true)
+      }
+    },
+    [suggestions, highlight, tagDraft, tags, commitTag],
+  )
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, Note[]>()
+    for (const n of notes) {
+      const key = n.createdAt.slice(0, 10)
+      const list = map.get(key)
+      if (list) list.push(n)
+      else map.set(key, [n])
+    }
+    return map
   }, [notes])
 
   const visible = useMemo(() => {
@@ -204,6 +328,99 @@ export function BrainDump({
           </p>
         </div>
       </header>
+
+      {/* Writing streak. A picture of the notes below it, so it reads as part
+          of this page rather than a habit that happens to mention them. */}
+      {writing ? (
+        <section className="mb-8 rounded-lg border border-line bg-raised px-4 py-3.5">
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="label">Writing streak</span>
+            <span className="flex items-center gap-1.5">
+              <FlameIcon
+                className="h-3.5 w-3.5"
+                beaming={writingStats.current > 0}
+                color={writing.color}
+                streak={writingStats.current}
+                peak={writing.targetStreak ?? 30}
+              />
+              <span
+                className="font-mono text-sm font-semibold tabular-nums"
+                style={{ color: writing.color }}
+              >
+                {writingStats.current}
+              </span>
+              <span className="text-3xs text-faint">
+                day{writingStats.current === 1 ? '' : 's'}
+              </span>
+            </span>
+            <div
+              role="radiogroup"
+              aria-label="Writing history range"
+              className="ml-auto inline-flex rounded-md border border-line p-0.5"
+            >
+              {(
+                [
+                  ['month', 'This month'],
+                  ['year', 'Last 365 days'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={writingRange === value}
+                  onClick={() => setWritingRange(value)}
+                  className={`cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
+                    writingRange === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {writingRange === 'year' ? (
+            <HabitHeatmap
+              habit={writing}
+              onPickDay={(date, anchor) => setDay({ date, anchor })}
+            />
+          ) : (
+            <HabitMonthRows
+              habit={writing}
+              span="month"
+              onPickDay={(date, anchor) => setDay({ date, anchor })}
+            />
+          )}
+          <p className="mt-2 font-mono text-3xs text-faint">
+            {writingStats.total} day{writingStats.total === 1 ? '' : 's'} written ·{' '}
+            {writingStats.best} best streak
+          </p>
+        </section>
+      ) : (
+        <div className="mb-8">
+          <button
+            type="button"
+            onClick={addWritingHabit}
+            title="Tracks a streak of the days you write something"
+            className="cursor-pointer rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
+          >
+            + Track a writing streak
+          </button>
+        </div>
+      )}
+
+      {day && (
+        <NoteDayDetail
+          date={day.date}
+          notes={byDay.get(day.date) ?? []}
+          anchor={day.anchor}
+          onOpenNote={(note) => {
+            setDay(null)
+            openForEdit(note)
+          }}
+          onClose={() => setDay(null)}
+        />
+      )}
 
       {/* History */}
       {notes.length > 0 && (
@@ -346,60 +563,115 @@ export function BrainDump({
           className="block max-h-[60vh] w-full resize-none bg-transparent px-4 py-3.5 text-base leading-relaxed text-ink outline-none placeholder:text-faint"
         />
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-line px-3 py-2.5">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-muted"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTags((prev) => prev.filter((t) => t !== tag))
-                    setDirty(true)
-                  }}
-                  aria-label={`Remove tag ${tag}`}
-                  className="cursor-pointer text-faint transition-colors hover:text-danger"
+        <div className="border-t border-line px-3 py-2.5">
+          {tags.length > 0 && (
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 font-mono text-3xs text-muted"
                 >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
-            <input
-              value={tagDraft}
-              onChange={(e) => setTagDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                  e.preventDefault()
-                  commitTag(tagDraft)
-                } else if (e.key === 'Backspace' && !tagDraft && tags.length) {
-                  setTags((prev) => prev.slice(0, -1))
-                  setDirty(true)
-                }
-              }}
-              onBlur={() => commitTag(tagDraft)}
-              placeholder={tags.length ? 'Add tag' : 'Add tags…'}
-              aria-label="Add tag"
-              className="min-w-24 flex-1 bg-transparent font-mono text-2xs text-ink outline-none placeholder:text-faint"
-            />
-          </div>
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTags((prev) => prev.filter((t) => t !== tag))
+                      setDirty(true)
+                    }}
+                    aria-label={`Remove tag ${tag}`}
+                    className="cursor-pointer text-faint transition-colors hover:text-danger"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
 
-          <span
-            aria-live="polite"
-            className="shrink-0 font-mono text-3xs text-faint tabular-nums"
-          >
-            {status}
-          </span>
-          <button
-            type="button"
-            onClick={() => void save()}
-            disabled={!canSave}
-            className="shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {editingId ? 'Save changes' : 'Save'}
-          </button>
+          {/* The field gets a row of its own. Sharing one with the chips meant
+              it was whatever sliver of space they left over, in a position that
+              moved every time a tag was added — which is where the caret kept
+              turning up somewhere unexpected. */}
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <input
+                ref={tagRef}
+                value={tagDraft}
+                onChange={(e) => {
+                  setTagDraft(e.target.value)
+                  setSuggestDismissed(false)
+                  setHighlight(0)
+                }}
+                onKeyDown={onTagKeyDown}
+                onBlur={() => {
+                  // A click on a suggestion blurs first; that path commits the
+                  // suggestion itself, so there is nothing to do here.
+                  if (pickingRef.current) return
+                  setSuggestDismissed(true)
+                  commitTag(tagDraft)
+                }}
+                onFocus={() => setSuggestDismissed(false)}
+                placeholder={tags.length ? 'Add tag' : 'Add tags…'}
+                aria-label="Add tag"
+                role="combobox"
+                aria-expanded={suggestions.length > 0}
+                aria-controls="tag-suggestions"
+                aria-autocomplete="list"
+                className="w-full bg-transparent py-1 font-mono text-2xs text-ink outline-none placeholder:text-faint"
+              />
+
+              {suggestions.length > 0 && (
+                <ul
+                  id="tag-suggestions"
+                  role="listbox"
+                  aria-label="Matching tags"
+                  className="anim-fade-in absolute bottom-full left-0 z-20 mb-1 max-h-44 w-44 overflow-y-auto rounded-lg border border-line bg-raised py-1 shadow-xl shadow-black/15 dark:shadow-black/60"
+                >
+                  {suggestions.map(([tag, count], i) => (
+                    <li key={tag}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={i === highlight}
+                        // Keep focus in the field so blur cannot commit the
+                        // half-typed draft before the click lands.
+                        onMouseDown={() => {
+                          pickingRef.current = true
+                        }}
+                        onClick={() => {
+                          commitTag(tag)
+                          pickingRef.current = false
+                          tagRef.current?.focus()
+                        }}
+                        onMouseEnter={() => setHighlight(i)}
+                        className={`flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left font-mono text-2xs transition-colors ${
+                          i === highlight ? 'bg-accent-soft text-ink' : 'text-muted'
+                        }`}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{tag}</span>
+                        <span className="shrink-0 text-3xs text-faint tabular-nums">{count}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <span
+              aria-live="polite"
+              className="shrink-0 font-mono text-3xs text-faint tabular-nums"
+            >
+              {status}
+            </span>
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={!canSave}
+              className="shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {editingId ? 'Save changes' : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
 

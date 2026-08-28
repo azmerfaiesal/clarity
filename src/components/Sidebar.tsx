@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   CheckCircle2,
+  BookOpen,
   Inbox,
   LayoutTemplate,
   ListPlus,
@@ -26,6 +27,19 @@ import { HabitIcon } from './HabitIcon'
 
 const LIST_COLORS = ['#3ddbf0', '#3bff9e', '#ffb020', '#ff4d5e', '#4aa8ff', '#a78bfa', '#f472b6']
 
+/**
+ * A nav row, with an optional disclosure toggle beside it.
+ *
+ * The toggle is a sibling of the row rather than a control nested inside it.
+ * It used to be a `role="button"` span within the row's own `<button>`, which
+ * is invalid — a button may not contain another — and browsers do not agree on
+ * which one a tap belongs to. iOS Safari hands it to the outer one, so tapping
+ * the chevron on a phone ran the row's handler instead: the panel opened and
+ * could never be closed again.
+ *
+ * The row also toggles when it is already the view you are on, so the target
+ * is the whole row rather than a chevron a few pixels wide.
+ */
 function NavItem({
   icon,
   label,
@@ -45,15 +59,9 @@ function NavItem({
   onToggle?: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? 'page' : undefined}
-      aria-expanded={onToggle ? expanded : undefined}
-      className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
-        active
-          ? 'bg-accent-soft font-medium text-ink'
-          : 'text-muted hover:bg-surface hover:text-ink'
+    <div
+      className={`relative flex w-full items-center rounded-md transition-colors ${
+        active ? 'bg-accent-soft font-medium text-ink' : 'text-muted hover:bg-surface hover:text-ink'
       }`}
     >
       {/* Active rail — the one place the accent reads as "you are here". */}
@@ -63,30 +71,44 @@ function NavItem({
           aria-hidden
         />
       )}
-      <span className={active ? 'text-accent' : 'text-faint'}>{icon}</span>
-      <span className="flex-1 truncate">{label}</span>
-      {count !== undefined && count > 0 && (
-        <span className="font-mono text-2xs text-faint tabular-nums">{count}</span>
-      )}
+      <button
+        type="button"
+        onClick={() => {
+          // Already here: the only thing left for this row to do is fold.
+          if (active && onToggle) onToggle()
+          else onClick()
+        }}
+        aria-current={active ? 'page' : undefined}
+        className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 py-2 pl-2.5 text-left text-sm ${
+          onToggle ? 'pr-1' : 'pr-2.5'
+        }`}
+      >
+        <span className={active ? 'text-accent' : 'text-faint'}>{icon}</span>
+        <span className="flex-1 truncate">{label}</span>
+        {count !== undefined && count > 0 && (
+          <span className="font-mono text-2xs text-faint tabular-nums">{count}</span>
+        )}
+      </button>
       {onToggle && (
-        <span
-          role="button"
-          tabIndex={-1}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
           aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggle()
-          }}
-          className="-mr-1 rounded p-0.5 text-faint transition-transform duration-200 hover:text-ink"
-          style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
+          // Padded well past the size of the glyph: a 14px chevron is not
+          // something a thumb can be expected to find.
+          className="mr-0.5 shrink-0 cursor-pointer rounded p-2.5 text-faint transition-colors hover:text-ink"
         >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </span>
+          <ChevronRight
+            className="h-3.5 w-3.5 transition-transform duration-200"
+            style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
+            aria-hidden
+          />
+        </button>
       )}
-    </button>
+    </div>
   )
 }
-
 
 /**
  * One template in the sidebar: tap to start a habit from it. Saved templates
@@ -147,10 +169,10 @@ function TemplateRow({
 }
 
 /**
- * Name + colour editor, shared by "new list" and "edit list" so both behave the
- * same way — Enter submits, Escape cancels from anywhere in the form, and the
- * actions sit on their own row (seven swatches plus two buttons will not fit on
- * one line in a 256px sidebar).
+ * Name + colour editor, shared by "new category" and "edit category" so both
+ * behave the same way — Enter submits, Escape cancels from anywhere in the
+ * form, and the actions sit on their own row (seven swatches plus two buttons
+ * will not fit on one line in a 256px sidebar).
  */
 function ListForm({
   initialName,
@@ -170,9 +192,9 @@ function ListForm({
   const [name, setName] = useState(initialName)
   const [color, setColor] = useState(initialColor)
 
-  // A list created before the current palette keeps a colour that is not in it.
-  // Show that colour as an option so editing does not misrepresent the list as
-  // having no colour selected.
+  // A category created before the current palette keeps a colour that is not in
+  // it. Show that colour as an option so editing does not misrepresent the
+  // category as having no colour selected.
   const swatches = LIST_COLORS.includes(initialColor)
     ? LIST_COLORS
     : [initialColor, ...LIST_COLORS]
@@ -199,12 +221,12 @@ function ListForm({
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit()
         }}
-        placeholder="List name"
+        placeholder="Category name"
         aria-label={nameLabel}
         className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
       />
       <div className="mt-2.5">
-        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="List color">
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Category colour">
           {swatches.map((c) => (
             <button
               key={c}
@@ -295,6 +317,8 @@ export function Sidebar({
   const [addingList, setAddingList] = useState(false)
   const [editingListId, setEditingListId] = useState<string | null>(null)
   const [tasksOpen, setTasksOpen] = useState(false)
+  // Open by default: these were always on show, and collapsing is the new part.
+  const [categoriesOpen, setCategoriesOpen] = useState(true)
   const [habitsOpen, setHabitsOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
@@ -304,6 +328,7 @@ export function Sidebar({
   // Arriving in a section from elsewhere (Home, a link) should reveal its panel.
   useEffect(() => {
     if (isTaskView) setTasksOpen(true)
+    if (view.startsWith('list:')) setCategoriesOpen(true)
     if (view === 'habits') setHabitsOpen(true)
     if (view === 'notes') setNotesOpen(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -326,11 +351,14 @@ export function Sidebar({
   const openAddForm = () => {
     setEditingListId(null)
     setAddingList(true)
+    // The form lives inside the panel, so opening one has to open the other.
+    setCategoriesOpen(true)
   }
 
   const openEditForm = (id: string) => {
     setAddingList(false)
     setEditingListId(id)
+    setCategoriesOpen(true)
   }
 
   const nav = (v: ViewId) => {
@@ -394,7 +422,7 @@ export function Sidebar({
         />
         {/* Task views and lists are ways of slicing tasks, so they live under
             Tasks rather than competing with the sections. */}
-        <div className="disclosure" data-open={tasksOpen}>
+        <div className="disclosure" data-open={tasksOpen} inert={!tasksOpen}>
           <div>
             <div className="space-y-0.5 pt-0.5 pl-3.5">
               <NavItem
@@ -440,21 +468,37 @@ export function Sidebar({
                 onClick={() => nav('trash')}
               />
 
-              {/* Lists filter tasks, so they belong to this section. */}
+              {/* Categories filter tasks, so they belong to this section.
+                  Collapsible in their own right: a long column of them
+                  otherwise crowds out everything below it. */}
               <div className="mt-3">
-        <div className="mb-1.5 flex items-center justify-between px-2.5">
-          <span className="label">Lists</span>
+        <div className="flex items-center px-2.5">
+          <button
+            type="button"
+            onClick={() => setCategoriesOpen((v) => !v)}
+            aria-expanded={categoriesOpen}
+            className="label flex flex-1 cursor-pointer items-center gap-1.5 rounded py-1 text-left transition-colors hover:text-ink"
+          >
+            Categories
+            <ChevronRight
+              className="h-3 w-3 transition-transform duration-200"
+              style={{ transform: categoriesOpen ? 'rotate(90deg)' : 'none' }}
+              aria-hidden
+            />
+          </button>
           <button
             type="button"
             onClick={() => (addingList ? closeListForm() : openAddForm())}
-            aria-label={addingList ? 'Close new list form' : 'Create list'}
+            aria-label={addingList ? 'Close new category form' : 'Create category'}
             className="cursor-pointer rounded p-1 text-faint transition-colors hover:bg-accent-soft hover:text-accent"
           >
             <ListPlus className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="space-y-0.5">
+        <div className="disclosure" data-open={categoriesOpen} inert={!categoriesOpen}>
+          <div>
+        <div className="space-y-0.5 pt-0.5">
           {lists.map((l, i) => {
             const id: ViewId = `list:${l.id}`
             const active = view === id
@@ -465,7 +509,7 @@ export function Sidebar({
                     initialName={l.name}
                     initialColor={l.color}
                     submitLabel="Save"
-                    nameLabel={`Rename list ${l.name}`}
+                    nameLabel={`Rename category ${l.name}`}
                     onSubmit={(name, color) => {
                       onUpdateList(l.id, { name, color })
                       setEditingListId(null)
@@ -514,7 +558,7 @@ export function Sidebar({
                   <button
                     type="button"
                     onClick={() => openEditForm(l.id)}
-                    aria-label={`Edit list ${l.name}`}
+                    aria-label={`Edit category ${l.name}`}
                     title="Rename or recolour"
                     className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-accent"
                   >
@@ -523,8 +567,8 @@ export function Sidebar({
                   <button
                     type="button"
                     onClick={() => onDeleteList(l.id)}
-                    aria-label={`Delete list ${l.name}`}
-                    title="Delete list"
+                    aria-label={`Delete category ${l.name}`}
+                    title="Delete category"
                     className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -543,7 +587,7 @@ export function Sidebar({
               initialName=""
               initialColor={LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)]}
               submitLabel="Add"
-              nameLabel="New list name"
+              nameLabel="New category name"
               onSubmit={(name, color) => {
                 onAddList(name, color)
                 setAddingList(false)
@@ -552,6 +596,8 @@ export function Sidebar({
             />
           </div>
         )}
+          </div>
+        </div>
               </div>
 
             </div>
@@ -570,7 +616,7 @@ export function Sidebar({
           }}
         />
         {/* Filter the habit list by how often it repeats. */}
-        <div className="disclosure" data-open={habitsOpen}>
+        <div className="disclosure" data-open={habitsOpen} inert={!habitsOpen}>
           <div>
             <div className="space-y-0.5 pt-0.5 pl-3.5">
               {(
@@ -615,7 +661,7 @@ export function Sidebar({
                   aria-hidden
                 />
               </button>
-              <div className="disclosure" data-open={templatesOpen}>
+              <div className="disclosure" data-open={templatesOpen} inert={!templatesOpen}>
                 <div>
                   <div className="space-y-0.5 pb-1">
                     <span className="block px-2.5 pt-1 pb-0.5 font-mono text-3xs text-faint">
@@ -661,7 +707,7 @@ export function Sidebar({
           }}
         />
         {/* Tags in use across the notes, as a way in. */}
-        <div className="disclosure" data-open={notesOpen}>
+        <div className="disclosure" data-open={notesOpen} inert={!notesOpen}>
           <div>
             <div className="space-y-0.5 pt-0.5 pl-3.5">
               <button
@@ -709,6 +755,20 @@ export function Sidebar({
 
       {/* Footer */}
       <div className="flex items-center gap-1 border-t border-line p-2.5">
+        <button
+          type="button"
+          onClick={() => nav('guide')}
+          aria-current={view === 'guide' ? 'page' : undefined}
+          title="How Clarity works"
+          aria-label="How Clarity works"
+          className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors ${
+            view === 'guide'
+              ? 'bg-accent-soft text-accent'
+              : 'text-faint hover:bg-accent-soft hover:text-accent'
+          }`}
+        >
+          <BookOpen className="h-4 w-4" />
+        </button>
         <button
           type="button"
           onClick={() => {

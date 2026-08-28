@@ -27,7 +27,7 @@ export const EMPTY_PRESETS = {
   upcoming: { icon: CheckCircle2, title: 'Nothing scheduled.', subtitle: 'Tasks with due dates will appear here.' },
   completed: { icon: CheckCircle2, title: 'No completed tasks yet.', subtitle: 'Finished tasks will land here.' },
   favorites: { icon: CheckCircle2, title: 'No favorites yet.', subtitle: 'Star a task to keep it close at hand.' },
-  list: { icon: Inbox, title: 'This list is empty.', subtitle: 'Add a task to get started.' },
+  list: { icon: Inbox, title: 'This category is empty.', subtitle: 'Add a task to get started.' },
   braindump: { icon: NotebookPen, title: 'Nothing here yet.', subtitle: 'Empty your mind — start writing below.' },
   habits: { icon: Sprout, title: 'No habits yet.', subtitle: 'Start building consistency — pick one below or create your own.' },
   trash: { icon: Trash2, title: 'Recycle bin is empty.', subtitle: 'Deleted tasks will appear here.' },

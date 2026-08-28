@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { Habit } from '../types'
 import { addDays, parseDate, todayStr } from '../utils/dateUtils'
 import {
@@ -12,6 +12,7 @@ import {
   type WeekStart,
 } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
+import { useMediaQuery } from '../utils/useMediaQuery'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -19,6 +20,17 @@ type CellState = 'future' | 'untracked' | 'notdue' | 'missed' | 'done'
 
 /** Opacity per ramp step, so one colour carries four levels of intensity. */
 const RAMP = [0, 0.3, 0.5, 0.75, 1]
+
+/**
+ * One cell size for all three ranges. A month drawn larger than the year it
+ * sits beside reads as a different instrument rather than the same one zoomed
+ * in, and switching between them jumps.
+ */
+const CELL = 12
+
+/** Gap and corner, derived so every grid keeps the same rhythm. */
+const gapFor = (cell: number) => Math.max(2, Math.round(cell / 4))
+const radiusFor = (cell: number) => Math.max(3, Math.round(cell / 3))
 
 /**
  * How one day should read. Shared by the year grid and the month row so the
@@ -133,7 +145,7 @@ function HeatCell({
  */
 export function HabitHeatmap({
   habit,
-  cell = 12,
+  cell = CELL,
   burstDate = null,
   onPickDay,
 }: {
@@ -146,6 +158,15 @@ export function HabitHeatmap({
 }) {
   const today = todayStr()
   const firstDay = useWeekStart()
+  const scroller = useRef<HTMLDivElement>(null)
+
+  // A year is wider than a phone, so it opens at the end — where today is.
+  // Scrolling back through the year is a choice; scrolling forward to find
+  // today should not be the price of opening the card.
+  useEffect(() => {
+    const el = scroller.current
+    if (el) el.scrollLeft = el.scrollWidth
+  }, [habit.id])
 
   const { weeks, months } = useMemo(() => {
     // 53 columns ending on the week containing today.
@@ -175,18 +196,16 @@ export function HabitHeatmap({
     return { weeks, months }
   }, [habit, today, firstDay])
 
-  const gap = Math.max(2, Math.round(cell / 4))
+  const gap = gapFor(cell)
   // Months read as separate blocks rather than one continuous ribbon.
   const monthGap = gap + 3
-  // Rounded almost to a squircle, stopping short of a circle so the grid still
-  // reads as a grid.
-  const radius = Math.max(3, Math.round(cell / 3))
+  const radius = radiusFor(cell)
   const col = `${cell}px`
 
   return (
     // `overflow-x-auto` clips vertically too, so the scroller needs a little
     // headroom or the firework on an edge cell is guillotined.
-    <div className="overflow-x-auto">
+    <div ref={scroller} className="overflow-x-auto">
       <div className="inline-flex gap-1.5 py-1.5">
         {/* Weekday gutter */}
         <div
@@ -273,6 +292,65 @@ function gutterLabels(firstDay: WeekStart): string[] {
 }
 
 /**
+ * One month as a run of days that wraps.
+ *
+ * Not a calendar: seven columns at this cell size uses about a third of a
+ * phone's width and pushes the card down the page for no gain. Filling the
+ * row first and wrapping when it runs out puts a month in two lines. The
+ * trade is weekday alignment, which the flat row never had either — today
+ * still wears its ring, and any day opens on a tap.
+ */
+function MonthFlow({
+  habit,
+  year,
+  month,
+  today,
+  cell = CELL,
+  burstDate,
+  onPickDay,
+}: {
+  habit: Habit
+  year: number
+  month: number
+  today: string
+  cell?: number
+  burstDate?: string | null
+  onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+}) {
+  const days = useMemo(() => {
+    const start = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    const count = new Date(year, month + 1, 0).getDate()
+    return Array.from({ length: count }, (_, i) => cellFor(habit, addDays(start, i), today))
+  }, [habit, year, month, today])
+
+  const gap = gapFor(cell)
+  const radius = radiusFor(cell)
+
+  return (
+    <div>
+      <div className="mb-1 font-mono text-3xs text-faint">{MONTHS[month]}</div>
+      <div className="flex flex-wrap" style={{ gap: `${gap}px` }}>
+        {days.map((c) => (
+          <HeatCell
+            key={c.date}
+            habit={habit}
+            cell={c}
+            size={cell}
+            radius={radius}
+            today={today}
+            // The rest of the month is drawn, faintly. Dropping it would end
+            // the run at today and read as a month cut short.
+            showFuture
+            bursting={c.date === burstDate}
+            onPickDay={onPickDay}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
  * The current month, or the three months of the current quarter, as one row of
  * days each — numbered underneath.
  *
@@ -284,7 +362,7 @@ function gutterLabels(firstDay: WeekStart): string[] {
 export function HabitMonthRows({
   habit,
   span = 'month',
-  cell = 16,
+  cell = CELL,
   burstDate = null,
   onPickDay,
 }: {
@@ -296,6 +374,16 @@ export function HabitMonthRows({
   onPickDay?: (date: string, anchor: { x: number; y: number }) => void
 }) {
   const today = todayStr()
+  // Below this the flat row is wider than the screen, which is the whole
+  // problem: today ends up off the right-hand edge of a view meant to show it.
+  const narrow = useMediaQuery('(max-width: 639px)')
+
+  const months = useMemo(() => {
+    const d = parseDate(today)
+    const first = span === 'quarter' ? Math.floor(d.getMonth() / 3) * 3 : d.getMonth()
+    const count = span === 'quarter' ? 3 : 1
+    return Array.from({ length: count }, (_, i) => ({ year: d.getFullYear(), month: first + i }))
+  }, [today, span])
 
   const rows = useMemo(() => {
     const d = parseDate(today)
@@ -316,8 +404,27 @@ export function HabitMonthRows({
     })
   }, [habit, today, span])
 
-  const gap = Math.max(2, Math.round(cell / 4))
-  const radius = Math.max(3, Math.round(cell / 3))
+  if (narrow) {
+    return (
+      <div className="space-y-3">
+        {months.map((m) => (
+          <MonthFlow
+            key={`${m.year}-${m.month}`}
+            habit={habit}
+            year={m.year}
+            month={m.month}
+            today={today}
+            cell={cell}
+            burstDate={burstDate}
+            onPickDay={onPickDay}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  const gap = gapFor(cell)
+  const radius = radiusFor(cell)
   const longest = Math.max(...rows.map((r) => r.days.length))
   const todayN = Number(today.slice(8))
   const todayInView = rows.some((r) => r.current)
