@@ -284,8 +284,15 @@ export function NoteProvider({ children }: { children: ReactNode }) {
       if (!userId) return
       try {
         await upsertNoteTemplate(row, userId)
-      } catch {
+      } catch (err) {
+        // Rethrown, not swallowed. Swallowing it left the optimistic row on
+        // screen and the dialog closing as though the edit had been kept —
+        // until the next pull replaced it with what the server actually has.
+        // The caller needs to know so it can say so.
         setSaveState('error')
+        setTemplateRows(templateRows)
+        saveNoteTemplates(userId, templateRows)
+        throw err
       }
     },
     [userId, templateRows],
@@ -299,8 +306,11 @@ export function NoteProvider({ children }: { children: ReactNode }) {
       if (!userId) return
       try {
         await deleteNoteTemplateRow(id)
-      } catch {
+      } catch (err) {
         setSaveState('error')
+        setTemplateRows(templateRows)
+        saveNoteTemplates(userId, templateRows)
+        throw err
       }
     },
     [userId, templateRows],

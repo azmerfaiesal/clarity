@@ -129,7 +129,7 @@ export function NoteTemplates({
                       {template.edited && (
                         <button
                           type="button"
-                          onClick={() => void resetTemplate(template.id)}
+                          onClick={() => void resetTemplate(template.id).catch(() => {})}
                           aria-label={`Reset ${template.name} to how it shipped`}
                           title="Back to how it shipped"
                           className="cursor-pointer rounded p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
@@ -151,7 +151,7 @@ export function NoteTemplates({
                           const question = template.custom
                             ? `Delete the “${template.name}” template?`
                             : `Hide the “${template.name}” template? You can bring it back by resetting it.`
-                          if (window.confirm(question)) void removeTemplate(template.id)
+                          if (window.confirm(question)) void removeTemplate(template.id).catch(() => {})
                         }}
                         aria-label={
                           template.custom
@@ -205,10 +205,12 @@ function TemplateForm({
   const [tags, setTags] = useState((template?.tags ?? []).join(', '))
   const [body, setBody] = useState(template?.body ?? '')
   const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   const submit = async () => {
     if (!name.trim() || busy) return
     setBusy(true)
+    setFailed(false)
     try {
       await onSave({
         name,
@@ -219,6 +221,10 @@ function TemplateForm({
           .map((t) => t.trim().replace(/^#/, '').toLowerCase())
           .filter(Boolean),
       })
+    } catch {
+      // Stay open with the text still in the fields. Closing on a refused save
+      // is how an edit gets lost between here and the next reload.
+      setFailed(true)
     } finally {
       setBusy(false)
     }
@@ -265,7 +271,12 @@ function TemplateForm({
         </Field>
       </div>
 
-      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line px-3 py-2.5">
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line px-3 py-2.5">
+        {failed && (
+          <span className="mr-auto text-xs text-danger" role="alert">
+            The server refused that. Nothing was changed — see Settings for why.
+          </span>
+        )}
         <button
           type="button"
           onClick={onCancel}

@@ -661,7 +661,7 @@ export function BrainDump({
        * scrolling happens.
        */}
       {notes.length > 0 && (
-        <Panel label="Earlier notes" className="flex min-h-64 flex-1 flex-col overflow-hidden">
+        <Panel label="Earlier notes" className="flex min-h-[27rem] flex-1 flex-col overflow-hidden">
           <PanelHeader>
             <span className="label shrink-0">Earlier</span>
             {filtering && (

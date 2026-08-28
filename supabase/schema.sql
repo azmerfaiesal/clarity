@@ -163,7 +163,9 @@ create table if not exists public.clarity_note_templates (
   -- A built-in the reader has put away. The row exists so the choice syncs;
   -- deleting the row is how a built-in goes back to its shipped shape.
   hidden      boolean not null default false,
-  sort_order  integer not null default 0,
+  -- bigint, like every other sort_order here: the client stamps these with
+  -- Date.now(), which overflows int4 and made every save a silent 400.
+  sort_order  bigint not null default 0,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
