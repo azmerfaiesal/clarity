@@ -7,6 +7,7 @@ import { formatRelative, todayStr } from '../utils/dateUtils'
 import type { WeekStart } from '../utils/habitUtils'
 import { formatAmount, habitStats, isCompletedOn } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
+import { beamIntensity } from '../utils/beam'
 import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { TaskItem } from './TaskItem'
@@ -180,6 +181,13 @@ export function Home({
   )
 }
 
+/**
+ * Each of the three summaries is a panel of its own, the same object the Notes
+ * page uses for its history: a heading fixed to the top edge and the content
+ * inside it. Three headings floating over one continuous column read as one
+ * long page with labels; three boxes read as three things, which is what they
+ * are — this page summarises three separate trackers.
+ */
 function Section({
   title,
   meta,
@@ -192,25 +200,25 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="mb-8">
-      <div className="mb-2 flex items-center gap-2">
+    <section className="mb-5 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40">
+      <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
         <span className="label">{title}</span>
         {meta && <span className="font-mono text-3xs text-faint">{meta}</span>}
         <button
           type="button"
           onClick={onOpen}
-          className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 font-mono text-3xs text-faint transition-colors hover:text-accent"
+          className="-mr-1.5 ml-auto inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 font-mono text-3xs text-faint transition-colors hover:text-accent"
         >
           Open <ArrowRight className="h-3 w-3" />
         </button>
       </div>
-      {children}
+      <div className="p-2">{children}</div>
     </section>
   )
 }
 
 function Blank({ children }: { children: React.ReactNode }) {
-  return <p className="px-2 py-3 text-sm text-faint">{children}</p>
+  return <p className="px-2 py-2.5 text-sm text-faint">{children}</p>
 }
 
 function HomeHabitRow({
@@ -226,6 +234,10 @@ function HomeHabitRow({
 }) {
   const s = habitStats(habit, today, firstDay)
   const done = s.doneToday
+  // The icon carries the streak too, not only the number at the end of the row:
+  // a long streak makes the thing you tap glow, and a cold one leaves it still.
+  const beaming = s.current > 0
+  const beam = beamIntensity(s.current, habit.targetStreak ?? 30)
   return (
     <li className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-surface">
       <button
@@ -235,8 +247,15 @@ function HomeHabitRow({
         aria-label={done ? `Undo ${habit.name}` : `Mark ${habit.name} complete`}
         className={`flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-all ${
           done ? 'border-transparent' : 'border-dashed border-line'
-        }`}
-        style={done ? { backgroundColor: habit.color, color: 'var(--bg)' } : { color: habit.color }}
+        } ${beaming ? 'icon-beam' : ''}`}
+        style={
+          {
+            color: done ? 'var(--bg)' : habit.color,
+            backgroundColor: done ? habit.color : undefined,
+            '--beam-color': habit.color,
+            '--beam': beam,
+          } as React.CSSProperties
+        }
       >
         {done ? (
           <Check className="h-4 w-4" strokeWidth={3} />

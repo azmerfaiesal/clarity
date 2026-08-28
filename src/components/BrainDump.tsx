@@ -397,7 +397,10 @@ export function BrainDump({
             <span className="label">Writing streak</span>
             <span className="flex items-center gap-1.5">
               <FlameIcon
-                className="h-3.5 w-3.5"
+                // A shade larger than the flames in a list: this one is the
+                // page's own headline number, and a 14px mark has nowhere to
+                // put a glow.
+                className="h-4 w-4"
                 beaming={writingStats.current > 0}
                 color={writing.color}
                 streak={writingStats.current}

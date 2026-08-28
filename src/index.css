@@ -285,22 +285,51 @@ body {
  * breathes on the same slow cycle as the list swatches so the two read as one
  * family rather than two separate effects.
  */
+/*
+ * Two shadows rather than one, because the streak has to be legible in the
+ * glow and a single halo cannot do it: the tight one is the flame's own edge
+ * and barely moves, while the wide one is almost nothing at day one and a real
+ * bloom at the target. Scaling the blur rather than the colour keeps the mix
+ * percentages constant, which every browser handles the same way.
+ */
 @keyframes flame-beam {
   0%,
   100% {
     filter: drop-shadow(
-      0 0 calc(1px + 1.5px * var(--beam, 0)) color-mix(in srgb, var(--flame, currentColor) 45%, transparent)
-    );
+        0 0 calc(0.5px + 1.5px * var(--beam, 0)) color-mix(in srgb, var(--flame, currentColor) 55%, transparent)
+      )
+      drop-shadow(0 0 calc(1px + 5px * var(--beam, 0)) color-mix(in srgb, var(--flame, currentColor) 28%, transparent));
   }
   50% {
     filter: drop-shadow(
-      0 0 calc(2.5px + 6px * var(--beam, 0)) color-mix(in srgb, var(--flame, currentColor) 85%, transparent)
-    );
+        0 0 calc(1.5px + 4px * var(--beam, 0)) color-mix(in srgb, var(--flame, currentColor) 90%, transparent)
+      )
+      drop-shadow(0 0 calc(3px + 12px * var(--beam, 0)) color-mix(in srgb, var(--flame, currentColor) 55%, transparent));
   }
 }
 .flame-beam {
   /* Longer streaks breathe a little slower as well as brighter. */
   animation: flame-beam calc(2.9s - 0.6s * var(--beam, 0)) ease-in-out infinite;
+}
+
+/*
+ * The same breath around a habit's own icon, so the streak is readable from the
+ * button you tap rather than only from the number beside it. Driven by the same
+ * --beam, and worn only while a streak is actually alive.
+ */
+@keyframes icon-beam {
+  0%,
+  100% {
+    box-shadow: 0 0 calc(2px + 3px * var(--beam, 0)) 0
+      color-mix(in srgb, var(--beam-color, var(--accent)) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 calc(5px + 11px * var(--beam, 0)) 0
+      color-mix(in srgb, var(--beam-color, var(--accent)) 80%, transparent);
+  }
+}
+.icon-beam {
+  animation: icon-beam calc(3.2s - 0.6s * var(--beam, 0)) ease-in-out infinite;
 }
 
 /* Micro-label: the uppercase, wide-tracked caption used for section headers. */

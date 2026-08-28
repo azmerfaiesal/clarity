@@ -1,3 +1,5 @@
+import { beamIntensity } from '../utils/beam'
+
 /**
  * Streak flame: an outline mark rather than the emoji, so it takes the habit's
  * colour and sits with the rest of the line iconography.
@@ -21,9 +23,7 @@ export function FlameIcon({
   /** The streak length at which the glow is full — a habit's own target if set. */
   peak?: number
 }) {
-  // 0 at day one, 1 once the streak reaches its peak. Sub-linear so early days
-  // still show visible progress rather than crawling.
-  const intensity = Math.min(1, Math.sqrt(Math.max(0, streak) / Math.max(1, peak)))
+  const intensity = beamIntensity(streak, peak)
   return (
     <svg
       viewBox="0 0 24 24"
