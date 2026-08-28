@@ -10,6 +10,7 @@ import { useWeekStart } from '../store/theme'
 import { beamIntensity } from '../utils/beam'
 import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
+import { Panel, PanelBody, PanelHeader } from './Panel'
 import { TaskItem } from './TaskItem'
 
 /**
@@ -200,8 +201,8 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="mb-5 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40">
-      <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
+    <Panel className="mb-4">
+      <PanelHeader>
         <span className="label">{title}</span>
         {meta && <span className="font-mono text-3xs text-faint">{meta}</span>}
         <button
@@ -211,9 +212,9 @@ function Section({
         >
           Open <ArrowRight className="h-3 w-3" />
         </button>
-      </div>
-      <div className="p-2">{children}</div>
-    </section>
+      </PanelHeader>
+      <PanelBody>{children}</PanelBody>
+    </Panel>
   )
 }
 

@@ -7,6 +7,7 @@ import { HabitTracker } from './components/HabitTracker'
 import { EMPTY_PRESETS, EmptyState } from './components/EmptyState'
 import { Header } from './components/Header'
 import { GlobalSearch } from './components/GlobalSearch'
+import { Panel, PanelBody, PanelHeader } from './components/Panel'
 import { Settings } from './components/Settings'
 import { Sidebar } from './components/Sidebar'
 import { TaskEditor } from './components/TaskEditor'
@@ -373,15 +374,26 @@ function AppShell() {
             </div>
           )}
 
-          {/* Task list */}
+          {/* The list gets the same panel Notes and Home use. Upcoming is the
+              one exception: it already groups by date, so each date gets its
+              own panel with the day as the heading rather than one long box
+              with headings floating inside it. */}
           {visibleTasks.length === 0 ? (
-            filtered ? (
-              <EmptyState {...EMPTY_PRESETS.search} />
-            ) : (
-              <EmptyState {...preset} />
-            )
+            <Panel>
+              <PanelBody>
+                {filtered ? (
+                  <EmptyState {...EMPTY_PRESETS.search} />
+                ) : (
+                  <EmptyState {...preset} />
+                )}
+              </PanelBody>
+            </Panel>
           ) : view === 'trash' ? (
-            <TrashRows tasks={visibleTasks} lists={lists} store={store} />
+            <Panel label="Deleted tasks">
+              <PanelBody>
+                <TrashRows tasks={visibleTasks} lists={lists} store={store} />
+              </PanelBody>
+            </Panel>
           ) : view === 'upcoming' ? (
             <UpcomingGroups
               tasks={visibleTasks}
@@ -390,7 +402,11 @@ function AppShell() {
               store={store}
             />
           ) : (
-            <TaskRows tasks={visibleTasks} lists={lists} onEdit={setEditingTask} store={store} />
+            <Panel label="Tasks">
+              <PanelBody>
+                <TaskRows tasks={visibleTasks} lists={lists} onEdit={setEditingTask} store={store} />
+              </PanelBody>
+            </Panel>
           )}
 
           {/* Completed section (non-completed views) */}
@@ -546,19 +562,24 @@ function UpcomingGroups({
 }) {
   const groups = groupByDate(tasks)
   return (
- <div className="space-y-6">
+ <div className="space-y-4">
       {groups.map((g) => (
-        <section key={g.date} aria-label={sectionLabel(g.date)}>
-          <h2
- className={`mb-1.5 px-3 text-xs font-semibold tracking-wide uppercase ${
-              isOverdue(g.date) ? 'text-danger' : 'text-faint'
-            }`}
-          >
-            {isOverdue(g.date) ? 'Overdue · ' : ''}
-            {sectionLabel(g.date)}
-          </h2>
-          <TaskRows tasks={g.tasks} lists={lists} onEdit={onEdit} store={store} />
-        </section>
+        <Panel key={g.date} label={sectionLabel(g.date)}>
+          <PanelHeader>
+            <span
+              className={`label ${isOverdue(g.date) ? 'text-danger' : ''}`}
+            >
+              {isOverdue(g.date) ? 'Overdue · ' : ''}
+              {sectionLabel(g.date)}
+            </span>
+            <span className="ml-auto font-mono text-3xs text-faint tabular-nums">
+              {g.tasks.length}
+            </span>
+          </PanelHeader>
+          <PanelBody>
+            <TaskRows tasks={g.tasks} lists={lists} onEdit={onEdit} store={store} />
+          </PanelBody>
+        </Panel>
       ))}
     </div>
   )
@@ -674,28 +695,33 @@ function CompletedSection({
 
   if (completed.length === 0) return null
 
+  // The disclosure is the panel's heading row, so a collapsed section is just a
+  // panel with nothing under its header rather than a stray button on the page.
   return (
- <div className="mt-6">
-      <button
-        type="button"
-        onClick={() => setExpanded((e) => !e)}
-        aria-expanded={expanded}
- className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide text-faint uppercase transition-colors hover:text-ink"
-      >
-        <span
- className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}
-          aria-hidden
+    <Panel className="mt-4">
+      <PanelHeader className={expanded ? '' : 'border-b-0'}>
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          aria-expanded={expanded}
+          className="-mx-1 flex flex-1 cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-left transition-colors hover:text-ink"
         >
-          ›
-        </span>
-        Completed · {completed.length}
-      </button>
+          <span
+            className={`label inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}
+            aria-hidden
+          >
+            ›
+          </span>
+          <span className="label">Completed</span>
+          <span className="font-mono text-3xs text-faint tabular-nums">{completed.length}</span>
+        </button>
+      </PanelHeader>
       {expanded && (
- <div className="anim-fade-slide-in mt-1">
+        <PanelBody className="anim-fade-slide-in p-2">
           <TaskRows tasks={completed} lists={lists} onEdit={onEdit} store={store} />
-        </div>
+        </PanelBody>
       )}
-    </div>
+    </Panel>
   )
 }
 

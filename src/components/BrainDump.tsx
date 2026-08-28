@@ -7,6 +7,7 @@ import { HabitHeatmap, HabitMonthRows } from './HabitHeatmap'
 import { FlameIcon } from './FlameIcon'
 import { NoteDayDetail } from './NoteDayDetail'
 import { NoteTemplates } from './NoteTemplates'
+import { Panel, PanelHeader } from './Panel'
 import type { NoteTemplate } from '../store/noteTemplates'
 import { formatDateTime, formatRelative, todayStr } from '../utils/dateUtils'
 import { habitStats } from '../utils/habitUtils'
@@ -124,7 +125,7 @@ export function BrainDump({
   const [highlight, setHighlight] = useState(0)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const composerRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<HTMLElement>(null)
   const tagRef = useRef<HTMLInputElement>(null)
   // Set for the moment between mousedown on a suggestion and its click, so the
   // input's blur handler knows not to commit the half-typed draft underneath.
@@ -392,7 +393,7 @@ export function BrainDump({
       {/* Writing streak. A picture of the notes below it, so it reads as part
           of this page rather than a habit that happens to mention them. */}
       {writing ? (
-        <section className="mb-8 shrink-0 rounded-lg border border-line bg-raised px-4 py-3.5">
+        <Panel className="mb-4 shrink-0 px-4 py-3.5">
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="label">Writing streak</span>
             <span className="flex items-center gap-1.5">
@@ -458,9 +459,9 @@ export function BrainDump({
             {writingStats.total} day{writingStats.total === 1 ? '' : 's'} written ·{' '}
             {writingStats.best} best streak
           </p>
-        </section>
+        </Panel>
       ) : (
-        <div className="mb-8 shrink-0">
+        <div className="mb-4 shrink-0">
           <button
             type="button"
             onClick={addWritingHabit}
@@ -486,10 +487,7 @@ export function BrainDump({
       )}
 
       {/* Writing area */}
-      <div
-        ref={composerRef}
-        className="anim-fade-in mb-8 shrink-0 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
-      >
+      <Panel ref={composerRef} className="anim-fade-in mb-4 shrink-0">
         {editing && (
           <div className="flex items-center gap-2 border-b border-line px-3 py-2 font-mono text-2xs text-faint">
             <span className="truncate">Editing · {formatDateTime(editing.createdAt)}</span>
@@ -644,7 +642,7 @@ export function BrainDump({
             </button>
           </div>
         </div>
-      </div>
+      </Panel>
 
       {templatesOpen && (
         <NoteTemplates
@@ -663,18 +661,15 @@ export function BrainDump({
        * scrolling happens.
        */}
       {notes.length > 0 && (
-        <section
-          aria-label="Earlier notes"
-          className="flex min-h-64 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
-        >
-          <div className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-2.5">
+        <Panel label="Earlier notes" className="flex min-h-64 flex-1 flex-col overflow-hidden">
+          <PanelHeader>
             <span className="label shrink-0">Earlier</span>
             {filtering && (
               <span className="font-mono text-3xs text-faint tabular-nums">
                 {visible.length} of {notes.length}
               </span>
             )}
-          </div>
+          </PanelHeader>
 
           {allTags.length > 0 && (
             <div
@@ -781,7 +776,7 @@ export function BrainDump({
               </button>
             )}
           </div>
-        </section>
+        </Panel>
       )}
 
       {notes.length === 0 && !filtering && (
