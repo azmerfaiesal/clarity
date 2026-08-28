@@ -19,6 +19,8 @@ export type AccentKey =
   | 'amber'
   | 'rose'
   | 'violet'
+  | 'coral'
+  | 'grey'
   | 'mint'
   | 'peach'
   | 'lilac'
@@ -75,6 +77,24 @@ export const ACCENTS: Record<AccentKey, AccentOption> = {
     pastel: false,
     light: { accent: '#6d28d9', hi: '#5a1fb4', ink: '#ffffff', rgb: '109 40 217' },
     dark: { accent: '#a78bfa', hi: '#c4b1fd', ink: '#100722', rgb: '167 139 250' },
+  },
+  // #FF6E4A as asked for, which is bright enough to be the dark member of the
+  // pair. As text on light backgrounds it only reaches about 2.4:1, so the
+  // light member is the same hue taken down until it carries text at AA —
+  // the rule every accent here follows.
+  coral: {
+    label: 'Coral',
+    pastel: false,
+    light: { accent: '#ad3a1e', hi: '#8e2f18', ink: '#ffffff', rgb: '173 58 30' },
+    dark: { accent: '#ff6e4a', hi: '#ff9377', ink: '#1a0603', rgb: '255 110 74' },
+  },
+  // No hue at all: the accent recedes and the priority flags, the streak
+  // colours and the favourite star become the only coloured things on screen.
+  grey: {
+    label: 'Grey',
+    pastel: false,
+    light: { accent: '#4f5865', hi: '#3d4551', ink: '#ffffff', rgb: '79 88 101' },
+    dark: { accent: '#b8c1cf', hi: '#d3dae4', ink: '#0b1017', rgb: '184 193 207' },
   },
   mint: {
     label: 'Pastel mint',

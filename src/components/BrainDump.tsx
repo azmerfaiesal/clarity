@@ -1,4 +1,4 @@
-import { Menu, Search, Trash2, X } from 'lucide-react'
+import { LayoutTemplate, Menu, Search, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BrainDump as Note, Habit } from '../types'
 import { useNotes } from '../store/noteStore'
@@ -6,6 +6,8 @@ import { useHabits } from '../store/habitStore'
 import { HabitHeatmap, HabitMonthRows } from './HabitHeatmap'
 import { FlameIcon } from './FlameIcon'
 import { NoteDayDetail } from './NoteDayDetail'
+import { NoteTemplates } from './NoteTemplates'
+import type { NoteTemplate } from '../store/noteTemplates'
 import { formatDateTime, formatRelative, todayStr } from '../utils/dateUtils'
 import { habitStats } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
@@ -57,6 +59,20 @@ function normalizeTag(raw: string): string {
 }
 
 /**
+ * Where the caret should land in a freshly inserted template: the end of the
+ * first line that trails off, which is the first place there is anything to
+ * type. Falls back to the end.
+ */
+function firstSlot(body: string): number {
+  let at = 0
+  for (const line of body.split('\n')) {
+    if (line.endsWith(' ')) return at + line.length
+    at += line.length + 1
+  }
+  return body.length
+}
+
+/**
  * Brain Dump — a blank sheet rather than a form.
  *
  * The composer sits at the top, under the streak that measures it, so writing
@@ -93,6 +109,7 @@ export function BrainDump({
   // afterwards brings it back. Simpler than tracking focus, and it behaves the
   // same way, since typing is the only thing that fills the field.
   const [suggestDismissed, setSuggestDismissed] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
   // The writing habit and its grid live here now rather than under Habits: it
   // is a picture of these notes, so this is where it belongs.
   const { habits, addWritingHabit } = useHabits()
@@ -177,6 +194,33 @@ export function BrainDump({
     reset()
     textareaRef.current?.focus()
   }, [content, tags, tagDraft, editingId, updateNote, createNote, reset])
+
+  /**
+   * Drop a template into the composer. Anything already written is kept and
+   * the shape lands under it — a template is a starting point, not a reason to
+   * lose the sentence you had already typed.
+   */
+  const applyTemplate = useCallback(
+    (template: NoteTemplate) => {
+      setTemplatesOpen(false)
+      const base = content.trim() ? `${content.replace(/\s+$/, '')}\n\n` : ''
+      const caret = base.length + firstSlot(template.body)
+      setContent(base + template.body)
+      if (template.tags.length) {
+        setTags((prev) => [...prev, ...template.tags.filter((t) => !prev.includes(t))])
+      }
+      setDirty(true)
+      // After the value has landed, or the caret would be set against the old
+      // one and the browser would drop it at the end.
+      window.setTimeout(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        el.setSelectionRange(caret, caret)
+      }, 0)
+    },
+    [content],
+  )
 
   const openForEdit = useCallback(
     (note: Note) => {
@@ -571,6 +615,16 @@ export function BrainDump({
               )}
             </div>
 
+            <button
+              type="button"
+              onClick={() => setTemplatesOpen(true)}
+              title="Start from a shape you write often"
+              className="shrink-0 cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-ink"
+            >
+              <LayoutTemplate className="mr-1 inline h-3.5 w-3.5 align-[-2px]" aria-hidden />
+              Templates
+            </button>
+
             <span
               aria-live="polite"
               className="shrink-0 font-mono text-3xs text-faint tabular-nums"
@@ -588,6 +642,14 @@ export function BrainDump({
           </div>
         </div>
       </div>
+
+      {templatesOpen && (
+        <NoteTemplates
+          hasContent={content.trim() !== ''}
+          onPick={applyTemplate}
+          onClose={() => setTemplatesOpen(false)}
+        />
+      )}
 
       {/*
        * History, as a panel of its own rather than a run of rows bleeding into
