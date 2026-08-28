@@ -326,7 +326,7 @@ export function BrainDump({
 
   return (
     <>
-      <header className="flex items-center gap-2 pt-6 pb-4 sm:pt-10">
+      <header className="flex shrink-0 items-center gap-2 pt-6 pb-4 sm:pt-10">
         <button
           type="button"
           onClick={onOpenMobileNav}
@@ -348,7 +348,7 @@ export function BrainDump({
       {/* Writing streak. A picture of the notes below it, so it reads as part
           of this page rather than a habit that happens to mention them. */}
       {writing ? (
-        <section className="mb-8 rounded-lg border border-line bg-raised px-4 py-3.5">
+        <section className="mb-8 shrink-0 rounded-lg border border-line bg-raised px-4 py-3.5">
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="label">Writing streak</span>
             <span className="flex items-center gap-1.5">
@@ -413,7 +413,7 @@ export function BrainDump({
           </p>
         </section>
       ) : (
-        <div className="mb-8">
+        <div className="mb-8 shrink-0">
           <button
             type="button"
             onClick={addWritingHabit}
@@ -441,7 +441,7 @@ export function BrainDump({
       {/* Writing area */}
       <div
         ref={composerRef}
-        className="anim-fade-in mb-8 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
+        className="anim-fade-in mb-8 shrink-0 rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
       >
         {editing && (
           <div className="flex items-center gap-2 border-b border-line px-3 py-2 font-mono text-2xs text-faint">
@@ -589,35 +589,34 @@ export function BrainDump({
         </div>
       </div>
 
-      {/* History */}
+      {/*
+       * History, as a panel of its own rather than a run of rows bleeding into
+       * the page. Only the list inside it scrolls: the heading, the tag filters
+       * and the search field are fixed to its edges, so they stay put however
+       * far back you go — which is the point of a box you can scroll rather
+       * than a page you scroll past. Search sits at the foot, next to where the
+       * scrolling happens.
+       */}
       {notes.length > 0 && (
-        <div className="mt-3">
-          <div className="mb-2 flex items-center gap-2">
+        <section
+          aria-label="Earlier notes"
+          className="flex min-h-64 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-raised shadow-sm shadow-black/5 dark:shadow-black/40"
+        >
+          <div className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-2.5">
             <span className="label shrink-0">Earlier</span>
-            <div className="ml-auto flex min-w-0 items-center gap-1.5 rounded-md border border-line px-2 py-1 focus-within:border-accent">
-              <Search className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search notes"
-                aria-label="Search brain dumps"
-                className="w-28 bg-transparent text-xs text-ink outline-none placeholder:text-faint sm:w-44"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery('')}
-                  aria-label="Clear search"
-                  className="shrink-0 cursor-pointer text-faint transition-colors hover:text-ink"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
+            {filtering && (
+              <span className="font-mono text-3xs text-faint tabular-nums">
+                {visible.length} of {notes.length}
+              </span>
+            )}
           </div>
 
           {allTags.length > 0 && (
-            <div className="mb-1 flex flex-wrap gap-1.5" role="group" aria-label="Filter by tag">
+            <div
+              className="flex shrink-0 flex-wrap gap-1.5 border-b border-line px-4 py-2"
+              role="group"
+              aria-label="Filter by tag"
+            >
               {allTags.map(([tag, count]) => (
                 <button
                   key={tag}
@@ -643,50 +642,79 @@ export function BrainDump({
             </div>
           )}
 
-          {visible.length === 0 ? (
-            <EmptyState {...EMPTY_PRESETS.search} />
-          ) : (
-            <ul className="mt-1" role="list">
-              {visible.map((note) => (
-                <li key={note.id} className="group relative border-b border-line last:border-b-0">
-                  <button
-                    type="button"
-                    onClick={() => openForEdit(note)}
-                    className={`w-full cursor-pointer py-3 pr-9 text-left transition-colors ${
-                      editingId === note.id ? 'opacity-50' : ''
-                    }`}
-                  >
-                    {/* The stamp carries the accent: it is the one line that
-                        dates the note, and in faint grey it disappeared into
-                        the rules between rows. */}
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-3xs">
-                      <span className="text-accent">{formatDateTime(note.createdAt)}</span>
-                      {wasEdited(note) && (
-                        <span className="text-accent/70">
-                          · edited {formatRelative(note.updatedAt)}
-                        </span>
-                      )}
-                      {note.tags.map((tag) => (
-                        <span key={tag} className="rounded border border-line px-1.5 py-px text-muted">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="mt-1.5 line-clamp-2 text-sm text-ink">{preview(note.content)}</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void remove(note)}
-                    aria-label="Delete brain dump"
-                    className="absolute top-3 right-0 cursor-pointer rounded p-1.5 text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+          {/* `min-h-0` is what actually lets this scroll: without it a flex
+              child refuses to shrink below its content and the panel grows
+              instead of the list scrolling inside it. */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-4">
+            {visible.length === 0 ? (
+              <EmptyState {...EMPTY_PRESETS.search} />
+            ) : (
+              <ul role="list">
+                {visible.map((note) => (
+                  <li key={note.id} className="group relative border-b border-line last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => openForEdit(note)}
+                      className={`w-full cursor-pointer py-3 pr-9 text-left transition-colors ${
+                        editingId === note.id ? 'opacity-50' : ''
+                      }`}
+                    >
+                      {/* The stamp carries the accent: it is the one line that
+                          dates the note, and in faint grey it disappeared into
+                          the rules between rows. */}
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-3xs">
+                        <span className="text-accent">{formatDateTime(note.createdAt)}</span>
+                        {wasEdited(note) && (
+                          <span className="text-accent/70">
+                            · edited {formatRelative(note.updatedAt)}
+                          </span>
+                        )}
+                        {note.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded border border-line px-1.5 py-px text-muted"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="mt-1.5 line-clamp-2 text-sm text-ink">{preview(note.content)}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void remove(note)}
+                      aria-label="Delete brain dump"
+                      className="absolute top-3 right-0 cursor-pointer rounded p-1.5 text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2 focus-within:border-accent">
+            <Search className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search notes"
+              aria-label="Search brain dumps"
+              className="min-w-0 flex-1 bg-transparent text-xs text-ink outline-none placeholder:text-faint"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                className="shrink-0 cursor-pointer text-faint transition-colors hover:text-ink"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </section>
       )}
 
       {notes.length === 0 && !filtering && (

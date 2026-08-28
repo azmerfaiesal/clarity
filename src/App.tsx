@@ -298,8 +298,18 @@ function AppShell() {
  <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
  <div
-            className={`mx-auto w-full px-4 pb-20 sm:px-6 sm:pb-12 ${
+            className={`mx-auto w-full px-4 sm:px-6 ${
               view === 'habits' ? 'max-w-5xl' : 'max-w-2xl'
+            } ${
+              // Notes lays itself out as a column that fills the height, so the
+              // Earlier panel can take whatever is left and scroll inside it —
+              // its search field then sits on screen rather than below the fold.
+              // It still overflows and scrolls the page when the composer and
+              // the streak leave the panel less than its minimum. The generous
+              // bottom padding elsewhere is clearance for the floating add
+              // button, which this view does not have; here it would only eat
+              // into the panel.
+              view === 'notes' ? 'flex h-full flex-col pb-4' : 'pb-20 sm:pb-12'
             }`}
           >
           {view === 'home' ? (
