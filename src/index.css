@@ -178,21 +178,34 @@ body {
 .native-app .app-shell {
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
 .native-app .native-safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.native-fab {
+  right: 1.25rem;
+  bottom: 4.25rem;
+}
+
 .native-app .native-fab {
-  bottom: calc(5rem + env(safe-area-inset-bottom));
+  right: calc(1.25rem + env(safe-area-inset-right));
+  bottom: calc(4.25rem + env(safe-area-inset-bottom));
 }
 
 .native-app .mobile-sidebar {
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  max-width: calc(
+    100vw - env(safe-area-inset-left) - env(safe-area-inset-right)
+  );
 }
 
 /* Fixed dialogs do not inherit the app shell's safe-area padding. Give the
@@ -201,11 +214,25 @@ body {
 .native-app .native-settings-overlay {
   box-sizing: border-box;
   padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+  padding-right: calc(env(safe-area-inset-right) + 0.5rem);
   padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  padding-left: calc(env(safe-area-inset-left) + 0.5rem);
 }
 
 .native-app .native-settings-panel {
   max-height: 100%;
+  max-width: calc(
+    100vw - env(safe-area-inset-left) - env(safe-area-inset-right)
+  );
+}
+
+/* Fixed toasts sit outside the shell's layout flow, so reserve the horizontal
+   sensor and rounded-corner insets here rather than inheriting shell padding. */
+.native-app .anim-toast-in {
+  right: calc(1rem + env(safe-area-inset-right));
+  left: calc(1rem + env(safe-area-inset-left));
+  width: auto;
+  max-width: none;
 }
 
 body {

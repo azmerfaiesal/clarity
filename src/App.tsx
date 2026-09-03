@@ -11,10 +11,13 @@ import { GlobalSearch } from './components/GlobalSearch'
 import { Panel, PanelBody, PanelHeader } from './components/Panel'
 import { Settings } from './components/Settings'
 import { Sidebar } from './components/Sidebar'
+import { TaskComposerModal } from './components/TaskComposerModal'
 import { TaskEditor } from './components/TaskEditor'
+import type { TaskDraftInput } from './components/TaskComposerFields'
 import { TaskInput } from './components/TaskInput'
 import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
+import { isNativeApp } from './native/platform'
 import { useHabits } from './store/habitStore'
 import { loadView, saveView } from './store/storage'
 import { checkReminders, syncNativeReminders } from './store/notifications'
@@ -50,6 +53,7 @@ import {
   shouldOpenDrawer,
 } from './utils/mobileDrawer'
 import type { DrawerMotion } from './utils/mobileDrawer'
+import { useMediaQuery } from './utils/useMediaQuery'
 
 type MobileDrawerDrag = {
   pointerId: number
@@ -130,6 +134,10 @@ function AppShell() {
   const store = useTaskStore()
   const { tasks, lists } = store
   const { notes } = useNotes()
+  // Keep this hook unconditional: a native iPad in landscape still uses the
+  // compact composer even though its viewport is wider than the web breakpoint.
+  const isNarrowTaskEntry = useMediaQuery('(max-width: 639px)')
+  const compactTaskEntry = isNativeApp || isNarrowTaskEntry
 
   // Tags in use across the notes, most used first — the sidebar's way in.
   const noteTags = useMemo(() => {
@@ -171,6 +179,7 @@ function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [undoVisible, setUndoVisible] = useState(false)
   const undoTimer = useRef<number | null>(null)
+  const fabRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     saveView(view)
@@ -245,6 +254,13 @@ function AppShell() {
   }, [view])
 
   const openQuickAdd = useCallback(() => setQuickAddOpen(true), [])
+  const addTaskFromComposer = useCallback(
+    (input: TaskDraftInput) => {
+      store.addTask({ ...input, favorite: view === 'favorites' })
+      setQuickAddOpen(false)
+    },
+    [store, view],
+  )
   const writeDrawerMotion = useCallback((motion: DrawerMotion) => {
     const host = mobileDrawerHostRef.current
     if (!host) return
@@ -327,6 +343,12 @@ function AppShell() {
     document.addEventListener('keydown', onEscape)
     return () => document.removeEventListener('keydown', onEscape)
   }, [closeMobileNav, mobileNavOpen])
+
+  // A view that cannot accept a task must never leave an inaccessible composer
+  // open after navigation (for example, from Inbox to Settings or Notes).
+  useEffect(() => {
+    if (!acceptsNewTask(view)) setQuickAddOpen(false)
+  }, [view])
 
   const onDrawerPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (window.innerWidth >= 768 || !event.isPrimary || event.button !== 0) return
@@ -464,9 +486,11 @@ function AppShell() {
   const filtered = isFilterActive(filters) || inlineQuery.trim() !== ''
 
   return (
+    <>
  <div
       ref={mobileDrawerHostRef}
       className="app-shell mobile-drawer-host flex h-dvh overflow-hidden bg-bg text-ink"
+      inert={quickAddOpen && compactTaskEntry}
       data-drawer-active={mobileNavOpen || mobileNavDragging}
       data-drawer-dragging={mobileNavDragging}
       style={{ '--mobile-drawer-width': `${mobileNavWidth}px` } as CSSProperties}
@@ -538,7 +562,8 @@ function AppShell() {
  <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-x-hidden overflow-y-auto">
  <div
-            className={`mx-auto w-full px-4 sm:px-6 ${
+            key={view}
+            className={`motion-page motion-page-enter mx-auto w-full px-4 sm:px-6 ${
               view === 'habits' ? 'max-w-5xl' : 'max-w-2xl'
             } ${
               // Notes lays itself out as a column that fills the height, so the
@@ -660,7 +685,7 @@ function AppShell() {
 
           {/* Quick add. Under the list rather than over it, so the page reads
               top to bottom as what is already there, then the place to add. */}
-          {view !== 'completed' && view !== 'trash' && (
+          {!compactTaskEntry && acceptsNewTask(view) && (
  <div className="mt-6">
               <TaskInput
                 key={`${view}-${quickAddOpen}`}
@@ -669,9 +694,7 @@ function AppShell() {
                 defaultDueDate={defaultDueDate}
                 autoFocus={quickAddOpen}
                 onCancel={() => setQuickAddOpen(false)}
-                onSubmit={(input) =>
-                  store.addTask({ ...input, favorite: view === 'favorites' })
-                }
+                onSubmit={addTaskFromComposer}
               />
             </div>
           )}
@@ -724,12 +747,14 @@ function AppShell() {
 
       {/* Mobile FAB. Only where a new task would land somewhere sensible.
           It clears the search bar rather than sitting on top of it. */}
-      {acceptsNewTask(view) && (
+      {compactTaskEntry && acceptsNewTask(view) && (
         <button
+          ref={fabRef}
           type="button"
-          onClick={() => setQuickAddOpen((o) => !o)}
+          onClick={openQuickAdd}
           aria-label="Add task"
- className="native-fab fixed right-5 bottom-20 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
+          aria-expanded={quickAddOpen}
+ className="native-fab motion-primary motion-interactive fixed z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-ink"
         >
  <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
@@ -763,6 +788,16 @@ function AppShell() {
         />
       )}
     </div>
+      <TaskComposerModal
+        open={quickAddOpen && compactTaskEntry}
+        anchorRef={fabRef}
+        lists={lists}
+        defaultListId={defaultListId}
+        defaultDueDate={defaultDueDate}
+        onSubmit={addTaskFromComposer}
+        onClose={() => setQuickAddOpen(false)}
+      />
+    </>
   )
 }
 

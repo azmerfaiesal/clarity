@@ -28,4 +28,12 @@ describe('motion CSS foundation', () => {
     expect(reducedMotion).toContain('animation: motion-content-fade var(--motion-press) ease both !important')
     expect(reducedMotion).toContain('transition-duration: var(--motion-press) !important')
   })
+
+  it('owns native safe areas on all four sides and keeps the FAB above docked search', () => {
+    expect(css).toContain('padding-left: env(safe-area-inset-left)')
+    expect(css).toContain('padding-right: env(safe-area-inset-right)')
+    expect(css).toContain('right: calc(1.25rem + env(safe-area-inset-right))')
+    expect(css).toContain('bottom: calc(4.25rem + env(safe-area-inset-bottom))')
+    expect(css).toContain('.native-app .native-modal-viewport')
+  })
 })
