@@ -15,14 +15,12 @@ export function formatHomeDate(
   date: Date,
   locales?: Intl.LocalesArgument,
 ): string {
-  return date
-    .toLocaleDateString(locales, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    })
-    .replace(/^(.*?),\s/, '$1 ')
+  return date.toLocaleDateString(locales, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 }
 
 export function addDays(dateStr: string, days: number): string {
