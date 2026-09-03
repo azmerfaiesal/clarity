@@ -14,6 +14,7 @@ import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
 import { nativeFeedback, nativeSelectionHaptic, nativeWarningHaptic } from '../native/platform'
 import { commitHabitAmount } from '../utils/habitFeedback'
+import { usePresenceValue } from './MotionPresence'
 
 export function HabitTracker({
   onOpenMobileNav,
@@ -49,9 +50,11 @@ export function HabitTracker({
   const firstDay = useWeekStart()
   const [dragId, setDragId] = useState<string | null>(null)
   const [summary, setSummary] = useState<Habit | null>(null)
-  const [day, setDay] = useState<{ habitId: string; date: string; anchor: { x: number; y: number } } | null>(
-    null,
-  )
+  const [day, setDay] = useState<{
+    habit: Habit
+    date: string
+    anchor: { x: number; y: number }
+  } | null>(null)
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Habit | null>(null)
@@ -60,6 +63,22 @@ export function HabitTracker({
   // The day just finished, and on which habit. Cleared on a timer so the same
   // box can go off again if the day is undone and redone.
   const [burst, setBurst] = useState<{ habitId: string; date: string } | null>(null)
+  const dayPresence = usePresenceValue(day)
+  const summaryPresence = usePresenceValue(summary)
+  const formRequest = useMemo(
+    () =>
+      formOpen
+        ? {
+            key: editTemplate?.id ?? seedTemplate?.id ?? editing?.id ?? 'new',
+            habit: editing,
+            seed: editTemplate ?? seedTemplate,
+            templateMode: editTemplate !== null,
+          }
+        : null,
+    [editTemplate, editing, formOpen, seedTemplate],
+  )
+  const formPresence = usePresenceValue(formRequest)
+  const toastPresence = usePresenceValue(toast)
 
   useEffect(() => {
     if (!toast) return
@@ -253,7 +272,7 @@ export function HabitTracker({
           type="button"
           onClick={onOpenMobileNav}
           aria-label="Open navigation"
-          className="-ml-1 cursor-pointer rounded-md p-2 text-muted transition-colors hover:bg-surface hover:text-ink md:hidden"
+          className="motion-interactive -ml-1 cursor-pointer rounded-md p-2 text-muted transition-colors hover:bg-surface hover:text-ink md:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -274,7 +293,7 @@ export function HabitTracker({
             setEditing(null)
             setFormOpen(true)
           }}
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm"
+          className="motion-primary motion-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink hover:bg-accent-hi"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
           <span className="hidden sm:inline">New habit</span>
@@ -290,7 +309,7 @@ export function HabitTracker({
                 key={s.id}
                 type="button"
                 onClick={() => quickAdd(s)}
-                className="cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
+                className="motion-interactive cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
               >
                 <span className="inline-flex items-center gap-1.5">
                   <HabitIcon icon={s.icon} className="h-3.5 w-3.5" />
@@ -302,7 +321,7 @@ export function HabitTracker({
         </div>
       ) : (
         <div className="space-y-3">
-          {active.map((h) => (
+          {active.map((h, index) => (
             <div
               key={h.id}
               onDragOver={(e) => e.preventDefault()}
@@ -311,6 +330,7 @@ export function HabitTracker({
             >
               <HabitCard
                 habit={h}
+                motionIndex={index}
                 justCompleted={flashId === h.id}
                 burstDate={burst?.habitId === h.id ? burst.date : null}
                 dragging={dragId === h.id}
@@ -324,7 +344,7 @@ export function HabitTracker({
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
                 onOpenSummary={() => setSummary(h)}
-                onPickDay={(date, anchor) => setDay({ habitId: h.id, date, anchor })}
+                onPickDay={(date, anchor) => setDay({ habit: h, date, anchor })}
                 onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
                   setEditing(h)
@@ -342,10 +362,11 @@ export function HabitTracker({
         <div className="mt-9">
           <span className="label">Paused</span>
           <div className="mt-2 space-y-3">
-            {archived.map((h) => (
+            {archived.map((h, index) => (
               <HabitCard
                 key={h.id}
                 habit={h}
+                motionIndex={index}
                 justCompleted={false}
                 burstDate={burst?.habitId === h.id ? burst.date : null}
                 onToggle={(date) => handleToggle(h, date)}
@@ -353,7 +374,7 @@ export function HabitTracker({
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
                 onOpenSummary={() => setSummary(h)}
-                onPickDay={(date, anchor) => setDay({ habitId: h.id, date, anchor })}
+                onPickDay={(date, anchor) => setDay({ habit: h, date, anchor })}
                 onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
                   setEditing(h)
@@ -367,38 +388,40 @@ export function HabitTracker({
         </div>
       )}
 
-      {day && (() => {
-        const h = habits.find((x) => x.id === day.habitId)
-        if (!h) return null
+      {dayPresence && (() => {
+        const currentDay = dayPresence.value
+        const h = habits.find((x) => x.id === currentDay.habit.id) ?? currentDay.habit
         return (
           <DayDetail
             habit={h}
-            date={day.date}
+            date={currentDay.date}
             today={todayStr()}
-            anchor={day.anchor}
+            anchor={currentDay.anchor}
             // A writing habit's days come from the notes, so annotating one
             // here would be overwritten on the next reconcile.
             editable={h.source !== 'notes'}
-            onSetNotes={(notes) => setLogNotes(h.id, day.date, notes)}
-            onLogMinutes={(minutes) => handleAdjust(h, minutes, day.date)}
+            onSetNotes={(notes) => setLogNotes(h.id, currentDay.date, notes)}
+            onLogMinutes={(minutes) => handleAdjust(h, minutes, currentDay.date)}
             onClose={() => setDay(null)}
+            phase={dayPresence.phase}
           />
         )
       })()}
 
-      {summary && (
+      {summaryPresence && (
         <HabitSummary
-          habit={habits.find((h) => h.id === summary.id) ?? summary}
+          habit={habits.find((h) => h.id === summaryPresence.value.id) ?? summaryPresence.value}
           onClose={() => setSummary(null)}
+          phase={summaryPresence.phase}
         />
       )}
 
-      {formOpen && (
+      {formPresence && (
         <HabitForm
-          key={editTemplate?.id ?? seedTemplate?.id ?? editing?.id ?? 'new'}
-          habit={editing ?? undefined}
-          seed={editTemplate ?? seedTemplate ?? undefined}
-          templateMode={editTemplate !== null}
+          key={formPresence.value.key}
+          habit={formPresence.value.habit ?? undefined}
+          seed={formPresence.value.seed ?? undefined}
+          templateMode={formPresence.value.templateMode}
           templates={templates}
           onSaveTemplate={(draft) =>
             saveAsTemplate({ ...(editing ?? ({} as Habit)), ...draft } as Habit)
@@ -419,15 +442,19 @@ export function HabitTracker({
             setEditing(null)
             onTemplateHandled?.()
           }}
+          phase={formPresence.phase}
         />
       )}
 
-      {toast && (
+      {toastPresence && (
         <div
           role="status"
-          className="anim-toast-in fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-line bg-raised px-4 py-2.5 text-sm text-ink shadow-xl shadow-black/20 sm:bottom-6 dark:shadow-black/70"
+          data-motion-state={toastPresence.phase}
+          className="motion-toast fixed bottom-20 left-1/2 z-50 -translate-x-1/2 sm:bottom-6"
         >
-          {toast}
+          <div className="motion-toast-inner rounded-lg border border-line bg-raised px-4 py-2.5 text-sm text-ink shadow-xl shadow-black/20 dark:shadow-black/70">
+            {toastPresence.value}
+          </div>
         </div>
       )}
     </>

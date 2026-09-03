@@ -6,6 +6,7 @@ import { amountOn, formatAmount, isCompletedOn, isScheduled, runContaining } fro
 import { useWeekStart } from '../store/theme'
 import { LogNotes } from './LogNotes'
 import { HabitTimer } from './HabitTimer'
+import type { MotionPhase } from '../utils/motion'
 
 /**
  * One day's record, opened from a heatmap cell: what happened, where it sits in
@@ -23,6 +24,7 @@ export function DayDetail({
   onSetNotes,
   onLogMinutes,
   onClose,
+  phase,
 }: {
   habit: Habit
   date: string
@@ -34,6 +36,7 @@ export function DayDetail({
   /** Add minutes to this day, from the timer. */
   onLogMinutes?: (minutes: number) => void
   onClose: () => void
+  phase: MotionPhase
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
@@ -90,12 +93,13 @@ export function DayDetail({
       ref={ref}
       role="dialog"
       aria-label={`${habit.name} on ${date}`}
+      data-motion-state={phase}
       style={{
         left: pos?.left ?? 0,
         top: pos?.top ?? 0,
         visibility: pos ? 'visible' : 'hidden',
       }}
-      className="anim-scale-in fixed z-50 w-60 rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
+      className="motion-popover fixed z-50 w-60 origin-bottom rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
     >
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
@@ -130,7 +134,7 @@ export function DayDetail({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="-mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
+          className="motion-interactive -mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
         >
           <X className="h-3.5 w-3.5" />
         </button>

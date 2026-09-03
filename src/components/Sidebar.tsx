@@ -79,7 +79,7 @@ function NavItem({
           else onClick()
         }}
         aria-current={active ? 'page' : undefined}
-        className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 py-2 pl-2.5 text-left text-sm ${
+        className={`motion-interactive flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 py-2 pl-2.5 text-left text-sm ${
           onToggle ? 'pr-1' : 'pr-2.5'
         }`}
       >
@@ -97,10 +97,10 @@ function NavItem({
           aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
           // Padded well past the size of the glyph: a 14px chevron is not
           // something a thumb can be expected to find.
-          className="mr-0.5 shrink-0 cursor-pointer rounded p-2.5 text-faint transition-colors hover:text-ink"
+          className="motion-interactive mr-0.5 shrink-0 cursor-pointer rounded p-2.5 text-faint transition-colors hover:text-ink"
         >
           <ChevronRight
-            className="h-3.5 w-3.5 transition-transform duration-200"
+            className="motion-disclosure-chevron h-3.5 w-3.5"
             style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}
             aria-hidden
           />
@@ -132,7 +132,7 @@ function TemplateRow({
         type="button"
         onClick={onUse}
         title={`Start a habit from ${template.name}`}
-        className={`flex w-full cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left text-xs text-muted transition-colors hover:bg-surface hover:text-ink ${
+        className={`motion-interactive flex w-full cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left text-xs text-muted transition-colors hover:bg-surface hover:text-ink ${
           onEdit ? 'pr-12' : 'pr-2.5'
         }`}
       >
@@ -150,7 +150,7 @@ function TemplateRow({
             type="button"
             onClick={onEdit}
             aria-label={`Edit template ${template.name}`}
-            className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-accent"
+            className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:text-accent"
           >
             <Pencil className="h-3 w-3" />
           </button>
@@ -158,7 +158,7 @@ function TemplateRow({
             type="button"
             onClick={onDelete}
             aria-label={`Delete template ${template.name}`}
-            className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
+            className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
           >
             <Trash2 className="h-3 w-3" />
           </button>
@@ -235,10 +235,10 @@ function ListForm({
               aria-checked={color === c}
               aria-label={`Color ${c}`}
               onClick={() => setColor(c)}
-              className={`h-3.5 w-3.5 cursor-pointer rounded-full transition-transform ${
+              className={`motion-interactive h-3.5 w-3.5 cursor-pointer rounded-full ${
                 color === c
                   ? 'ring-2 ring-accent ring-offset-2 ring-offset-raised'
-                  : 'hover:scale-110'
+                  : ''
               }`}
               style={{ backgroundColor: c }}
             />
@@ -248,7 +248,7 @@ function ListForm({
           <button
             type="button"
             onClick={onCancel}
-            className="cursor-pointer rounded px-2 py-1 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+            className="motion-interactive cursor-pointer rounded px-2 py-1 text-2xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
           >
             Cancel
           </button>
@@ -256,7 +256,7 @@ function ListForm({
             type="button"
             onClick={submit}
             disabled={!name.trim()}
-            className="cursor-pointer rounded bg-accent px-2 py-1 text-2xs font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="motion-primary motion-interactive cursor-pointer rounded bg-accent px-2 py-1 text-2xs font-medium text-accent-ink hover:opacity-90 disabled:opacity-40"
           >
             {submitLabel}
           </button>
@@ -383,7 +383,7 @@ export function Sidebar({
           type="button"
           onClick={onCloseMobile}
           aria-label="Close menu"
-          className="ml-auto cursor-pointer rounded-md p-1.5 text-faint hover:bg-surface md:hidden"
+          className="motion-interactive ml-auto cursor-pointer rounded-md p-1.5 text-faint hover:bg-surface md:hidden"
         >
           <X className="h-4 w-4" />
         </button>
@@ -466,11 +466,11 @@ export function Sidebar({
             type="button"
             onClick={() => setCategoriesOpen((v) => !v)}
             aria-expanded={categoriesOpen}
-            className="label flex flex-1 cursor-pointer items-center gap-1.5 rounded py-1 text-left transition-colors hover:text-ink"
+            className="motion-interactive label flex flex-1 cursor-pointer items-center gap-1.5 rounded py-1 text-left transition-colors hover:text-ink"
           >
             Categories
             <ChevronRight
-              className="h-3 w-3 transition-transform duration-200"
+              className="motion-disclosure-chevron h-3 w-3"
               style={{ transform: categoriesOpen ? 'rotate(90deg)' : 'none' }}
               aria-hidden
             />
@@ -479,7 +479,7 @@ export function Sidebar({
             type="button"
             onClick={() => (addingList ? closeListForm() : openAddForm())}
             aria-label={addingList ? 'Close new category form' : 'Create category'}
-            className="cursor-pointer rounded p-1 text-faint transition-colors hover:bg-accent-soft hover:text-accent"
+            className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:bg-accent-soft hover:text-accent"
           >
             <ListPlus className="h-4 w-4" />
           </button>
@@ -511,7 +511,7 @@ export function Sidebar({
                   type="button"
                   onClick={() => nav(id)}
                   aria-current={active ? 'page' : undefined}
-                  className={`relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
+                  className={`motion-interactive relative flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
                     active
                       ? 'bg-accent-soft font-medium text-ink'
                       : 'text-muted hover:bg-surface hover:text-ink'
@@ -549,7 +549,7 @@ export function Sidebar({
                     onClick={() => openEditForm(l.id)}
                     aria-label={`Edit category ${l.name}`}
                     title="Rename or recolour"
-                    className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-accent"
+                    className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:text-accent"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -558,7 +558,7 @@ export function Sidebar({
                     onClick={() => onDeleteList(l.id)}
                     aria-label={`Delete category ${l.name}`}
                     title="Delete category"
-                    className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
+                    className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -624,7 +624,7 @@ export function Sidebar({
                     onHabitFilter(value)
                     nav('habits')
                   }}
-                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                  className={`motion-interactive flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
                     view === 'habits' && habitFilter === value
                       ? 'bg-accent-soft font-medium text-ink'
                       : 'text-muted hover:bg-surface hover:text-ink'
@@ -640,12 +640,12 @@ export function Sidebar({
                 type="button"
                 onClick={() => setTemplatesOpen((v) => !v)}
                 aria-expanded={templatesOpen}
-                className="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2.5 pt-2.5 pb-1 text-left text-2xs font-semibold tracking-wider text-faint uppercase transition-colors hover:text-ink"
+                className="motion-interactive flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2.5 pt-2.5 pb-1 text-left text-2xs font-semibold tracking-wider text-faint uppercase transition-colors hover:text-ink"
               >
                 <LayoutTemplate className="h-3 w-3" aria-hidden />
                 Templates
                 <ChevronRight
-                  className="ml-auto h-3 w-3 transition-transform duration-200"
+                  className="motion-disclosure-chevron ml-auto h-3 w-3"
                   style={{ transform: templatesOpen ? 'rotate(90deg)' : 'none' }}
                   aria-hidden
                 />
@@ -706,7 +706,7 @@ export function Sidebar({
                   onNoteTag(null)
                   nav('notes')
                 }}
-                className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                className={`motion-interactive flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
                   view === 'notes' && noteTag === null
                     ? 'bg-accent-soft font-medium text-ink'
                     : 'text-muted hover:bg-surface hover:text-ink'
@@ -726,7 +726,7 @@ export function Sidebar({
                       onNoteTag(tag)
                       nav('notes')
                     }}
-                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors ${
+                    className={`motion-interactive flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors ${
                       view === 'notes' && noteTag === tag
                         ? 'bg-accent-soft font-medium text-ink'
                         : 'text-muted hover:bg-surface hover:text-ink'
@@ -750,7 +750,7 @@ export function Sidebar({
           aria-current={view === 'guide' ? 'page' : undefined}
           title="How Clarity works"
           aria-label="How Clarity works"
-          className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors ${
+          className={`motion-interactive flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors ${
             view === 'guide'
               ? 'bg-accent-soft text-accent'
               : 'text-faint hover:bg-accent-soft hover:text-accent'
@@ -764,7 +764,7 @@ export function Sidebar({
             onOpenSettings()
             onCloseMobile()
           }}
-          className="flex flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-muted transition-colors hover:bg-surface hover:text-ink"
+          className="motion-interactive flex flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-muted transition-colors hover:bg-surface hover:text-ink"
         >
           <SettingsIcon className="h-4 w-4 text-faint" />
           Settings
@@ -775,7 +775,7 @@ export function Sidebar({
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
+            className="motion-interactive flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>

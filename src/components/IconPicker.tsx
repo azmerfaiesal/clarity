@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { EMOJI, ICON_GROUPS, searchIcons } from './HabitIcon'
+import type { MotionPhase } from '../utils/motion'
 
 /**
  * Icon chooser: curated line icons with search, or an emoji tab. Opens as a
@@ -11,11 +12,13 @@ export function IconPicker({
   color,
   onPick,
   onClose,
+  phase,
 }: {
   value: string
   color: string
   onPick: (icon: string) => void
   onClose: () => void
+  phase: MotionPhase
 }) {
   const [tab, setTab] = useState<'icons' | 'emoji'>(value && !value.startsWith('lucide:') ? 'emoji' : 'icons')
   const [query, setQuery] = useState('')
@@ -47,7 +50,8 @@ export function IconPicker({
       ref={ref}
       role="dialog"
       aria-label="Choose icon"
-      className="anim-scale-in absolute top-full left-0 z-50 mt-1.5 w-[19rem] overflow-hidden rounded-lg border border-line bg-raised shadow-2xl shadow-black/30 dark:shadow-black/70"
+      data-motion-state={phase}
+      className="motion-popover absolute top-full left-0 z-50 mt-1.5 w-[19rem] origin-top-left overflow-hidden rounded-lg border border-line bg-raised shadow-2xl shadow-black/30 dark:shadow-black/70"
     >
       <div className="flex border-b border-line" role="tablist">
         {(['icons', 'emoji'] as const).map((t) => (
@@ -57,7 +61,7 @@ export function IconPicker({
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`flex-1 cursor-pointer py-2 text-xs font-medium capitalize transition-colors ${
+            className={`motion-interactive flex-1 cursor-pointer py-2 text-xs font-medium capitalize transition-colors ${
               tab === t
                 ? 'border-b-2 border-accent text-ink'
                 : 'text-muted hover:text-ink'
@@ -93,7 +97,7 @@ export function IconPicker({
                       title={alias}
                       aria-label={alias}
                       onClick={() => onPick(`lucide:${key}`)}
-                      className={`flex h-9 items-center justify-center rounded-md transition-colors ${
+                      className={`motion-interactive flex h-9 cursor-pointer items-center justify-center rounded-md ${
                         value === `lucide:${key}`
                           ? 'bg-accent-soft'
                           : 'text-muted hover:bg-surface hover:text-ink'
@@ -117,7 +121,7 @@ export function IconPicker({
             type="button"
             onClick={() => onPick('')}
             aria-label="No icon"
-            className={`flex h-9 items-center justify-center rounded-md text-xs transition-colors ${
+            className={`motion-interactive flex h-9 cursor-pointer items-center justify-center rounded-md text-xs ${
               value === '' ? 'bg-accent-soft text-accent' : 'text-faint hover:bg-surface'
             }`}
           >
@@ -129,7 +133,7 @@ export function IconPicker({
               type="button"
               onClick={() => onPick(e)}
               aria-label={`Emoji ${e}`}
-              className={`flex h-9 items-center justify-center rounded-md text-base transition-colors ${
+              className={`motion-interactive flex h-9 cursor-pointer items-center justify-center rounded-md text-base ${
                 value === e ? 'bg-accent-soft' : 'hover:bg-surface'
               }`}
             >

@@ -38,6 +38,7 @@ import { ACCENTS, ACCENT_KEYS, accentSwatch } from '../store/accents'
 import { clearSyncError, useSyncHealth } from '../store/syncHealth'
 import { formatRelative } from '../utils/dateUtils'
 import { isNativeApp } from '../native/platform'
+import type { MotionPhase } from '../utils/motion'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -53,9 +54,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function Settings({
   onClose,
   onOpenGuide,
+  phase,
 }: {
   onClose: () => void
   onOpenGuide: () => void
+  phase: MotionPhase
 }) {
   const {
     theme,
@@ -109,7 +112,8 @@ export function Settings({
 
   return (
     <div
- className="native-settings-overlay anim-fade-in fixed inset-0 z-50 flex justify-start bg-[var(--scrim)] backdrop-blur-[3px]"
+      data-motion-state={phase}
+ className="native-settings-overlay motion-overlay fixed inset-0 z-50 flex justify-start bg-[var(--scrim)] backdrop-blur-[3px]"
       onClick={onClose}
       role="presentation"
     >
@@ -122,7 +126,7 @@ export function Settings({
         aria-modal="true"
         aria-label="Settings"
         onClick={(e) => e.stopPropagation()}
- className="native-settings-panel anim-drawer-in-left h-full w-[86vw] max-w-md overflow-y-auto rounded-r-xl border-r border-line bg-raised shadow-xl shadow-black/20 dark:shadow-black/70"
+ className="native-settings-panel motion-dialog h-full w-[86vw] max-w-md origin-left overflow-y-auto rounded-r-xl border-r border-line bg-raised shadow-xl shadow-black/20 dark:shadow-black/70"
       >
  <div className="flex items-center justify-between px-5 pt-5 pb-1">
  <h2 className="text-md font-semibold tracking-tight text-ink">
@@ -132,7 +136,7 @@ export function Settings({
             type="button"
             onClick={onClose}
             aria-label="Close settings"
- className="-mr-3 flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-faint transition-colors hover:bg-surface hover:text-ink"
+ className="motion-interactive -mr-3 flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-faint transition-colors hover:bg-surface hover:text-ink"
           >
  <X className="h-4 w-4" />
           </button>
@@ -152,7 +156,7 @@ export function Settings({
                 aria-checked={theme === t}
                 disabled={controlledByHost}
                 onClick={() => setTheme(t)}
- className={`flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+ className={`motion-interactive flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   theme === t
                     ? 'bg-accent-soft text-ink'
                     : 'text-muted hover:text-ink'
@@ -193,7 +197,7 @@ export function Settings({
                     aria-label={ACCENTS[key].label}
                     title={ACCENTS[key].label}
                     onClick={() => setAccent(key)}
-                    className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-transform hover:scale-105 ${
+                    className={`motion-interactive flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border ${
                       on ? 'border-ink/25' : 'border-transparent'
                     }`}
                     style={{ backgroundColor: colour }}
@@ -233,7 +237,7 @@ export function Settings({
                   role="radio"
                   aria-checked={fontSize === f}
                   onClick={() => setFontSize(f)}
-                  className={`cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors ${
+                  className={`motion-interactive cursor-pointer rounded-md px-3 py-1.5 font-medium transition-colors ${
                     fontSize === f ? 'bg-accent-soft text-ink' : 'text-muted hover:text-ink'
                   }`}
                   // Each option previews its own scale, so the choice is legible
@@ -259,7 +263,7 @@ export function Settings({
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value as FontKey)}
                 aria-label="Typeface"
-                className="w-full cursor-pointer appearance-none rounded-md border border-line bg-surface py-2 pr-8 pl-3 text-sm text-ink outline-none focus:border-accent"
+                className="motion-interactive w-full cursor-pointer appearance-none rounded-md border border-line bg-surface py-2 pr-8 pl-3 text-sm text-ink outline-none focus:border-accent"
                 // The closed control previews the face it names.
                 style={{ fontFamily: FONTS[fontFamily].stack }}
               >
@@ -334,7 +338,7 @@ export function Settings({
             <button
               type="button"
               onClick={async () => setNotifyState(await requestPermission())}
-              className="mt-3 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi"
+              className="motion-interactive mt-3 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi"
             >
               Enable notifications
             </button>
@@ -363,7 +367,7 @@ export function Settings({
                 role="radio"
                 aria-checked={weekStartsOn === d}
                 onClick={() => setWeekStartsOn(d)}
-                className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`motion-interactive cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   weekStartsOn === d ? 'bg-accent-soft text-ink' : 'text-muted hover:text-ink'
                 }`}
               >
@@ -409,7 +413,7 @@ export function Settings({
                       clearSyncError()
                       window.location.reload()
                     }}
- className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+ className="motion-interactive mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
                   >
  <RefreshCw className="h-3.5 w-3.5" aria-hidden />
                     Try again
@@ -430,7 +434,7 @@ export function Settings({
                   onClose()
                   void signOut()
                 }}
- className="mt-3 cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface"
+ className="motion-interactive mt-3 cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface"
               >
                 Sign out
               </button>
@@ -466,7 +470,7 @@ export function Settings({
               type="button"
               disabled={completed === 0}
               onClick={() => store.clearCompleted()}
- className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+ className="motion-interactive cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
             >
               Clear completed
             </button>
@@ -482,7 +486,7 @@ export function Settings({
                   store.emptyTrash()
                 }
               }}
- className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
+ className="motion-interactive cursor-pointer rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-danger/40 hover:bg-danger-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
             >
               Empty recycle bin
             </button>
@@ -500,7 +504,7 @@ export function Settings({
               onClose()
               onOpenGuide()
             }}
- className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+ className="motion-interactive mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
           >
  <BookOpen className="h-3.5 w-3.5" aria-hidden />
             How Clarity works

@@ -34,7 +34,7 @@ export function Header({
         type="button"
         onClick={onOpenMobileNav}
         aria-label="Open navigation"
-        className="-ml-1 cursor-pointer rounded-md p-2 text-muted transition-colors hover:bg-surface hover:text-ink md:hidden"
+        className="motion-interactive -ml-1 cursor-pointer rounded-md p-2 text-muted transition-colors hover:bg-surface hover:text-ink md:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -58,7 +58,7 @@ export function Header({
           type="button"
           onClick={onOpenSearch}
           aria-label="Search tasks"
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
+          className="motion-interactive flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
         >
           <Search className="h-4 w-4" />
         </button>
@@ -67,7 +67,7 @@ export function Header({
         <button
           type="button"
           onClick={onAddTask}
-          className="ml-2 hidden cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm sm:inline-flex"
+          className="motion-primary motion-interactive ml-2 hidden cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink hover:bg-accent-hi sm:inline-flex"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
           Add Task

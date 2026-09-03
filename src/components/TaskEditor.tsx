@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { Priority, Task, TaskList } from '../types'
 import { formatTimestamp, fromDateTimeLocal, toDateTimeLocal } from '../utils/dateUtils'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
+import type { MotionPhase } from '../utils/motion'
 
 const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high']
 
@@ -19,12 +20,14 @@ export function TaskEditor({
   onSave,
   onDelete,
   onClose,
+  phase,
 }: {
   task: Task
   lists: TaskList[]
   onSave: (patch: Partial<Task>) => void
   onDelete: () => void
   onClose: () => void
+  phase: MotionPhase
 }) {
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description)
@@ -66,7 +69,8 @@ export function TaskEditor({
 
   return (
     <div
- className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] p-0 backdrop-blur-[3px] sm:items-center sm:p-6"
+      data-motion-state={phase}
+ className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] p-0 backdrop-blur-[3px] sm:items-center sm:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -74,7 +78,7 @@ export function TaskEditor({
         role="dialog"
         aria-modal="true"
         aria-label="Edit task"
- className="anim-scale-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+ className="motion-dialog flex max-h-[92dvh] w-full max-w-lg flex-col overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
         onClick={(e) => e.stopPropagation()}
       >
  <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
@@ -87,7 +91,7 @@ export function TaskEditor({
               onClick={() => setFavorite((f) => !f)}
               aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
               aria-pressed={favorite}
- className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
+ className="motion-interactive cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
               <Star
  className={`h-4 w-4 ${favorite ? 'fill-fav text-fav' : ''}`}
@@ -100,7 +104,7 @@ export function TaskEditor({
                 onClose()
               }}
               aria-label="Delete task"
- className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-danger-soft hover:text-danger"
+ className="motion-interactive cursor-pointer rounded-lg p-1.5 text-faint hover:bg-danger-soft hover:text-danger"
             >
  <Trash2 className="h-4 w-4" />
             </button>
@@ -108,7 +112,7 @@ export function TaskEditor({
               type="button"
               onClick={onClose}
               aria-label="Close"
- className="cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
+ className="motion-interactive cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
  <X className="h-4 w-4" />
             </button>
@@ -158,7 +162,7 @@ export function TaskEditor({
                 aria-label="Category"
                 value={listId ?? ''}
                 onChange={(e) => setListId(e.target.value || null)}
- className="w-full cursor-pointer bg-transparent text-sm text-ink outline-none"
+ className="motion-interactive w-full cursor-pointer bg-transparent text-sm text-ink outline-none"
               >
                 <option value="">Inbox</option>
                 {lists.map((l) => (
@@ -208,7 +212,7 @@ export function TaskEditor({
                   role="radio"
                   aria-checked={priority === p}
                   onClick={() => setPriority(p)}
- className={`cursor-pointer px-3 py-1.5 text-xs transition-colors ${
+ className={`motion-interactive cursor-pointer px-3 py-1.5 text-xs transition-colors ${
                     priority === p
                       ? 'bg-accent-soft font-medium text-ink'
                       : 'text-muted hover:bg-surface'
@@ -237,7 +241,7 @@ export function TaskEditor({
           <button
             type="button"
             onClick={onClose}
- className="cursor-pointer rounded-lg px-3.5 py-2 text-sm font-medium text-muted hover:bg-surface"
+ className="motion-interactive cursor-pointer rounded-lg px-3.5 py-2 text-sm font-medium text-muted hover:bg-surface"
           >
             Cancel
           </button>
@@ -245,7 +249,7 @@ export function TaskEditor({
             type="button"
             onClick={save}
             disabled={!title.trim()}
- className="cursor-pointer rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
+ className="motion-primary motion-interactive cursor-pointer rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-ink hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
           >
             Save
           </button>
@@ -280,7 +284,7 @@ function Field({
             onClick={onClear}
             aria-label={`Clear ${label.toLowerCase()}`}
             title={`Clear ${label.toLowerCase()}`}
-            className="-mr-1 shrink-0 cursor-pointer rounded p-0.5 text-faint transition-colors hover:bg-surface hover:text-danger"
+            className="motion-interactive -mr-1 shrink-0 cursor-pointer rounded p-0.5 text-faint transition-colors hover:bg-surface hover:text-danger"
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>

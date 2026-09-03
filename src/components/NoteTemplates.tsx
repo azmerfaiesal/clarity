@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react'
 import { useNotes, type TemplateEdit } from '../store/noteStore'
 import { type NoteTemplate } from '../store/noteTemplates'
+import type { MotionPhase } from '../utils/motion'
 
 /**
  * The template picker for the note composer.
@@ -20,10 +21,12 @@ export function NoteTemplates({
   onClose,
   /** True when the composer has text: picking then appends rather than fills. */
   hasContent,
+  phase,
 }: {
   onPick: (template: NoteTemplate) => void
   onClose: () => void
   hasContent: boolean
+  phase: MotionPhase
 }) {
   const { templates, saveTemplate, removeTemplate, resetTemplate } = useNotes()
   /** null = the list; a template = editing it; 'new' = writing one. */
@@ -43,7 +46,8 @@ export function NoteTemplates({
 
   return (
     <div
-      className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
+      data-motion-state={phase}
+      className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -52,7 +56,7 @@ export function NoteTemplates({
         aria-modal="true"
         aria-label="Note templates"
         onClick={(e) => e.stopPropagation()}
-        className="anim-scale-in flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+        className="motion-dialog flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div className="min-w-0">
@@ -75,7 +79,7 @@ export function NoteTemplates({
             type="button"
             onClick={onClose}
             aria-label="Close templates"
-            className="-mr-1.5 shrink-0 cursor-pointer rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
+            className="motion-interactive -mr-1.5 shrink-0 cursor-pointer rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>
@@ -99,7 +103,7 @@ export function NoteTemplates({
                     <button
                       type="button"
                       onClick={() => onPick(template)}
-                      className="w-full cursor-pointer rounded-lg border border-line py-3 pr-24 pl-3.5 text-left transition-colors hover:border-accent/50 hover:bg-accent-soft"
+                      className="motion-interactive w-full cursor-pointer rounded-lg border border-line py-3 pr-24 pl-3.5 text-left transition-colors hover:border-accent/50 hover:bg-accent-soft"
                     >
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-sm font-medium text-ink">{template.name}</span>
@@ -132,7 +136,7 @@ export function NoteTemplates({
                           onClick={() => void resetTemplate(template.id).catch(() => {})}
                           aria-label={`Reset ${template.name} to how it shipped`}
                           title="Back to how it shipped"
-                          className="cursor-pointer rounded p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
+                          className="motion-interactive cursor-pointer rounded p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
                         </button>
@@ -141,7 +145,7 @@ export function NoteTemplates({
                         type="button"
                         onClick={() => setEditing(template)}
                         aria-label={`Edit ${template.name}`}
-                        className="cursor-pointer rounded p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
+                        className="motion-interactive cursor-pointer rounded p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -158,7 +162,7 @@ export function NoteTemplates({
                             ? `Delete ${template.name}`
                             : `Hide ${template.name}`
                         }
-                        className="cursor-pointer rounded p-1.5 text-faint transition-colors hover:bg-danger-soft hover:text-danger"
+                        className="motion-interactive cursor-pointer rounded p-1.5 text-faint transition-colors hover:bg-danger-soft hover:text-danger"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -178,7 +182,7 @@ export function NoteTemplates({
               <button
                 type="button"
                 onClick={() => setEditing('new')}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-ink"
+                className="motion-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-ink"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 New template
@@ -280,7 +284,7 @@ function TemplateForm({
         <button
           type="button"
           onClick={onCancel}
-          className="cursor-pointer rounded-md border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+          className="motion-interactive cursor-pointer rounded-md border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
         >
           Cancel
         </button>
@@ -288,7 +292,7 @@ function TemplateForm({
           type="button"
           onClick={() => void submit()}
           disabled={!name.trim() || busy}
-          className="cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
+          className="motion-primary motion-interactive cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
         >
           Save template
         </button>

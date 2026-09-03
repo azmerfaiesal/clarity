@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { nativeSelectionHaptic } from '../native/platform'
+import { usePresenceValue } from './MotionPresence'
 
 interface DropdownProps {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
@@ -22,7 +23,7 @@ const MARGIN = 8
  */
 export function Dropdown({ trigger, children, align = 'right', label }: DropdownProps) {
   const [open, setOpen] = useState(false)
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const [pos, setPos] = useState<{ top: number; left: number; above: boolean } | null>(null)
   const anchorRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -34,24 +35,29 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
     const m = menu.getBoundingClientRect()
 
     let top = a.bottom + 6
+    let above = false
     if (top + m.height > window.innerHeight - MARGIN) {
       // Not enough room below — flip above the trigger, then clamp.
       top = Math.max(MARGIN, a.top - m.height - 6)
+      above = true
     }
 
     let left = align === 'right' ? a.right - m.width : a.left
     left = Math.min(Math.max(MARGIN, left), window.innerWidth - m.width - MARGIN)
 
-    setPos({ top, left })
+    setPos({ top, left, above })
   }, [align])
 
+  const presence = usePresenceValue(open ? true : null, {
+    onExited: () => setPos(null),
+  })
+  const presencePhase = presence?.phase
+  const presenceValue = presence?.value
+
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null)
-      return
-    }
+    if (!presenceValue || presencePhase === 'exiting') return
     place()
-  }, [open, place])
+  }, [place, presencePhase, presenceValue])
 
   useEffect(() => {
     if (!open) return
@@ -91,7 +97,7 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
           setOpen(!open)
         },
       })}
-      {open &&
+      {presence &&
         createPortal(
           <div
             ref={menuRef}
@@ -100,10 +106,12 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
             style={{
               top: pos?.top ?? 0,
               left: pos?.left ?? 0,
+              transformOrigin: `${align === 'right' ? 'right' : 'left'} ${pos?.above ? 'bottom' : 'top'}`,
               // Keep it out of sight until measured, so it never flashes at 0,0.
               visibility: pos ? 'visible' : 'hidden',
             }}
-            className="anim-scale-in fixed z-50 min-w-44 rounded-lg border border-line bg-raised p-1 shadow-xl shadow-black/10 dark:shadow-black/60"
+            data-motion-state={presence.phase}
+            className="motion-popover fixed z-50 min-w-44 rounded-lg border border-line bg-raised p-1 shadow-xl shadow-black/10 dark:shadow-black/60"
           >
             {children(() => setOpen(false))}
           </div>,
@@ -131,7 +139,7 @@ export function MenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
+      className={`motion-interactive flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm ${
         danger
           ? 'text-danger hover:bg-danger-soft'
           : active

@@ -5,6 +5,8 @@ import type { HabitDraft } from '../store/habitStore'
 import { WEEKDAYS, ordinal } from '../utils/habitUtils'
 import { HabitIcon } from './HabitIcon'
 import { IconPicker } from './IconPicker'
+import type { MotionPhase } from '../utils/motion'
+import { usePresenceValue } from './MotionPresence'
 
 /** Pastels first, then the saturated ramp — soft enough to sit side by side. */
 const HABIT_COLORS = [
@@ -34,6 +36,7 @@ export function HabitForm({
   onSaveTemplate,
   onDeleteTemplate,
   onClose,
+  phase,
 }: {
   habit?: Habit
   /** Values to start from when this is not an edit — a template being used. */
@@ -45,6 +48,7 @@ export function HabitForm({
   onSaveTemplate: (draft: HabitDraft) => void
   onDeleteTemplate: (id: string) => void
   onClose: () => void
+  phase: MotionPhase
 }) {
   // Everything below reads from one source: the habit being edited, or the
   // template being used or edited, or nothing at all.
@@ -71,6 +75,7 @@ export function HabitForm({
   const [reminderTime, setReminderTime] = useState(habit?.reminderTime ?? '')
   const [showErrors, setShowErrors] = useState(false)
   const [pickingIcon, setPickingIcon] = useState(false)
+  const iconPickerPresence = usePresenceValue(pickingIcon ? true : null)
   const [browsing, setBrowsing] = useState(false)
   const [savedTemplate, setSavedTemplate] = useState(false)
 
@@ -171,7 +176,8 @@ export function HabitForm({
 
   return (
     <div
-      className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
+      data-motion-state={phase}
+      className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -180,7 +186,7 @@ export function HabitForm({
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="anim-scale-in max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+        className="motion-dialog max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <span className="text-sm font-medium text-muted">{title}</span>
@@ -188,7 +194,7 @@ export function HabitForm({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1.5 cursor-pointer rounded-md p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
+            className="motion-interactive -mr-1.5 cursor-pointer rounded-md p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>
@@ -203,7 +209,7 @@ export function HabitForm({
                 onClick={() => setPickingIcon((v) => !v)}
                 aria-label="Choose icon"
                 aria-expanded={pickingIcon}
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-dashed border-line transition-colors hover:border-solid"
+                className="motion-interactive flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-dashed border-line transition-colors hover:border-solid"
                 style={{ color }}
               >
                 <HabitIcon
@@ -212,7 +218,7 @@ export function HabitForm({
                   fallback={<Pencil className="h-4 w-4 opacity-50" />}
                 />
               </button>
-              {pickingIcon && (
+              {iconPickerPresence && (
                 <IconPicker
                   value={icon}
                   color={color}
@@ -221,6 +227,7 @@ export function HabitForm({
                     setPickingIcon(false)
                   }}
                   onClose={() => setPickingIcon(false)}
+                  phase={iconPickerPresence.phase}
                 />
               )}
             </div>
@@ -253,7 +260,7 @@ export function HabitForm({
               type="button"
               onClick={() => setBrowsing((v) => !v)}
               aria-expanded={browsing}
-              className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-accent transition-opacity hover:opacity-80"
+              className="motion-interactive inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-accent transition-opacity hover:opacity-80"
             >
               <Lightbulb className="h-3.5 w-3.5" />
               {browsing ? 'Hide templates' : 'Browse templates'}
@@ -272,7 +279,7 @@ export function HabitForm({
                         <button
                           type="button"
                           onClick={() => applyTemplate(t)}
-                          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-raised"
+                          className="motion-interactive flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-raised"
                         >
                           <span
                             className="flex h-6 w-6 shrink-0 items-center justify-center rounded"
@@ -293,7 +300,7 @@ export function HabitForm({
                           type="button"
                           onClick={() => onDeleteTemplate(t.id)}
                           aria-label={`Delete template ${t.name}`}
-                          className="shrink-0 cursor-pointer rounded p-1 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
+                          className="motion-interactive shrink-0 cursor-pointer rounded p-1 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -326,7 +333,7 @@ export function HabitForm({
                   role="radio"
                   aria-checked={preset === value}
                   onClick={() => applyPreset(value)}
-                  className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                  className={`motion-interactive cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors ${
                     preset === value
                       ? 'border-accent/50 bg-accent-soft font-medium text-ink'
                       : 'border-line text-muted hover:bg-surface hover:text-ink'
@@ -345,7 +352,7 @@ export function HabitForm({
                     type="button"
                     aria-pressed={daysOfWeek.includes(i)}
                     onClick={() => toggle(daysOfWeek, setDaysOfWeek, i)}
-                    className={`w-11 cursor-pointer rounded-md border px-1 py-1.5 text-3xs font-medium transition-colors ${
+                    className={`motion-interactive w-11 cursor-pointer rounded-md border px-1 py-1.5 text-3xs font-medium transition-colors ${
                       daysOfWeek.includes(i)
                         ? 'border-accent/50 bg-accent-soft text-accent'
                         : 'border-line text-muted hover:text-ink'
@@ -366,7 +373,7 @@ export function HabitForm({
                     aria-pressed={timesPerWeek === n}
                     aria-label={`${n} times per week`}
                     onClick={() => setTimesPerWeek(n)}
-                    className={`h-8 w-8 cursor-pointer rounded-md border font-mono text-xs transition-colors ${
+                    className={`motion-interactive h-8 w-8 cursor-pointer rounded-md border font-mono text-xs transition-colors ${
                       timesPerWeek === n
                         ? 'border-accent/50 bg-accent-soft text-accent'
                         : 'border-line text-muted hover:text-ink'
@@ -394,7 +401,7 @@ export function HabitForm({
                     aria-pressed={datesOfMonth.includes(d)}
                     aria-label={ordinal(d)}
                     onClick={() => toggle(datesOfMonth, setDatesOfMonth, d)}
-                    className={`cursor-pointer rounded border py-1 font-mono text-3xs transition-colors ${
+                    className={`motion-interactive cursor-pointer rounded border py-1 font-mono text-3xs transition-colors ${
                       datesOfMonth.includes(d)
                         ? 'border-accent/50 bg-accent-soft text-accent'
                         : 'border-line text-muted hover:text-ink'
@@ -435,7 +442,7 @@ export function HabitForm({
                   role="radio"
                   aria-checked={trackBy === value}
                   onClick={() => setTrackBy(value)}
-                  className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                  className={`motion-interactive cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors ${
                     trackBy === value
                       ? 'border-accent/50 bg-accent-soft font-medium text-ink'
                       : 'border-line text-muted hover:bg-surface hover:text-ink'
@@ -462,7 +469,7 @@ export function HabitForm({
                     type="button"
                     aria-pressed={dailyTarget === String(n)}
                     onClick={() => setDailyTarget(String(n))}
-                    className={`cursor-pointer rounded-md border px-2.5 py-1.5 font-mono text-3xs transition-colors ${
+                    className={`motion-interactive cursor-pointer rounded-md border px-2.5 py-1.5 font-mono text-3xs transition-colors ${
                       dailyTarget === String(n)
                         ? 'border-accent/50 bg-accent-soft text-accent'
                         : 'border-line text-muted hover:text-ink'
@@ -497,10 +504,10 @@ export function HabitForm({
                   aria-checked={color === c}
                   aria-label={`Color ${c}`}
                   onClick={() => setColor(c)}
-                  className={`h-4 w-4 cursor-pointer rounded-full transition-transform ${
+                  className={`motion-interactive h-4 w-4 cursor-pointer rounded-full ${
                     color === c
                       ? 'ring-2 ring-accent ring-offset-2 ring-offset-raised'
-                      : 'hover:scale-110'
+                      : ''
                   }`}
                   style={{ backgroundColor: c }}
                 />
@@ -538,7 +545,7 @@ export function HabitForm({
                   type="button"
                   onClick={() => setReminderTime('')}
                   aria-label="Clear reminder"
-                  className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
+                  className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:text-danger"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -547,7 +554,7 @@ export function HabitForm({
               <button
                 type="button"
                 onClick={() => setReminderTime('09:00')}
-                className="cursor-pointer rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-solid hover:text-ink"
+                className="motion-interactive cursor-pointer rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-solid hover:text-ink"
               >
                 + Add reminder
               </button>
@@ -579,7 +586,7 @@ export function HabitForm({
                 setSavedTemplate(true)
                 window.setTimeout(() => setSavedTemplate(false), 2000)
               }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-2.5 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+              className="motion-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line px-2.5 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
             >
               <BookmarkPlus className="h-3.5 w-3.5" />
               {savedTemplate ? 'Saved' : 'Save as template'}
@@ -589,14 +596,14 @@ export function HabitForm({
             <button
               type="button"
               onClick={onClose}
-              className="cursor-pointer rounded-md px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+              className="motion-interactive cursor-pointer rounded-md px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={submit}
-              className="cursor-pointer rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm"
+              className="motion-primary motion-interactive cursor-pointer rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-ink hover:bg-accent-hi"
             >
               {templateMode ? 'Save template' : habit ? 'Save changes' : 'Create'}
             </button>

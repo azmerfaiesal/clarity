@@ -54,6 +54,7 @@ import {
 } from './utils/mobileDrawer'
 import type { DrawerMotion } from './utils/mobileDrawer'
 import { useMediaQuery } from './utils/useMediaQuery'
+import { usePresenceValue } from './components/MotionPresence'
 
 type MobileDrawerDrag = {
   pointerId: number
@@ -481,6 +482,11 @@ function AppShell() {
   }, [tasks, view, filters, sort, inlineQuery, lists])
 
   const defaultListId = view.startsWith('list:') ? view.slice(5) : null
+  const editingTaskPresence = usePresenceValue(editingTask)
+  const settingsPresence = usePresenceValue(settingsOpen ? true : null)
+  const undoPresence = usePresenceValue(
+    undoVisible && store.lastDeleted ? store.lastDeleted.task.title : null,
+  )
   const defaultDueDate =
     view === 'today' ? todayStr() : view === 'upcoming' ? addDays(todayStr(), 1) : null
 
@@ -575,7 +581,7 @@ function AppShell() {
         <div className="flex-1 overflow-x-hidden overflow-y-auto">
  <div
             key={view}
-            className={`motion-page motion-page-enter mx-auto w-full px-4 sm:px-6 ${
+            className={`motion-page mx-auto w-full px-4 sm:px-6 ${
               view === 'habits' ? 'max-w-5xl' : 'max-w-2xl'
             } ${
               // Notes lays itself out as a column that fills the height, so the
@@ -642,7 +648,7 @@ function AppShell() {
 
           {/* Inline search (visible when typing via palette is bypassed) */}
           {inlineQuery && (
- <div className="anim-fade-in mb-3 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-sm text-accent">
+ <div className="motion-content mb-3 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-sm text-accent">
  <SearchX className="h-3.5 w-3.5" />
               Filtering by “{inlineQuery}”
               <button
@@ -774,26 +780,29 @@ function AppShell() {
       )}
       </div>
 
-      {editingTask && (
+      {editingTaskPresence && (
         <TaskEditor
-          task={editingTask}
+          task={editingTaskPresence.value}
           lists={lists}
-          onSave={(patch) => store.updateTask(editingTask.id, patch)}
-          onDelete={() => store.deleteTask(editingTask.id)}
+          onSave={(patch) => store.updateTask(editingTaskPresence.value.id, patch)}
+          onDelete={() => store.deleteTask(editingTaskPresence.value.id)}
           onClose={() => setEditingTask(null)}
+          phase={editingTaskPresence.phase}
         />
       )}
 
-      {settingsOpen && (
+      {settingsPresence && (
         <Settings
           onClose={() => setSettingsOpen(false)}
           onOpenGuide={() => navigateTo('guide')}
+          phase={settingsPresence.phase}
         />
       )}
 
-      {undoVisible && store.lastDeleted && (
+      {undoPresence && (
         <UndoToast
-          title={store.lastDeleted.task.title}
+          title={undoPresence.value}
+          phase={undoPresence.phase}
           onUndo={() => {
             nativeSelectionHaptic()
             store.undoDelete()
@@ -828,10 +837,11 @@ function TaskRows({
 }) {
   return (
  <ul className="space-y-0.5" role="list" aria-label="Tasks">
-      {tasks.map((t) => (
+      {tasks.map((t, index) => (
         <li key={t.id}>
           <TaskItem
             task={t}
+            motionIndex={index}
             lists={lists}
             onEdit={() => onEdit(t)}
             onDelete={() => store.deleteTask(t.id)}

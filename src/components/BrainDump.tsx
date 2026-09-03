@@ -13,6 +13,7 @@ import { formatDateTime, formatRelative, todayStr } from '../utils/dateUtils'
 import { habitStats } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
+import { usePresenceValue } from './MotionPresence'
 
 /**
  * Stats are derived, so they need a habit even when there is not one yet. This
@@ -117,6 +118,8 @@ export function BrainDump({
   const writing = habits.find((h) => h.source === 'notes' && h.archivedAt === null)
   const [writingRange, setWritingRange] = useState<'month' | 'year'>('month')
   const [day, setDay] = useState<{ date: string; anchor: { x: number; y: number } } | null>(null)
+  const dayPresence = usePresenceValue(day)
+  const templatesPresence = usePresenceValue(templatesOpen ? true : null)
   const firstDay = useWeekStart()
   const writingStats = useMemo(
     () => habitStats(writing ?? EMPTY_HABIT, todayStr(), firstDay),
@@ -376,7 +379,7 @@ export function BrainDump({
           type="button"
           onClick={onOpenMobileNav}
           aria-label="Open navigation"
-          className="-ml-1 cursor-pointer rounded-md p-2 text-muted transition-colors hover:bg-surface hover:text-ink md:hidden"
+          className="motion-interactive -ml-1 cursor-pointer rounded-md p-2 text-muted transition-colors hover:bg-surface hover:text-ink md:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -434,7 +437,7 @@ export function BrainDump({
                   role="radio"
                   aria-checked={writingRange === value}
                   onClick={() => setWritingRange(value)}
-                  className={`cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
+                  className={`motion-interactive cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
                     writingRange === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
                   }`}
                 >
@@ -466,35 +469,36 @@ export function BrainDump({
             type="button"
             onClick={addWritingHabit}
             title="Tracks a streak of the days you write something"
-            className="cursor-pointer rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
+            className="motion-interactive cursor-pointer rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-ink"
           >
             + Track a writing streak
           </button>
         </div>
       )}
 
-      {day && (
+      {dayPresence && (
         <NoteDayDetail
-          date={day.date}
-          notes={byDay.get(day.date) ?? []}
-          anchor={day.anchor}
+          date={dayPresence.value.date}
+          notes={byDay.get(dayPresence.value.date) ?? []}
+          anchor={dayPresence.value.anchor}
           onOpenNote={(note) => {
             setDay(null)
             openForEdit(note)
           }}
           onClose={() => setDay(null)}
+          phase={dayPresence.phase}
         />
       )}
 
       {/* Writing area */}
-      <Panel ref={composerRef} className="anim-fade-in mb-4 shrink-0">
+      <Panel ref={composerRef} className="motion-content mb-4 shrink-0">
         {editing && (
           <div className="flex items-center gap-2 border-b border-line px-3 py-2 font-mono text-2xs text-faint">
             <span className="truncate">Editing · {formatDateTime(editing.createdAt)}</span>
             <button
               type="button"
               onClick={reset}
-              className="ml-auto shrink-0 cursor-pointer rounded px-1.5 py-0.5 font-sans text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
+              className="motion-interactive ml-auto shrink-0 cursor-pointer rounded px-1.5 py-0.5 font-sans text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               Cancel
             </button>
@@ -536,7 +540,7 @@ export function BrainDump({
                       setDirty(true)
                     }}
                     aria-label={`Remove tag ${tag}`}
-                    className="cursor-pointer text-faint transition-colors hover:text-danger"
+                    className="motion-interactive cursor-pointer text-faint transition-colors hover:text-danger"
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>
@@ -603,7 +607,7 @@ export function BrainDump({
                           tagRef.current?.focus()
                         }}
                         onMouseEnter={() => setHighlight(i)}
-                        className={`flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left font-mono text-2xs transition-colors ${
+                        className={`motion-interactive flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left font-mono text-2xs transition-colors ${
                           i === highlight ? 'bg-accent-soft text-ink' : 'text-muted'
                         }`}
                       >
@@ -620,7 +624,7 @@ export function BrainDump({
               type="button"
               onClick={() => setTemplatesOpen(true)}
               title="Start from a shape you write often"
-              className="shrink-0 cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-ink"
+              className="motion-interactive shrink-0 cursor-pointer rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-ink"
             >
               <LayoutTemplate className="mr-1 inline h-3.5 w-3.5 align-[-2px]" aria-hidden />
               Templates
@@ -636,7 +640,7 @@ export function BrainDump({
               type="button"
               onClick={() => void save()}
               disabled={!canSave}
-              className="shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi hover:glow-sm disabled:cursor-not-allowed disabled:opacity-40"
+              className="motion-primary motion-interactive shrink-0 cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
             >
               {editingId ? 'Save changes' : 'Save'}
             </button>
@@ -644,11 +648,12 @@ export function BrainDump({
         </div>
       </Panel>
 
-      {templatesOpen && (
+      {templatesPresence && (
         <NoteTemplates
           hasContent={content.trim() !== ''}
           onPick={applyTemplate}
           onClose={() => setTemplatesOpen(false)}
+          phase={templatesPresence.phase}
         />
       )}
 
@@ -687,7 +692,7 @@ export function BrainDump({
                   // The picked one fills; the rest are outlined in the same hue,
                   // so the row reads as one set with one member switched on
                   // rather than as grey furniture next to a coloured thing.
-                  className={`cursor-pointer rounded border px-1.5 py-0.5 font-mono text-3xs transition-colors ${
+                  className={`motion-interactive cursor-pointer rounded border px-1.5 py-0.5 font-mono text-3xs transition-colors ${
                     tagFilter === tag
                       ? 'border-accent bg-accent text-accent-ink'
                       : 'border-accent/30 text-accent/80 hover:border-accent/60 hover:bg-accent-soft hover:text-accent'
@@ -715,7 +720,7 @@ export function BrainDump({
                     <button
                       type="button"
                       onClick={() => openForEdit(note)}
-                      className={`w-full cursor-pointer py-3 pr-9 text-left transition-colors ${
+                      className={`motion-interactive w-full cursor-pointer py-3 pr-9 text-left transition-colors ${
                         editingId === note.id ? 'opacity-50' : ''
                       }`}
                     >
@@ -744,7 +749,7 @@ export function BrainDump({
                       type="button"
                       onClick={() => void remove(note)}
                       aria-label="Delete brain dump"
-                      className="absolute top-3 right-0 cursor-pointer rounded p-1.5 text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger"
+                      className="motion-interactive absolute top-3 right-0 cursor-pointer rounded p-1.5 text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -770,7 +775,7 @@ export function BrainDump({
                 type="button"
                 onClick={() => setQuery('')}
                 aria-label="Clear search"
-                className="shrink-0 cursor-pointer text-faint transition-colors hover:text-ink"
+                className="motion-interactive shrink-0 cursor-pointer text-faint transition-colors hover:text-ink"
               >
                 <X className="h-3 w-3" />
               </button>

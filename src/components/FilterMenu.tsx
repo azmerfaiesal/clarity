@@ -43,7 +43,7 @@ export function FilterMenu({
       role="menuitemcheckbox"
       aria-checked={selected}
       onClick={onClick}
-      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
+      className={`motion-interactive flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
         selected ? 'text-ink' : 'text-muted hover:bg-surface hover:text-ink'
       }`}
     >
@@ -66,7 +66,7 @@ export function FilterMenu({
           type="button"
           onClick={toggle}
           aria-label="Filter tasks"
-          className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors ${
+          className={`motion-interactive relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors ${
             activeCount > 0
               ? 'bg-accent-soft text-accent'
               : 'text-faint hover:bg-accent-soft hover:text-accent'
@@ -148,7 +148,7 @@ export function FilterMenu({
               <button
                 type="button"
                 onClick={() => onChange(DEFAULT_FILTERS)}
-                className="w-full cursor-pointer rounded-md px-2.5 py-2 text-left text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
+                className="motion-interactive w-full cursor-pointer rounded-md px-2.5 py-2 text-left text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
               >
                 Clear all filters
               </button>

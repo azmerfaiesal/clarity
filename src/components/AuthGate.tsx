@@ -74,7 +74,7 @@ function AuthGate({ children }: { children: ReactNode }) {
             type="button"
             onClick={submit}
             disabled={busy}
- className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:opacity-60"
+ className="motion-primary motion-interactive mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-ink hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-60"
           >
  {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === 'signin' ? 'Sign In' : 'Create Account'}
@@ -87,7 +87,7 @@ function AuthGate({ children }: { children: ReactNode }) {
               setError(null)
               setInfo(null)
             }}
- className="w-full text-center text-xs text-faint hover:text-ink"
+ className="motion-interactive w-full cursor-pointer text-center text-xs text-faint hover:text-ink"
           >
             {mode === 'signin'
               ? "No account? Create one"

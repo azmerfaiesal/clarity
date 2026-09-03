@@ -99,7 +99,11 @@ export function GlobalSearch({
               hits.map((hit, i) => {
                 const selected = i === active
                 return (
-                  <div key={hit.kind === 'task' ? `t:${hit.task.id}` : `n:${hit.note.id}`}>
+                  <div
+                    key={hit.kind === 'task' ? `t:${hit.task.id}` : `n:${hit.note.id}`}
+                    className="motion-content"
+                    style={{ '--motion-index': Math.min(i, 7) } as React.CSSProperties}
+                  >
                     {/* Headers are drawn between the two runs rather than around
                         them, so the list stays one keyboard-navigable column. */}
                     {i === 0 && <GroupLabel icon={CheckSquare} text="Tasks" />}
@@ -111,7 +115,7 @@ export function GlobalSearch({
                       onMouseEnter={() => setActive(i)}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => choose(hit)}
-                      className={`flex w-full cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-left transition-colors ${
+                      className={`motion-interactive flex w-full cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-left transition-colors ${
                         selected ? 'bg-accent-soft' : ''
                       }`}
                     >
@@ -210,7 +214,7 @@ export function GlobalSearch({
                 inputRef.current?.focus()
               }}
               aria-label="Clear search"
-              className="shrink-0 cursor-pointer text-faint transition-colors hover:text-ink"
+              className="motion-interactive shrink-0 cursor-pointer text-faint transition-colors hover:text-ink"
             >
               <X className="h-3.5 w-3.5" />
             </button>

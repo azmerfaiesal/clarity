@@ -25,7 +25,7 @@ export function SortMenu({
           type="button"
           onClick={toggle}
           aria-label="Sort tasks"
-          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors ${
+          className={`motion-interactive flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors ${
             sort !== 'manual'
               ? 'bg-accent-soft text-accent'
               : 'text-faint hover:bg-accent-soft hover:text-accent'

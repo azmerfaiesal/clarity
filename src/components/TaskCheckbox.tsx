@@ -38,9 +38,9 @@ export function TaskCheckbox({
         }
         onToggle()
       }}
-      className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 cursor-pointer items-center justify-center rounded-[6px] border-[1.5px] transition-all duration-150 ${
+      className={`motion-interactive mt-0.5 flex h-[18px] w-[18px] shrink-0 cursor-pointer items-center justify-center rounded-[6px] border-[1.5px] transition-all duration-150 ${
         completed
-          ? 'border-success bg-success glow-success'
+          ? 'motion-check-complete border-success bg-success'
           : `${RING[priority]} bg-transparent hover:bg-accent-soft`
       } ${popping ? 'anim-check-pop' : ''}`}
     >

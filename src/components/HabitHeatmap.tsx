@@ -113,7 +113,7 @@ function HeatCell({
           ...(state === 'done' ? { backgroundColor: habit.color, opacity: RAMP[level] } : {}),
         } as React.CSSProperties
       }
-      className={`relative transition-transform disabled:cursor-default enabled:cursor-pointer enabled:hover:scale-125 ${
+      className={`motion-interactive relative disabled:cursor-default enabled:cursor-pointer ${
         // Today wears a ring that breathes, so the eye finds the live end of
         // the range without reading the labels.
         date === today ? 'cell-today' : ''

@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { BrainDump as Note } from '../types'
 import { parseDate } from '../utils/dateUtils'
+import type { MotionPhase } from '../utils/motion'
 
 /** Four to a page: enough to recognise a day, few enough to stay a popover. */
 const PER_PAGE = 4
@@ -20,6 +21,7 @@ export function NoteDayDetail({
   anchor,
   onOpenNote,
   onClose,
+  phase,
 }: {
   date: string
   /** Notes written on this date, newest first. */
@@ -27,6 +29,7 @@ export function NoteDayDetail({
   anchor: { x: number; y: number }
   onOpenNote: (note: Note) => void
   onClose: () => void
+  phase: MotionPhase
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
@@ -78,12 +81,13 @@ export function NoteDayDetail({
       ref={ref}
       role="dialog"
       aria-label={`Notes written on ${date}`}
+      data-motion-state={phase}
       style={{
         left: pos?.left ?? 0,
         top: pos?.top ?? 0,
         visibility: pos ? 'visible' : 'hidden',
       }}
-      className="anim-scale-in fixed z-50 w-64 rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
+      className="motion-popover fixed z-50 w-64 origin-bottom rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
     >
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
@@ -98,7 +102,7 @@ export function NoteDayDetail({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="-mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
+          className="motion-interactive -mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -111,7 +115,7 @@ export function NoteDayDetail({
               <button
                 type="button"
                 onClick={() => onOpenNote(note)}
-                className="w-full cursor-pointer rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-surface"
+                className="motion-interactive w-full cursor-pointer rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-surface"
               >
                 <p className="line-clamp-2 text-xs leading-relaxed text-ink">
                   {note.content.replace(/\s+/g, ' ').trim()}
@@ -134,7 +138,7 @@ export function NoteDayDetail({
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
             aria-label="Previous page"
-            className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+            className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
@@ -146,7 +150,7 @@ export function NoteDayDetail({
             onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
             disabled={page === pages - 1}
             aria-label="Next page"
-            className="cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+            className="motion-interactive cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>

@@ -23,6 +23,7 @@ import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { HabitHeatmap, HabitMonthRows, HeatmapLegend } from './HabitHeatmap'
 import { loadHabitRange, saveHabitRange } from '../store/storage'
 import { nativeSelectionHaptic, nativeSuccessHaptic } from '../native/platform'
+import { usePresenceValue } from './MotionPresence'
 
 type Range = 'month' | 'quarter' | 'year'
 
@@ -46,6 +47,7 @@ export function HabitCard({
   burstDate,
   dragHandleProps,
   dragging,
+  motionIndex = 0,
 }: {
   habit: Habit
   onToggle: (date?: string) => void
@@ -64,8 +66,10 @@ export function HabitCard({
   burstDate?: string | null
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>
   dragging?: boolean
+  motionIndex?: number
 }) {
   const [sliderOpen, setSliderOpen] = useState(false)
+  const sliderPresence = usePresenceValue(sliderOpen ? true : null)
   // Which span of history the card is showing. Per card, not global — one
   // habit is worth reading a year of while another only matters this month —
   // and remembered, so the choice survives leaving the page.
@@ -103,10 +107,15 @@ export function HabitCard({
 
   return (
     <article
-      className={`anim-fade-slide-in min-w-0 max-w-full rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
+      className={`motion-content min-w-0 max-w-full rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
         justCompleted ? 'border-success' : 'border-line'
       } ${archived ? 'opacity-60' : ''}`}
-      style={justCompleted ? { boxShadow: `0 0 22px -8px ${habit.color}` } : undefined}
+      style={
+        {
+          '--motion-index': Math.min(motionIndex, 7),
+          ...(justCompleted ? { boxShadow: `0 0 22px -8px ${habit.color}` } : {}),
+        } as React.CSSProperties
+      }
     >
       <div className="flex items-start gap-3">
         {/* Drag handle */}
@@ -115,7 +124,7 @@ export function HabitCard({
           {...dragHandleProps}
           aria-label={`Reorder ${habit.name}`}
           title="Drag to reorder"
-          className={`mt-3 hidden shrink-0 cursor-grab touch-none rounded text-faint transition-colors hover:text-muted active:cursor-grabbing sm:block ${
+          className={`motion-interactive mt-3 hidden shrink-0 cursor-grab touch-none rounded text-faint hover:text-muted active:cursor-grabbing sm:block ${
             dragging ? 'text-accent' : ''
           }`}
         >
@@ -169,7 +178,7 @@ export function HabitCard({
                       ? 'Done today · undo'
                       : 'Mark complete'
             }
-            className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+            className={`motion-interactive flex h-11 w-11 items-center justify-center rounded-xl border disabled:cursor-not-allowed disabled:opacity-40 ${
               canTick && !fromNotes ? 'cursor-pointer' : ''
             } ${s.doneToday ? 'border-transparent' : 'border-line border-dashed hover:border-solid'}`}
             style={
@@ -210,12 +219,12 @@ export function HabitCard({
               onClick={() => onAdjust(habit.trackBy === 'duration' ? -5 : -1)}
               aria-label={`Remove one from ${habit.name}`}
               title="Remove one"
-              className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
+              className="motion-interactive cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
             >
               <Minus className="h-3 w-3" />
             </button>
           )}
-          {sliderOpen && (
+          {sliderPresence && (
             <AmountSlider
               habit={habit}
               initial={s.amountToday}
@@ -223,6 +232,7 @@ export function HabitCard({
               onSetNotes={(n) => onSetNotes(today, n)}
               onCommit={(v) => onSetAmount(v)}
               onClose={() => setSliderOpen(false)}
+              phase={sliderPresence.phase}
             />
           )}
         </div>
@@ -232,7 +242,7 @@ export function HabitCard({
           type="button"
           onClick={onOpenSummary}
           aria-label={`Open ${habit.name} summary`}
-          className="min-w-0 flex-1 cursor-pointer text-left"
+          className="motion-interactive min-w-0 flex-1 cursor-pointer text-left"
         >
           <h3 className="flex items-center gap-1.5 truncate text-md font-semibold text-ink">
             {habit.icon && s.doneToday && (
@@ -291,7 +301,7 @@ export function HabitCard({
                 type="button"
                 onClick={toggle}
                 aria-label={`More actions for ${habit.name}`}
-                className="-mr-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
+                className="motion-interactive -mr-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
@@ -370,7 +380,7 @@ export function HabitCard({
                 role="radio"
                 aria-checked={range === value}
                 onClick={() => pickRange(value)}
-                className={`cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
+                className={`motion-interactive cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
                   range === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
                 }`}
               >

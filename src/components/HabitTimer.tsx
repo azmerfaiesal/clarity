@@ -86,7 +86,7 @@ export function HabitTimer({
             onClick={running ? pause : start}
             aria-label={running ? 'Pause timer' : 'Start timer'}
             title={running ? 'Pause' : 'Start'}
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-line text-muted transition-colors hover:border-accent/50 hover:text-accent"
+            className="motion-interactive flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-line text-muted transition-colors hover:border-accent/50 hover:text-accent"
           >
             {running ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
           </button>
@@ -96,7 +96,7 @@ export function HabitTimer({
             disabled={seconds === 0}
             aria-label="Reset timer"
             title="Reset — discards this session"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-line text-faint transition-colors hover:border-danger/40 hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
+            className="motion-interactive flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-line text-faint transition-colors hover:border-danger/40 hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
@@ -108,7 +108,7 @@ export function HabitTimer({
         onClick={stop}
         disabled={seconds < 30}
         title={seconds < 30 ? 'Nothing to log yet' : undefined}
-        className="mt-2 w-full cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink transition-all hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
+        className="motion-primary motion-interactive mt-2 w-full cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
       >
         Stop and log {seconds >= 30 ? `${Math.round(seconds / 60)}m` : ''}
       </button>

@@ -19,6 +19,7 @@ export function TaskItem({
   onToggleComplete,
   onToggleFavorite,
   onDuplicate,
+  motionIndex = 0,
 }: {
   task: Task
   lists: TaskList[]
@@ -27,6 +28,7 @@ export function TaskItem({
   onToggleComplete: () => void
   onToggleFavorite: () => void
   onDuplicate: () => void
+  motionIndex?: number
 }) {
   const due = formatDueDate(task.dueDate)
   const reminder = formatReminder(task.reminder)
@@ -34,9 +36,10 @@ export function TaskItem({
 
   return (
     <div
-      className={`group anim-fade-slide-in relative flex items-start gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-line hover:bg-surface ${
+      className={`motion-content group relative flex items-start gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-line hover:bg-surface ${
         task.completed ? 'opacity-50' : ''
       }`}
+      style={{ '--motion-index': Math.min(motionIndex, 7) } as React.CSSProperties}
     >
       <TaskCheckbox
         completed={task.completed}
@@ -47,7 +50,7 @@ export function TaskItem({
       <button
         type="button"
         onClick={onEdit}
-        className="min-w-0 flex-1 cursor-pointer text-left"
+        className="motion-interactive min-w-0 flex-1 cursor-pointer text-left"
         aria-label={`Edit task: ${task.title}`}
       >
         <div className="flex items-center gap-2">
@@ -134,7 +137,7 @@ export function TaskItem({
               type="button"
               onClick={toggle}
               aria-label={`More actions for ${task.title}`}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
+              className="motion-interactive flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-faint transition-colors hover:bg-accent-soft hover:text-accent"
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>

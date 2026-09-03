@@ -29,6 +29,31 @@ describe('motion CSS foundation', () => {
     expect(reducedMotion).toContain('transition-duration: var(--motion-press) !important')
   })
 
+  it('provides the full app-wide interaction and content motion inventory', () => {
+    for (const name of [
+      '.motion-interactive',
+      '.motion-primary',
+      '.motion-overlay',
+      '.motion-dialog',
+      '.motion-popover',
+      '.motion-content',
+      '.motion-page',
+    ]) {
+      expect(css).toContain(name)
+    }
+  })
+
+  it('neutralizes independent scale, transforms, and long transitions for reduced motion', () => {
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+
+    expect(reducedMotion).toContain('scale: 1 !important')
+    expect(reducedMotion).toContain('transform: translateY(0) !important')
+    expect(reducedMotion).toContain('transition-duration: var(--motion-press) !important')
+    expect(reducedMotion).toContain('.motion-popover')
+    expect(reducedMotion).toContain('.motion-content')
+    expect(reducedMotion).toContain('.motion-page')
+  })
+
   it('owns native safe areas on all four sides and keeps the FAB above docked search', () => {
     expect(css).toContain('padding-left: env(safe-area-inset-left)')
     expect(css).toContain('padding-right: env(safe-area-inset-right)')

@@ -13,13 +13,22 @@ import {
 } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
 import { HabitIcon } from './HabitIcon'
+import type { MotionPhase } from '../utils/motion'
 
 /**
  * The habit's record at a glance: the numbers, the last fortnight day by day,
  * and where it stands against its target. Read-only on purpose — logging lives
  * on the card, so this can be opened and dismissed without consequence.
  */
-export function HabitSummary({ habit, onClose }: { habit: Habit; onClose: () => void }) {
+export function HabitSummary({
+  habit,
+  onClose,
+  phase,
+}: {
+  habit: Habit
+  onClose: () => void
+  phase: MotionPhase
+}) {
   const today = todayStr()
   const firstDay = useWeekStart()
   const s = habitStats(habit, today, firstDay)
@@ -57,7 +66,8 @@ export function HabitSummary({ habit, onClose }: { habit: Habit; onClose: () => 
 
   return (
     <div
-      className="anim-fade-in fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
+      data-motion-state={phase}
+      className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -66,7 +76,7 @@ export function HabitSummary({ habit, onClose }: { habit: Habit; onClose: () => 
         aria-modal="true"
         aria-label={`${habit.name} summary`}
         onClick={(e) => e.stopPropagation()}
-        className="anim-scale-in max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+        className="motion-dialog max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
         <div className="flex items-start gap-3 border-b border-line px-5 py-4">
           <span
@@ -88,7 +98,7 @@ export function HabitSummary({ habit, onClose }: { habit: Habit; onClose: () => 
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1.5 cursor-pointer rounded-md p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
+            className="motion-interactive -mr-1.5 cursor-pointer rounded-md p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>
@@ -121,7 +131,7 @@ export function HabitSummary({ habit, onClose }: { habit: Habit; onClose: () => 
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-surface">
                 <div
-                  className="h-full rounded-full transition-[width] duration-500"
+                  className="motion-progress h-full rounded-full"
                   style={{
                     width: `${Math.min(100, (s.current / habit.targetStreak) * 100)}%`,
                     backgroundColor: habit.color,

@@ -11,7 +11,7 @@ export function EmptyState({
 }) {
   const Display = Icon ?? CheckCircle2
   return (
-    <div className="anim-fade-in flex flex-col items-center justify-center px-6 py-16 text-center sm:py-24">
+    <div className="motion-content flex flex-col items-center justify-center px-6 py-16 text-center sm:py-24">
       <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-line bg-surface">
         <Display className="h-6 w-6 text-accent" strokeWidth={1.25} />
       </div>

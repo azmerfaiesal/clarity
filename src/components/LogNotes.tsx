@@ -44,7 +44,7 @@ export function LogNotes({
                   type="button"
                   onClick={() => onChange(notes.filter((_, j) => j !== i))}
                   aria-label={`Remove note ${n}`}
-                  className="shrink-0 cursor-pointer rounded p-0.5 text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger"
+                  className="motion-interactive shrink-0 cursor-pointer rounded p-0.5 text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -81,7 +81,7 @@ export function LogNotes({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="mt-1 inline-flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-3xs text-faint transition-colors hover:text-accent"
+            className="motion-interactive mt-1 inline-flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-3xs text-faint transition-colors hover:text-accent"
           >
             <Plus className="h-3 w-3" /> Add note
           </button>
