@@ -84,6 +84,12 @@
 /* ---- Light: cool paper. Hues darkened until they carry text at AA. ---- */
 :root {
   --fs: 1;
+  --motion-press: 160ms;
+  --motion-standard: 320ms;
+  --motion-prominent: 420ms;
+  --motion-exit: 280ms;
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 
   /* Default pair, kept identical to the Daily Dashboard that embeds this app so
      the iframe does not read as a different product. Both are requested in
@@ -433,6 +439,92 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--faint);
+}
+
+/*
+ * Shared motion primitives. They deliberately animate `scale` separately from
+ * `transform`, because drawers, the FAB, and translated toasts already own
+ * transforms of their own.
+ */
+.motion-interactive {
+  touch-action: manipulation;
+  transition:
+    scale var(--motion-press) var(--ease-spring),
+    opacity var(--motion-press) ease,
+    box-shadow var(--motion-standard) ease,
+    background-color var(--motion-standard) ease,
+    border-color var(--motion-standard) ease,
+    color var(--motion-standard) ease;
+}
+.motion-interactive:active {
+  scale: 0.97;
+}
+.motion-primary {
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 28px -5px var(--glow);
+}
+.motion-primary:hover {
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 36px -4px var(--glow);
+}
+
+/* Modal surfaces use a local transform; they never override layout transforms
+   on surrounding components. The phase attribute is supplied by MotionPresence. */
+.motion-overlay {
+  transition: opacity var(--motion-standard) ease;
+}
+.motion-dialog {
+  transition:
+    opacity var(--motion-standard) ease,
+    transform var(--motion-prominent) var(--ease-spring),
+    scale var(--motion-prominent) var(--ease-spring);
+}
+[data-motion-state='entering'] {
+  will-change: opacity;
+}
+[data-motion-state='entered'] {
+  will-change: auto;
+}
+[data-motion-state='exiting'] {
+  pointer-events: none;
+  will-change: opacity;
+}
+.motion-overlay[data-motion-state='entering'],
+.motion-overlay[data-motion-state='exiting'] {
+  opacity: 0;
+}
+.motion-overlay[data-motion-state='entered'] {
+  opacity: 1;
+}
+.motion-dialog[data-motion-state='entering'] {
+  opacity: 0;
+  transform: translateY(12px);
+  scale: 0.97;
+}
+.motion-dialog[data-motion-state='entered'] {
+  opacity: 1;
+  transform: translateY(0);
+  scale: 1;
+}
+.motion-dialog[data-motion-state='exiting'] {
+  opacity: 0;
+  transform: translateY(6px);
+  scale: 0.985;
+  transition-duration: var(--motion-exit), var(--motion-exit), var(--motion-exit);
+  transition-timing-function: var(--ease-exit), var(--ease-exit), var(--ease-exit);
+}
+
+@keyframes motion-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.motion-content-enter,
+.motion-page-enter {
+  animation: motion-content-enter var(--motion-prominent) var(--ease-spring) both;
 }
 
 /* Subtle entrance animations */
