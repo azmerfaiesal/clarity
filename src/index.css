@@ -499,7 +499,17 @@ body {
   transform: translateY(12px);
   scale: 0.97;
 }
+.motion-overlay[data-motion-state='entering'] .motion-dialog {
+  opacity: 0;
+  transform: translateY(12px);
+  scale: 0.97;
+}
 .motion-dialog[data-motion-state='entered'] {
+  opacity: 1;
+  transform: translateY(0);
+  scale: 1;
+}
+.motion-overlay[data-motion-state='entered'] .motion-dialog {
   opacity: 1;
   transform: translateY(0);
   scale: 1;
@@ -510,6 +520,45 @@ body {
   scale: 0.985;
   transition-duration: var(--motion-exit), var(--motion-exit), var(--motion-exit);
   transition-timing-function: var(--ease-exit), var(--ease-exit), var(--ease-exit);
+}
+.motion-overlay[data-motion-state='exiting'] .motion-dialog {
+  opacity: 0;
+  transform: translateY(6px);
+  scale: 0.985;
+  transition-duration: var(--motion-exit), var(--motion-exit), var(--motion-exit);
+  transition-timing-function: var(--ease-exit), var(--ease-exit), var(--ease-exit);
+}
+
+.native-modal-viewport {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 1rem;
+  background: var(--scrim);
+}
+.task-composer-modal {
+  width: min(100%, 34rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-lg);
+  transform-origin: bottom right;
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 38px -6px var(--glow),
+    0 18px 55px -24px rgb(0 0 0 / 0.72);
+}
+.native-app .native-modal-viewport {
+  padding-top: calc(env(safe-area-inset-top) + 0.75rem);
+  padding-right: calc(env(safe-area-inset-right) + 0.75rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+  padding-left: calc(env(safe-area-inset-left) + 0.75rem);
+}
+.native-app .task-composer-modal {
+  max-height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem
+  );
 }
 
 @keyframes motion-content-enter {
@@ -810,7 +859,10 @@ body {
   }
   .motion-dialog[data-motion-state='entering'],
   .motion-dialog[data-motion-state='entered'],
-  .motion-dialog[data-motion-state='exiting'] {
+  .motion-dialog[data-motion-state='exiting'],
+  .motion-overlay[data-motion-state='entering'] .motion-dialog,
+  .motion-overlay[data-motion-state='entered'] .motion-dialog,
+  .motion-overlay[data-motion-state='exiting'] .motion-dialog {
     transform: translateY(0) !important;
     scale: 1 !important;
   }
