@@ -12,7 +12,8 @@ import { HabitIcon } from './HabitIcon'
 import { DayDetail } from './DayDetail'
 import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
-import { nativeSelectionHaptic, nativeWarningHaptic } from '../native/platform'
+import { nativeFeedback, nativeSelectionHaptic, nativeWarningHaptic } from '../native/platform'
+import { habitCompletionFeedback } from '../utils/habitFeedback'
 
 export function HabitTracker({
   onOpenMobileNav,
@@ -132,15 +133,15 @@ export function HabitTracker({
   const handleAdjust = useCallback(
     (habit: Habit, delta: number, date?: string) => {
       const target = date ?? todayStr()
-      adjustCompletion(habit.id, delta, target)
-      if (delta <= 0) return
-      // Announce only when this log is the one that finishes the day.
+      const nextAmount = Math.max(0, (habit.logs[target] ?? 0) + delta)
       const next: Habit = {
         ...habit,
-        logs: { ...habit.logs, [target]: (habit.logs[target] ?? 0) + delta },
+        logs: { ...habit.logs, [target]: nextAmount },
       }
-      if (!isCompletedOn(next, target)) return
-      if (isCompletedOn(habit, target)) return
+      const feedback = habitCompletionFeedback(habit, target, nextAmount)
+      if (feedback) nativeFeedback(feedback)
+      adjustCompletion(habit.id, delta, target)
+      if (delta <= 0 || feedback !== 'success') return
       const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
       setBurst({ habitId: habit.id, date: target })
@@ -158,10 +159,12 @@ export function HabitTracker({
   const handleSetAmount = useCallback(
     (habit: Habit, amount: number, date?: string) => {
       const target = date ?? todayStr()
-      const before = isCompletedOn(habit, target)
-      setAmount(habit.id, amount, target)
-      const next: Habit = { ...habit, logs: { ...habit.logs, [target]: amount } }
-      if (before || !isCompletedOn(next, target)) return
+      const nextAmount = Math.max(0, Math.round(amount))
+      const next: Habit = { ...habit, logs: { ...habit.logs, [target]: nextAmount } }
+      const feedback = habitCompletionFeedback(habit, target, nextAmount)
+      if (feedback) nativeFeedback(feedback)
+      setAmount(habit.id, nextAmount, target)
+      if (feedback !== 'success') return
       const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
       setBurst({ habitId: habit.id, date: target })
