@@ -410,7 +410,7 @@ git commit -m "feat: add animated mobile task composer"
 
 **Interfaces:**
 - Consumes: `TaskComposerModal`, `TaskInput`, `isNativeApp`, and `useMediaQuery('(max-width: 639px)')`.
-- Produces: `compactTaskEntry = isNativeApp || useMediaQuery('(max-width: 639px)')` behavior.
+- Produces: `const isNarrowTaskEntry = useMediaQuery('(max-width: 639px)')` followed by `const compactTaskEntry = isNativeApp || isNarrowTaskEntry` so the hook is called unconditionally.
 - Preserves: `defaultListId`, `defaultDueDate`, and Favorites insertion semantics.
 
 - [ ] **Step 1: Extend the failing CSS contract test for four-sided safe areas**
@@ -436,10 +436,11 @@ Expected: FAIL on the missing horizontal inset and new FAB positions.
 
 - [ ] **Step 3: Wire mobile/native modal and desktop inline entry**
 
-Add a `fabRef`, compute `compactTaskEntry`, and make `openQuickAdd` idempotently
-set `true`. Render the desktop `TaskInput` only when `!compactTaskEntry` and
-render `TaskComposerModal` once outside the inert background container with
-`open={quickAddOpen && compactTaskEntry}`.
+Add a `fabRef`, call `useMediaQuery` unconditionally, compute
+`compactTaskEntry` from that result and `isNativeApp`, and make `openQuickAdd`
+idempotently set `true`. Render the desktop `TaskInput` only when
+`!compactTaskEntry` and render `TaskComposerModal` once outside the inert
+background container with `open={quickAddOpen && compactTaskEntry}`.
 
 The same submit callback remains authoritative:
 
