@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import type { Habit, Task, TaskList, ViewId } from '../types'
 import { useHabits } from '../store/habitStore'
 import { useNotes } from '../store/noteStore'
-import { formatRelative, todayStr } from '../utils/dateUtils'
+import { formatHomeDate, formatRelative, todayStr } from '../utils/dateUtils'
 import type { WeekStart } from '../utils/habitUtils'
 import { formatAmount, habitStats, isCompletedOn } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
@@ -91,11 +91,7 @@ export function Home({
             {greeting}
           </h1>
           <p className="mt-1 font-mono text-2xs tracking-[0.06em] text-faint uppercase">
-            {new Date().toLocaleDateString(undefined, {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })}
+            {formatHomeDate(new Date())}
           </p>
         </div>
       </header>

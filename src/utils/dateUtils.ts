@@ -11,6 +11,20 @@ export function todayStr(): string {
   return toDateStr(new Date())
 }
 
+export function formatHomeDate(
+  date: Date,
+  locales?: Intl.LocalesArgument,
+): string {
+  return date
+    .toLocaleDateString(locales, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    .replace(/^(.*?),\s/, '$1 ')
+}
+
 export function addDays(dateStr: string, days: number): string {
   const d = parseDate(dateStr)
   d.setDate(d.getDate() + days)
