@@ -19,4 +19,13 @@ describe('motion CSS foundation', () => {
     expect(css).toContain("[data-motion-state='exiting']")
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
   })
+
+  it('keeps reduced motion to short opacity changes without spatial travel', () => {
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+
+    expect(reducedMotion).toContain('scale: 1 !important')
+    expect(reducedMotion).toContain('transform: translateY(0) !important')
+    expect(reducedMotion).toContain('animation: motion-content-fade var(--motion-press) ease both !important')
+    expect(reducedMotion).toContain('transition-duration: var(--motion-press) !important')
+  })
 })

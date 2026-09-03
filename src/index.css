@@ -527,6 +527,15 @@ body {
   animation: motion-content-enter var(--motion-prominent) var(--ease-spring) both;
 }
 
+@keyframes motion-content-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Subtle entrance animations */
 @keyframes fade-slide-in {
   from {
@@ -783,6 +792,31 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Preserve state changes as brief fades, without the displacement, spring,
+     scale, or glow movement that can be uncomfortable for motion-sensitive users. */
+  .motion-interactive,
+  .motion-interactive:active {
+    scale: 1 !important;
+  }
+  .motion-overlay,
+  .motion-dialog[data-motion-state='entering'],
+  .motion-dialog[data-motion-state='entered'],
+  .motion-dialog[data-motion-state='exiting'] {
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+    transition-timing-function: ease !important;
+  }
+  .motion-dialog[data-motion-state='entering'],
+  .motion-dialog[data-motion-state='entered'],
+  .motion-dialog[data-motion-state='exiting'] {
+    transform: translateY(0) !important;
+    scale: 1 !important;
+  }
+  .motion-content-enter,
+  .motion-page-enter {
+    animation: motion-content-fade var(--motion-press) ease both !important;
   }
 }
 
