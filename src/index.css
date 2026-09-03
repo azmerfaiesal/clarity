@@ -233,6 +233,18 @@ body {
   left: calc(1rem + env(safe-area-inset-left));
   width: auto;
   max-width: none;
+  transform: translateY(0) scale(1);
+}
+
+/* All full-screen presentation overlays share this class shape. Settings and
+   the task composer deliberately opt out because their dedicated viewports
+   already own the same insets. The scrim still paints edge-to-edge. */
+.native-app .anim-fade-in.fixed.inset-0.z-50:not(.native-settings-overlay) {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
 body {

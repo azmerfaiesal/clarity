@@ -36,4 +36,26 @@ describe('motion CSS foundation', () => {
     expect(css).toContain('bottom: calc(4.25rem + env(safe-area-inset-bottom))')
     expect(css).toContain('.native-app .native-modal-viewport')
   })
+
+  it('keeps native toasts inside two-sided safe bounds and protects every full-screen dialog', () => {
+    const nativeToast = css.slice(
+      css.indexOf('.native-app .anim-toast-in'),
+      css.indexOf('\n}\n\nbody', css.indexOf('.native-app .anim-toast-in')),
+    )
+    const nativePresentation = css.slice(
+      css.indexOf('.native-app .anim-fade-in.fixed.inset-0.z-50:not(.native-settings-overlay)'),
+      css.indexOf(
+        '\n}',
+        css.indexOf('.native-app .anim-fade-in.fixed.inset-0.z-50:not(.native-settings-overlay)'),
+      ),
+    )
+
+    expect(nativeToast).toContain('left: calc(1rem + env(safe-area-inset-left))')
+    expect(nativeToast).toContain('right: calc(1rem + env(safe-area-inset-right))')
+    expect(nativeToast).toContain('transform: translateY(0) scale(1)')
+    expect(nativePresentation).toContain('padding-top: env(safe-area-inset-top)')
+    expect(nativePresentation).toContain('padding-right: env(safe-area-inset-right)')
+    expect(nativePresentation).toContain('padding-bottom: env(safe-area-inset-bottom)')
+    expect(nativePresentation).toContain('padding-left: env(safe-area-inset-left)')
+  })
 })
