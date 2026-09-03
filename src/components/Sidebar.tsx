@@ -18,7 +18,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { HabitFilter, HabitTemplate, Task, TaskList, ViewId } from '../types'
 import { tasksForView } from '../utils/taskUtils'
 import { useTheme } from '../store/theme'
@@ -271,8 +271,11 @@ export function Sidebar({
   tasks,
   lists,
   mobileOpen,
+  mobileDragging,
+  mobileWidth,
   onNavigate,
   onCloseMobile,
+  onBackdropClick,
   onAddList,
   onUpdateList,
   onDeleteList,
@@ -293,8 +296,11 @@ export function Sidebar({
   tasks: Task[]
   lists: TaskList[]
   mobileOpen: boolean
+  mobileDragging: boolean
+  mobileWidth: number
   onNavigate: (v: ViewId) => void
   onCloseMobile: () => void
+  onBackdropClick: () => void
   onAddList: (name: string, color: string) => void
   onUpdateList: (id: string, patch: { name?: string; color?: string }) => void
   onDeleteList: (id: string) => void
@@ -343,7 +349,6 @@ export function Sidebar({
     view === 'favorites' ||
     view === 'trash' ||
     view.startsWith('list:')
-
   const closeListForm = () => setAddingList(false)
 
   // Opening one form closes the other; two open editors in a narrow column is
@@ -365,22 +370,6 @@ export function Sidebar({
     onNavigate(v)
     onCloseMobile()
   }
-
-  // Keep the panel mounted while it animates back out. The ref stops a closed
-  // sidebar from playing that exit once on first render.
-  const [closing, setClosing] = useState(false)
-  const everOpened = useRef(false)
-  useEffect(() => {
-    if (mobileOpen) {
-      everOpened.current = true
-      setClosing(false)
-      return
-    }
-    if (!everOpened.current) return
-    setClosing(true)
-    const t = window.setTimeout(() => setClosing(false), 220)
-    return () => window.clearTimeout(t)
-  }, [mobileOpen])
 
   const content = (
     <div className="flex h-full min-h-0 flex-col">
@@ -800,29 +789,29 @@ export function Sidebar({
       {/* Desktop sidebar */}
       <aside className="panel-l hidden h-full w-64 shrink-0 md:block lg:w-68">{content}</aside>
 
-      {/* Mobile navigation. Rather than a drawer pinned to the left edge, the
-          panel travels in from that edge and settles in the middle of the
-          screen — and rewinds the same way, which is why it stays mounted for
-          the length of the exit. */}
-      {(mobileOpen || closing) && (
+      {/* The mobile drawer stays mounted so a drag can reveal it continuously
+          from the first pixel. Its scrim and the complete page surface use the
+          same progress value, keeping every layer locked to the finger. */}
+      <div
+        className="mobile-drawer-layer fixed inset-0 z-40 md:hidden"
+        aria-hidden={!mobileOpen && !mobileDragging}
+        inert={!mobileOpen && !mobileDragging}
+        style={{ pointerEvents: mobileOpen || mobileDragging ? 'auto' : 'none' }}
+      >
         <div
-          className={`fixed inset-0 z-40 flex items-center justify-center bg-[var(--scrim)] p-4 backdrop-blur-[2px] md:hidden ${
-            closing ? 'anim-fade-out' : 'anim-fade-in'
-          }`}
-          onClick={onCloseMobile}
+          className="mobile-drawer-scrim absolute inset-0 bg-[var(--scrim)]"
+          onClick={onBackdropClick}
           role="presentation"
+        />
+        <aside
+          className="mobile-sidebar mobile-drawer-panel absolute inset-y-0 left-0 flex flex-col overflow-hidden rounded-r-2xl border-r border-line bg-raised shadow-2xl shadow-black/25 dark:shadow-black/70"
+          style={{ width: mobileWidth }}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Navigation"
         >
-          <aside
-            className={`${
-              closing ? 'nav-to-edge' : 'nav-to-center'
-            } flex max-h-[85dvh] w-full max-w-xs flex-col overflow-hidden rounded-2xl border border-line bg-raised/95 shadow-2xl shadow-black/25 backdrop-blur-xl dark:shadow-black/70`}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Navigation"
-          >
-            {content}
-          </aside>
-        </div>
-      )}
+          {content}
+        </aside>
+      </div>
     </>
   )
 }

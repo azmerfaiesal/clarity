@@ -22,6 +22,7 @@ import { HabitIcon } from './HabitIcon'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { HabitHeatmap, HabitMonthRows, HeatmapLegend } from './HabitHeatmap'
 import { loadHabitRange, saveHabitRange } from '../store/storage'
+import { nativeSelectionHaptic, nativeSuccessHaptic } from '../native/platform'
 
 type Range = 'month' | 'quarter' | 'year'
 
@@ -102,7 +103,7 @@ export function HabitCard({
 
   return (
     <article
-      className={`anim-fade-slide-in rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
+      className={`anim-fade-slide-in min-w-0 max-w-full rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
         justCompleted ? 'border-success' : 'border-line'
       } ${archived ? 'opacity-60' : ''}`}
       style={justCompleted ? { boxShadow: `0 0 22px -8px ${habit.color}` } : undefined}
@@ -134,8 +135,16 @@ export function HabitCard({
                 heldRef.current = false
                 return
               }
-              if (counted) onAdjust(habit.trackBy === 'duration' ? 5 : 1)
-              else onToggle()
+              if (counted) {
+                const step = habit.trackBy === 'duration' ? 5 : 1
+                if (!s.doneToday && s.amountToday + step >= s.needPerDay) nativeSuccessHaptic()
+                else nativeSelectionHaptic()
+                onAdjust(step)
+              } else {
+                if (s.doneToday) nativeSelectionHaptic()
+                else nativeSuccessHaptic()
+                onToggle()
+              }
             }}
             aria-pressed={s.doneToday}
             aria-label={
@@ -341,7 +350,7 @@ export function HabitCard({
       </div>
 
       {/* History */}
-      <div className="mt-4">
+      <div className="mt-4 min-w-0 max-w-full">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div
             role="radiogroup"

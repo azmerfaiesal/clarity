@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import { useState } from 'react'
 import type { Priority } from '../types'
+import { nativeSelectionHaptic, nativeSuccessHaptic } from '../native/platform'
 
 const RING: Record<Priority, string> = {
   none: 'border-line-strong hover:border-accent',
@@ -31,6 +32,9 @@ export function TaskCheckbox({
         if (!completed) {
           setPopping(true)
           window.setTimeout(() => setPopping(false), 260)
+          nativeSuccessHaptic()
+        } else {
+          nativeSelectionHaptic()
         }
         onToggle()
       }}

@@ -8,6 +8,7 @@ import {
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { clearNativeReminders } from './notifications'
 
 interface AuthState {
   user: User | null
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null, needsConfirm: !data.session }
       },
       signOut: async () => {
+        await clearNativeReminders()
         await supabase.auth.signOut()
       },
     }),

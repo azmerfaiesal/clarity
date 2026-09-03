@@ -158,7 +158,7 @@ export function NoteProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [authLoading, userId, ready])
+  }, [authLoading, userId, ready, applySnapshot])
 
   // ---- realtime, plus a re-read whenever the socket cannot have kept up ----
   useEffect(() => {

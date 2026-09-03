@@ -20,7 +20,12 @@ import { useAuth } from '../store/auth'
 import { useTaskStore } from '../store/taskStore'
 import { FONT_SIZE_LABELS, useTheme, type FontSize } from '../store/theme'
 import type { WeekStart } from '../utils/habitUtils'
-import { permissionState, requestPermission, type PermissionState } from '../store/notifications'
+import {
+  permissionState,
+  refreshPermissionState,
+  requestPermission,
+  type PermissionState,
+} from '../store/notifications'
 import {
   DEFAULT_FONT,
   FONTS,
@@ -32,6 +37,7 @@ import {
 import { ACCENTS, ACCENT_KEYS, accentSwatch } from '../store/accents'
 import { clearSyncError, useSyncHealth } from '../store/syncHealth'
 import { formatRelative } from '../utils/dateUtils'
+import { isNativeApp } from '../native/platform'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -76,7 +82,8 @@ export function Settings({
   // Permission can be changed from the browser's own site settings while this
   // panel is open, so re-read it whenever the window comes back into focus.
   useEffect(() => {
-    const sync = () => setNotifyState(permissionState())
+    const sync = () => void refreshPermissionState().then(setNotifyState)
+    sync()
     window.addEventListener('focus', sync)
     document.addEventListener('visibilitychange', sync)
     return () => {
@@ -102,19 +109,20 @@ export function Settings({
 
   return (
     <div
- className="anim-fade-in fixed inset-0 z-50 flex justify-start bg-[var(--scrim)] backdrop-blur-[3px]"
+ className="native-settings-overlay anim-fade-in fixed inset-0 z-50 flex justify-start bg-[var(--scrim)] backdrop-blur-[3px]"
       onClick={onClose}
       role="presentation"
     >
-      {/* A drawer pinned to the left edge, full height. The panel stops short of
-          the viewport width on purpose, so there is always a strip of the app
-          left to click on to dismiss it. */}
+      {/* A drawer pinned to the left edge that fills the overlay's available
+          height. The native overlay reserves the iPhone safe areas, while the
+          web version still uses the full viewport. The panel stops short of
+          the viewport width so there is always a strip to click to dismiss. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
         onClick={(e) => e.stopPropagation()}
- className="anim-drawer-in-left h-full w-[86vw] max-w-md overflow-y-auto rounded-r-xl border-r border-line bg-raised shadow-xl shadow-black/20 dark:shadow-black/70"
+ className="native-settings-panel anim-drawer-in-left h-full w-[86vw] max-w-md overflow-y-auto rounded-r-xl border-r border-line bg-raised shadow-xl shadow-black/20 dark:shadow-black/70"
       >
  <div className="flex items-center justify-between px-5 pt-5 pb-1">
  <h2 className="text-md font-semibold tracking-tight text-ink">
@@ -124,7 +132,7 @@ export function Settings({
             type="button"
             onClick={onClose}
             aria-label="Close settings"
- className="-mr-1.5 cursor-pointer rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
+ className="-mr-3 flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-faint transition-colors hover:bg-surface hover:text-ink"
           >
  <X className="h-4 w-4" />
           </button>
@@ -287,7 +295,7 @@ export function Settings({
           </p>
           {notifyState === 'unsupported' ? (
             <p className="mt-3 text-sm text-muted">
-              This browser does not support notifications.
+              Notifications are not available on this device.
             </p>
           ) : notifyState === 'needs-install' ? (
             // iOS hides the notification API from an ordinary Safari tab
@@ -318,8 +326,8 @@ export function Settings({
                 Notifications blocked
               </span>
               <p className="mt-2 text-xs text-faint">
-                Re-allow them in your browser's site settings; this panel picks the change up when
-                you come back to the tab.
+                Re-allow them in {isNativeApp ? 'iOS Settings' : "your browser's site settings"};
+                {' '}this panel picks the change up when you come back.
               </p>
             </>
           ) : (
@@ -332,9 +340,9 @@ export function Settings({
             </button>
           )}
           <p className="mt-2 text-xs text-faint">
-            Reminders fire while Clarity is running — a foreground tab, a background tab, or the
-            installed app. They cannot reach you once it is closed entirely; that needs a push
-            server this app does not have.
+            {isNativeApp
+              ? 'iOS schedules these on the device, so reminders can arrive even when Clarity is closed.'
+              : 'Reminders fire while Clarity is running — a foreground tab, a background tab, or the installed app. They cannot reach you once it is closed entirely; that needs a push server this app does not have.'}
           </p>
         </Section>
 

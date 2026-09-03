@@ -42,13 +42,13 @@ export function Header({
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">
           {title}
-          {subtitle && (
-            <span className="ml-3 font-mono text-xs font-normal tracking-normal text-faint">
-              {subtitle}
-            </span>
-          )}
         </h1>
-        <p className="mt-1 font-mono text-2xs tracking-[0.06em] text-faint uppercase">
+        {subtitle && (
+          <p className="mt-1 font-mono text-xs leading-tight text-faint">
+            {subtitle}
+          </p>
+        )}
+        <p className={`${subtitle ? 'mt-0.5' : 'mt-1'} font-mono text-2xs tracking-[0.06em] text-faint uppercase`}>
           {count} {count === 1 ? 'task' : 'tasks'}
         </p>
       </div>

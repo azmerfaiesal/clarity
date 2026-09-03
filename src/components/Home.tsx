@@ -23,6 +23,7 @@ export function Home({
   lists,
   onOpenMobileNav,
   onNavigate,
+  onOpenNote,
   onEditTask,
   store,
 }: {
@@ -30,6 +31,7 @@ export function Home({
   lists: TaskList[]
   onOpenMobileNav: () => void
   onNavigate: (v: ViewId) => void
+  onOpenNote: (id: string) => void
   onEditTask: (t: Task) => void
   store: {
     toggleComplete: (id: string) => void
@@ -127,7 +129,7 @@ export function Home({
 
       {/* Tasks */}
       <Section
-        title="Due today"
+        title="Due and overdue"
         meta={dueTasks.length > 0 ? `${dueTasks.length}` : undefined}
         onOpen={() => onNavigate('today')}
       >
@@ -162,7 +164,7 @@ export function Home({
               <li key={n.id}>
                 <button
                   type="button"
-                  onClick={() => onNavigate('notes')}
+                  onClick={() => onOpenNote(n.id)}
                   className="w-full cursor-pointer rounded-md px-2 py-2 text-left transition-colors hover:bg-surface"
                 >
                   <p className="line-clamp-1 text-sm text-ink">

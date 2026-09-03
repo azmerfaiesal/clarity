@@ -158,6 +158,48 @@ html,
 body,
 #root {
   height: 100%;
+  overscroll-behavior: none;
+}
+
+html,
+body {
+  overflow: hidden;
+}
+
+/* The Capacitor WebView intentionally runs edge-to-edge. Keep controls clear
+   of the Dynamic Island, rounded corners and home indicator while leaving the
+   browser/PWA layout unchanged. */
+.native-app .app-shell {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.native-app .native-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.native-app .native-fab {
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+.native-app .mobile-sidebar {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Fixed dialogs do not inherit the app shell's safe-area padding. Give the
+   Settings drawer its own native viewport so its title and close button stay
+   below the status bar and above the home indicator. */
+.native-app .native-settings-overlay {
+  box-sizing: border-box;
+  padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+}
+
+.native-app .native-settings-panel {
+  max-height: 100%;
 }
 
 body {
@@ -177,6 +219,58 @@ body {
   position: relative;
   isolation: isolate;
 }
+
+/* A horizontal edge gesture belongs to the drawer, while vertical movement
+   remains available to the page and the sidebar's own scrolling regions. */
+.mobile-drawer-host {
+  touch-action: pan-y;
+}
+
+.mobile-drawer-host[data-drawer-active='true'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mobile-page {
+  transform-origin: left center;
+  transform: translate3d(var(--mobile-page-x, 0px), 0, 0) scale(var(--mobile-page-scale, 1));
+  border-radius: var(--mobile-page-radius, 0px);
+  box-shadow: -14px 0 38px rgb(0 0 0 / 22%);
+  transition:
+    transform var(--mobile-settle-duration, 280ms) cubic-bezier(0.2, 0.9, 0.25, 1),
+    border-radius var(--mobile-settle-duration, 280ms) cubic-bezier(0.2, 0.9, 0.25, 1);
+  will-change: transform, border-radius;
+  backface-visibility: hidden;
+}
+
+.mobile-drawer-panel {
+  transform: translate3d(var(--mobile-drawer-x, -100%), 0, 0);
+  transition: transform var(--mobile-settle-duration, 280ms) cubic-bezier(0.2, 0.9, 0.25, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.mobile-drawer-scrim {
+  opacity: var(--mobile-scrim-opacity, 0);
+  transition: opacity var(--mobile-settle-duration, 280ms) ease-out;
+  will-change: opacity;
+}
+
+.mobile-drawer-host[data-drawer-dragging='true'] .mobile-page,
+.mobile-drawer-host[data-drawer-dragging='true'] .mobile-drawer-panel,
+.mobile-drawer-host[data-drawer-dragging='true'] .mobile-drawer-scrim {
+  transition: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-page {
+    transform: none;
+    border-radius: 0;
+    box-shadow: none;
+    transition: none;
+  }
+}
+
 .app-shell::before {
   content: "";
   position: fixed;
@@ -398,22 +492,6 @@ body {
   }
 }
 
-/*
- * The mobile navigation. It comes from the left edge, where the desktop
- * sidebar lives, and settles in the middle of the screen — so the panel reads
- * as the same object having moved rather than a second one appearing.
- */
-@keyframes nav-to-center {
-  from {
-    opacity: 0;
-    transform: translateX(-26%) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-}
-
 @keyframes scale-in {
   from {
     opacity: 0;
@@ -606,14 +684,6 @@ body {
 .anim-fade-out {
   animation: fade-out 200ms ease-in both;
 }
-.nav-to-center {
-  animation: nav-to-center 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-/* The same journey, rewound, so dismissing returns it to the edge. */
-.nav-to-edge {
-  animation: nav-to-center 200ms cubic-bezier(0.4, 0, 0.8, 0.4) both reverse;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

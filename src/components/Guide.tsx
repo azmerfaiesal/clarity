@@ -1,5 +1,6 @@
 import { Menu } from 'lucide-react'
 import type { ViewId } from '../types'
+import { isNativeApp } from '../native/platform'
 
 /**
  * The manual. Its own page rather than a panel inside Settings, because it is
@@ -8,7 +9,7 @@ import type { ViewId } from '../types'
  */
 
 const SHORTCUTS: [string, string][] = [
-  ['N', 'New task, in any task view'],
+  ['N', 'New task in an active task view'],
   ['/', 'Jump to the search bar'],
   ['⌘ / Ctrl + K', 'Jump to the search bar'],
   ['Enter', 'Save a task, or add a tag while writing a note'],
@@ -96,19 +97,36 @@ export function Guide({
           device that loses its connection keeps working from its own copy and catches up when it
           can.
         </p>
+        <p>
+          <strong className="font-medium text-ink">Home</strong> is the daily overview: habits
+          scheduled for today, tasks due today or already overdue, and your three most recent
+          notes. Opening a recent note takes you straight back into its editor.
+        </p>
       </Part>
 
       <Part title="Tasks">
         <div className="space-y-3">
           <Feature name="Views">
-            {link('inbox', 'Inbox')} holds everything open. {link('today', 'Today')} and{' '}
-            {link('upcoming', 'Upcoming')} narrow that by date, {link('favorites', 'Favorites')}{' '}
-            by the star, and {link('completed', 'Completed')} looks backwards. Deleting is never
-            final: tasks rest in the {link('trash', 'Recycle Bin')} until you empty it.
+            {link('inbox', 'Inbox')} holds every open task, including tasks assigned to a
+            category. {link('today', 'Today')} includes anything due today or overdue, while{' '}
+            {link('upcoming', 'Upcoming')} groups every dated task chronologically.{' '}
+            {link('favorites', 'Favorites')} collects starred tasks, and{' '}
+            {link('completed', 'Completed')} looks backwards. Deleting is never final: tasks rest
+            in the {link('trash', 'Recycle Bin')} until you empty it.
           </Feature>
           <Feature name="Categories">
             Colour-coded groupings in the sidebar — Personal, Work, whatever suits. A task belongs
-            to at most one, and the Inbox is where the ones that belong to none of them live.
+            to at most one. Categories are filters rather than folders, so their tasks also remain
+            visible in the Inbox.
+          </Feature>
+          <Feature name="Quick add follows the view">
+            Adding from a category preselects that category. Today preselects today's date,
+            Upcoming starts with tomorrow, and Favorites stars the new task, so it stays in the
+            view where you captured it. Press{' '}
+            <kbd className="rounded border border-line bg-surface px-1 py-0.5 font-mono text-2xs text-muted">
+              N
+            </kbd>{' '}
+            in any of those views to open the same form.
           </Feature>
           <Feature name="Due dates and reminders">
             Both are optional, and a task with neither is perfectly normal. A reminder shows a
@@ -194,7 +212,7 @@ export function Guide({
       <Part title="Making it yours">
         <div className="space-y-3">
           <Feature name="Appearance">
-            Light or dark, nine accent colours including four pastels, four text sizes and five
+            Light or dark, eleven accent colours including four pastels, four text sizes and ten
             typefaces. These are per device — a phone at night and a laptop by a window do not
             want the same settings.
           </Feature>
@@ -203,9 +221,9 @@ export function Guide({
             against, so a streak can shift when you change it.
           </Feature>
           <Feature name="Notifications">
-            Reminders arrive while a Clarity tab is open, in the foreground or the background.
-            They cannot reach you with the browser closed — that needs a push server this app does
-            not have. Worth knowing before you rely on one.
+            {isNativeApp
+              ? 'The iOS app schedules reminders on your phone, so they arrive even after Clarity is closed.'
+              : 'Reminders arrive while a Clarity tab is open, in the foreground or the background. They cannot reach you with the browser closed — that needs a push server this app does not have. Worth knowing before you rely on one.'}
           </Feature>
         </div>
       </Part>
@@ -213,9 +231,12 @@ export function Guide({
       <Part title="Getting the most out of it">
         <ul className="space-y-2.5" role="list">
           <Tip>
-            <strong className="font-medium text-ink">Put it on your home screen.</strong> On a
-            phone, Share → Add to Home Screen gives you an icon and a full screen, and it behaves
-            like an app from then on.
+            <strong className="font-medium text-ink">
+              {isNativeApp ? 'Make reminders useful.' : 'Put it on your home screen.'}
+            </strong>{' '}
+            {isNativeApp
+              ? 'Give Clarity notification permission, then attach times only to the tasks and habits that genuinely need a nudge.'
+              : 'On a phone, Share → Add to Home Screen gives you an icon and a full screen, and it behaves like an app from then on.'}
           </Tip>
           <Tip>
             <strong className="font-medium text-ink">Let the Inbox be a dumping ground.</strong>{' '}

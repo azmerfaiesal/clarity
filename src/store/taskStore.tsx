@@ -311,6 +311,7 @@ export interface TaskStore {
     listId?: string | null
     tags?: string[]
     reminder?: string | null
+    favorite?: boolean
   }) => Task
   updateTask: (id: string, patch: Partial<Task>) => void
   deleteTask: (id: string) => void
@@ -502,7 +503,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       dueDate: input.dueDate ?? null,
       listId: input.listId ?? null,
       tags: input.tags ?? [],
-      favorite: false,
+      favorite: input.favorite ?? false,
       reminder: input.reminder ?? null,
       sortOrder: Date.now(),
       createdAt: stamp,

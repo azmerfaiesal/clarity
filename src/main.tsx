@@ -8,10 +8,14 @@ import { NoteProvider } from './store/noteStore.tsx'
 import { TaskProvider } from './store/taskStore.tsx'
 import { ThemeProvider } from './store/theme.tsx'
 import { registerServiceWorker } from './store/notifications.ts'
+import { initializeNativeApp } from './native/platform.ts'
 
-// The worker is how reminders reach a phone at all, so it is registered up
-// front rather than when the first one comes due — on iOS the permission
-// prompt is only offered to an installed app that already has one.
+// Adds the native document classes synchronously, then configures the iOS
+// status bar and keyboard through Capacitor without delaying first paint.
+initializeNativeApp()
+
+// The worker is the web/PWA delivery path. Native builds skip it inside the
+// helper and use iOS local notifications instead.
 void registerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(

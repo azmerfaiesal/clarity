@@ -1,6 +1,8 @@
+import { LocalNotifications, type LocalNotificationSchema } from '@capacitor/local-notifications'
 import type { Habit, Task } from '../types'
 import { isCompletedOn, isScheduled } from '../utils/habitUtils'
-import { todayStr } from '../utils/dateUtils'
+import { addDays, todayStr } from '../utils/dateUtils'
+import { isNativeApp } from '../native/platform'
 
 /**
  * Browser notifications for task and habit reminders.
@@ -29,6 +31,10 @@ const FIRED_KEY = 'clarity.notified.v1'
 const KEEP_DAYS = 3
 /** PNG rather than the SVG favicon: several platforms will not render SVG here. */
 const ICON = './icon-192.png'
+/** iOS accepts at most 64 pending local notifications per app. Leave headroom. */
+const NATIVE_PENDING_LIMIT = 60
+const NATIVE_TASK_RESERVE = 40
+const NATIVE_HABIT_LOOKAHEAD_DAYS = 45
 
 export type PermissionState =
   | 'unsupported'
@@ -37,6 +43,14 @@ export type PermissionState =
   | 'default'
   | 'granted'
   | 'denied'
+
+let nativePermission: PermissionState = 'default'
+
+function mapNativePermission(display: string): PermissionState {
+  if (display === 'granted') return 'granted'
+  if (display === 'denied') return 'denied'
+  return 'default'
+}
 
 function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false
@@ -53,6 +67,7 @@ export function isStandalone(): boolean {
 }
 
 export function permissionState(): PermissionState {
+  if (isNativeApp) return nativePermission
   if (typeof Notification === 'undefined') {
     // Safari on iOS hides the whole API until the app is installed, so "this
     // browser does not support notifications" was both wrong and a dead end.
@@ -61,7 +76,29 @@ export function permissionState(): PermissionState {
   return Notification.permission as PermissionState
 }
 
+/** Native permissions are asynchronous, unlike the browser's static property. */
+export async function refreshPermissionState(): Promise<PermissionState> {
+  if (!isNativeApp) return permissionState()
+  try {
+    nativePermission = mapNativePermission((await LocalNotifications.checkPermissions()).display)
+  } catch {
+    nativePermission = 'unsupported'
+  }
+  return nativePermission
+}
+
 export async function requestPermission(): Promise<PermissionState> {
+  if (isNativeApp) {
+    try {
+      nativePermission = mapNativePermission((await LocalNotifications.requestPermissions()).display)
+      if (nativePermission === 'granted') {
+        window.dispatchEvent(new Event('clarity:native-notifications-enabled'))
+      }
+    } catch {
+      nativePermission = 'unsupported'
+    }
+    return nativePermission
+  }
   if (typeof Notification === 'undefined') return permissionState()
   try {
     // Safari's `requestPermission` is the old callback form: it returns
@@ -88,6 +125,7 @@ export async function requestPermission(): Promise<PermissionState> {
  * all that is left.
  */
 export async function registerServiceWorker(): Promise<void> {
+  if (isNativeApp) return
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
   try {
     // Resolved against the document so the same build works from the repo root
@@ -194,6 +232,7 @@ let sweeping = false
  * everything it might announce is deduplicated by key.
  */
 export function checkReminders(tasks: Task[], habits: Habit[]): void {
+  if (isNativeApp) return
   void sweep(tasks, habits)
 }
 
@@ -226,4 +265,166 @@ async function sweep(tasks: Task[], habits: Habit[]): Promise<void> {
   } finally {
     sweeping = false
   }
+}
+
+// ---- native iOS scheduling ----
+
+export interface PlannedNativeNotification {
+  id: number
+  title: string
+  body: string
+  at: Date
+  kind: 'task' | 'habit'
+  entityId: string
+}
+
+/** A stable positive 31-bit integer, required by the native notification APIs. */
+function nativeId(key: string): number {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < key.length; i++) {
+    hash ^= key.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return hash & 0x7fffffff
+}
+
+function localDate(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function atLocalTime(date: string, time: string): Date {
+  return new Date(`${date}T${time}:00`)
+}
+
+/**
+ * Build the bounded rolling schedule that is handed to iOS.
+ *
+ * Exact task reminders receive a generous reserve. Habit reminders fill the
+ * rest in chronological order, then either kind can use any unused capacity.
+ * This stays below iOS's 64-item ceiling while keeping several future habit
+ * occurrences ready even if the app is not opened every day.
+ */
+export function planNativeReminders(
+  tasks: Task[],
+  habits: Habit[],
+  now: Date = new Date(),
+): PlannedNativeNotification[] {
+  const taskPlans: PlannedNativeNotification[] = []
+  const habitPlans: PlannedNativeNotification[] = []
+
+  for (const task of tasks) {
+    if (!task.reminder || task.completed || task.deletedAt) continue
+    const at = new Date(task.reminder)
+    if (Number.isNaN(at.getTime()) || at <= now) continue
+    taskPlans.push({
+      id: nativeId(`task:${task.id}:${task.reminder}`),
+      title: 'Reminder',
+      body: task.title,
+      at,
+      kind: 'task',
+      entityId: task.id,
+    })
+  }
+
+  const today = localDate(now)
+  for (const habit of habits) {
+    if (!habit.reminderTime || habit.archivedAt) continue
+    for (let offset = 0; offset < NATIVE_HABIT_LOOKAHEAD_DAYS; offset++) {
+      const date = addDays(today, offset)
+      if (!isScheduled(habit, date) || isCompletedOn(habit, date)) continue
+      const at = atLocalTime(date, habit.reminderTime)
+      if (at <= now) continue
+      habitPlans.push({
+        id: nativeId(`habit:${habit.id}:${date}`),
+        title: habit.name,
+        body: 'Still open for today.',
+        at,
+        kind: 'habit',
+        entityId: habit.id,
+      })
+    }
+  }
+
+  const byTime = (a: PlannedNativeNotification, b: PlannedNativeNotification) =>
+    a.at.getTime() - b.at.getTime()
+  taskPlans.sort(byTime)
+  habitPlans.sort(byTime)
+
+  const selected = [
+    ...taskPlans.slice(0, NATIVE_TASK_RESERVE),
+    ...habitPlans.slice(0, NATIVE_PENDING_LIMIT - NATIVE_TASK_RESERVE),
+  ]
+  const selectedIds = new Set(selected.map((item) => item.id))
+  const overflow = [...taskPlans, ...habitPlans]
+    .filter((item) => !selectedIds.has(item.id))
+    .sort(byTime)
+
+  selected.push(...overflow.slice(0, NATIVE_PENDING_LIMIT - selected.length))
+  return selected.sort(byTime)
+}
+
+let nativeRevision = 0
+let nativeQueue: Promise<void> = Promise.resolve()
+
+/** Reconcile only Clarity-owned pending notifications; never touch another plugin's. */
+async function applyNativePlan(plan: PlannedNativeNotification[], revision: number): Promise<void> {
+  if ((await refreshPermissionState()) !== 'granted' || revision !== nativeRevision) return
+
+  const pending = await LocalNotifications.getPending()
+  const ours = pending.notifications.filter(
+    (item) => (item.extra as { source?: string } | undefined)?.source === 'clarity',
+  )
+  if (ours.length > 0) {
+    await LocalNotifications.cancel({ notifications: ours.map(({ id }) => ({ id })) })
+  }
+  if (revision !== nativeRevision || plan.length === 0) return
+
+  const notifications: LocalNotificationSchema[] = plan.map((item) => ({
+    id: item.id,
+    title: item.title,
+    body: item.body,
+    schedule: { at: item.at },
+    sound: 'default',
+    threadIdentifier: `clarity-${item.kind}s`,
+    extra: {
+      source: 'clarity',
+      kind: item.kind,
+      entityId: item.entityId,
+    },
+  }))
+  await LocalNotifications.schedule({ notifications })
+}
+
+export function syncNativeReminders(tasks: Task[], habits: Habit[]): void {
+  if (!isNativeApp) return
+  const revision = ++nativeRevision
+  const plan = planNativeReminders(tasks, habits)
+  nativeQueue = nativeQueue
+    .catch(() => undefined)
+    .then(() => applyNativePlan(plan, revision))
+    .catch(() => undefined)
+}
+
+/** Remove scheduled task titles when an account leaves this device. */
+export async function clearNativeReminders(): Promise<void> {
+  if (!isNativeApp) return
+  nativeRevision++
+  nativeQueue = nativeQueue
+    .catch(() => undefined)
+    .then(async () => {
+      const pending = await LocalNotifications.getPending()
+      const ours = pending.notifications.filter(
+        (item) => (item.extra as { source?: string } | undefined)?.source === 'clarity',
+      )
+      if (ours.length > 0) {
+        await LocalNotifications.cancel({ notifications: ours.map(({ id }) => ({ id })) })
+      }
+    })
+    .catch(() => {
+      /* Signing out must still succeed if the OS notification centre is unavailable. */
+    })
+  await nativeQueue
 }

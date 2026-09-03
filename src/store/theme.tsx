@@ -23,6 +23,7 @@ import {
 import { DEFAULT_FONT, FONTS, applyFont, type FontKey } from './fonts'
 import { ACCENTS, DEFAULT_ACCENT, applyAccent, type AccentKey } from './accents'
 import type { WeekStart } from '../utils/habitUtils'
+import { setNativeTheme } from '../native/platform'
 
 export type Theme = 'light' | 'dark'
 export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -88,6 +89,7 @@ function applyTheme(t: Theme) {
   painted = true
   root.setAttribute('data-theme', t)
   root.style.colorScheme = t
+  setNativeTheme(t)
 }
 
 function applyFontSize(f: FontSize) {

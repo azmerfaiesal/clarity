@@ -1,5 +1,6 @@
 import { Flag, Plus, RotateCcw, SearchX, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { BrainDump } from './components/BrainDump'
 import { Guide } from './components/Guide'
 import { Home } from './components/Home'
@@ -16,7 +17,7 @@ import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
 import { useHabits } from './store/habitStore'
 import { loadView, saveView } from './store/storage'
-import { checkReminders } from './store/notifications'
+import { checkReminders, syncNativeReminders } from './store/notifications'
 import { useNotes } from './store/noteStore'
 import { useTaskStore } from './store/taskStore'
 import AuthGate from './components/AuthGate'
@@ -29,7 +30,7 @@ import {
   type Task,
   type ViewId,
 } from './types'
-import { isOverdue, sectionLabel, todayStr, formatDueDate } from './utils/dateUtils'
+import { addDays, isOverdue, sectionLabel, todayStr, formatDueDate } from './utils/dateUtils'
 import {
   applyFilters,
   applySearch,
@@ -38,6 +39,29 @@ import {
   sortTasks,
   tasksForView,
 } from './utils/taskUtils'
+import {
+  canStartDrawerDrag,
+  createDrawerFrameScheduler,
+  dragDirection,
+  drawerProgress,
+  drawerReleaseVelocity,
+  drawerSettleDuration,
+  mobileDrawerWidth,
+  shouldOpenDrawer,
+} from './utils/mobileDrawer'
+import type { DrawerMotion } from './utils/mobileDrawer'
+
+type MobileDrawerDrag = {
+  pointerId: number
+  startX: number
+  startY: number
+  lastX: number
+  lastTime: number
+  originProgress: number
+  progress: number
+  velocityX: number
+  axis: 'pending' | 'horizontal' | 'vertical'
+}
 
 function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string {
   switch (view) {
@@ -133,6 +157,15 @@ function AppShell() {
   const [openNoteId, setOpenNoteId] = useState<string | null>(null)
   const [inlineQuery, setInlineQuery] = useState('')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [mobileNavDragging, setMobileNavDragging] = useState(false)
+  const [mobileNavWidth, setMobileNavWidth] = useState(() =>
+    typeof window === 'undefined' ? 320 : mobileDrawerWidth(window.innerWidth),
+  )
+  const mobileNavProgressRef = useRef(0)
+  const mobileNavDrag = useRef<MobileDrawerDrag | null>(null)
+  const mobileDrawerHostRef = useRef<HTMLDivElement>(null)
+  const mobileDrawerScheduler = useRef<ReturnType<typeof createDrawerFrameScheduler> | null>(null)
+  const suppressClick = useRef(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -188,6 +221,23 @@ function AppShell() {
     }
   }, [tasks, habits])
 
+  // Native reminders are owned by iOS rather than this foreground timer. Any
+  // task/habit edit, app resume, or newly granted permission reconciles the
+  // pending OS schedule.
+  useEffect(() => {
+    const sync = () => syncNativeReminders(tasks, habits)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') sync()
+    }
+    sync()
+    window.addEventListener('clarity:native-notifications-enabled', sync)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('clarity:native-notifications-enabled', sync)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [tasks, habits])
+
   // The global key handler is bound once; read the live view through a ref.
   const viewRef = useRef(view)
   useEffect(() => {
@@ -195,10 +245,174 @@ function AppShell() {
   }, [view])
 
   const openQuickAdd = useCallback(() => setQuickAddOpen(true), [])
+  const writeDrawerMotion = useCallback((motion: DrawerMotion) => {
+    const host = mobileDrawerHostRef.current
+    if (!host) return
+    host.style.setProperty('--mobile-page-x', `${motion.pageX}px`)
+    host.style.setProperty('--mobile-page-scale', `${motion.pageScale}`)
+    host.style.setProperty('--mobile-page-radius', `${motion.pageRadius}px`)
+    host.style.setProperty('--mobile-drawer-x', `${motion.drawerX}px`)
+    host.style.setProperty('--mobile-scrim-opacity', `${motion.scrimOpacity}`)
+  }, [])
+  const ensureDrawerScheduler = useCallback(() => {
+    if (!mobileDrawerScheduler.current) {
+      mobileDrawerScheduler.current = createDrawerFrameScheduler({
+        requestFrame: (callback) => window.requestAnimationFrame(callback),
+        cancelFrame: (handle) => window.cancelAnimationFrame(handle),
+        write: writeDrawerMotion,
+      })
+    }
+    return mobileDrawerScheduler.current
+  }, [writeDrawerMotion])
+  const setDrawerProgress = useCallback((progress: number) => {
+    mobileNavProgressRef.current = progress
+    ensureDrawerScheduler().schedule(progress, mobileNavWidth)
+  }, [ensureDrawerScheduler, mobileNavWidth])
+  const settleDrawer = useCallback(
+    (targetProgress: 0 | 1, velocityX = 0) => {
+      const startProgress = mobileNavProgressRef.current
+      const host = mobileDrawerHostRef.current
+      const scheduler = ensureDrawerScheduler()
+
+      // Paint the final finger position before transitions are restored. This
+      // prevents a queued pointer frame from landing after the settle begins.
+      scheduler.flush(startProgress, mobileNavWidth)
+      if (host) {
+        host.dataset.drawerDragging = 'false'
+        host.style.setProperty(
+          '--mobile-settle-duration',
+          `${drawerSettleDuration(startProgress, targetProgress, velocityX, mobileNavWidth)}ms`,
+        )
+        // Commit the drag transform before the target is queued for the next
+        // display frame, otherwise WebKit may merge both writes and skip it.
+        void host.offsetWidth
+      }
+      setDrawerProgress(targetProgress)
+    },
+    [ensureDrawerScheduler, mobileNavWidth, setDrawerProgress],
+  )
+  const openMobileNav = useCallback(() => {
+    setMobileNavOpen(true)
+    settleDrawer(1)
+  }, [settleDrawer])
+  const closeMobileNav = useCallback(() => {
+    setMobileNavOpen(false)
+    settleDrawer(0)
+  }, [settleDrawer])
   const openSearch = useCallback(() => {
     searchRef.current?.focus()
     searchRef.current?.select()
   }, [])
+
+  useEffect(() => {
+    return () => mobileDrawerScheduler.current?.cancel()
+  }, [])
+
+  useEffect(() => {
+    const syncDrawerWidth = () => {
+      const width = mobileDrawerWidth(window.innerWidth)
+      setMobileNavWidth(width)
+      ensureDrawerScheduler().flush(mobileNavProgressRef.current, width)
+      if (window.innerWidth >= 768) closeMobileNav()
+    }
+    window.addEventListener('resize', syncDrawerWidth)
+    return () => window.removeEventListener('resize', syncDrawerWidth)
+  }, [closeMobileNav, ensureDrawerScheduler])
+
+  useEffect(() => {
+    if (!mobileNavOpen) return
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMobileNav()
+    }
+    document.addEventListener('keydown', onEscape)
+    return () => document.removeEventListener('keydown', onEscape)
+  }, [closeMobileNav, mobileNavOpen])
+
+  const onDrawerPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (window.innerWidth >= 768 || !event.isPrimary || event.button !== 0) return
+
+    const progress = mobileNavProgressRef.current
+    const target = event.target as HTMLElement
+    const interactiveTarget = Boolean(
+      target.closest('button, a, input, textarea, select, [contenteditable="true"]'),
+    )
+    if (
+      !canStartDrawerDrag({
+        progress,
+        startX: event.clientX,
+        interactiveTarget,
+      })
+    )
+      return
+
+    mobileNavDrag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastTime: event.timeStamp,
+      originProgress: progress,
+      progress,
+      velocityX: 0,
+      axis: 'pending',
+    }
+  }, [])
+
+  const onDrawerPointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const drag = mobileNavDrag.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+
+      const deltaX = event.clientX - drag.startX
+      const deltaY = event.clientY - drag.startY
+      if (drag.axis === 'pending') {
+        drag.axis = dragDirection(deltaX, deltaY)
+        if (drag.axis === 'vertical') {
+          mobileNavDrag.current = null
+          return
+        }
+        if (drag.axis === 'pending') return
+        event.currentTarget.setPointerCapture(event.pointerId)
+        event.currentTarget.dataset.drawerDragging = 'true'
+        setMobileNavDragging(true)
+      }
+
+      event.preventDefault()
+      const elapsed = event.timeStamp - drag.lastTime
+      if (elapsed > 0) drag.velocityX = (event.clientX - drag.lastX) / elapsed
+      drag.lastX = event.clientX
+      drag.lastTime = event.timeStamp
+      drag.progress = drawerProgress(drag.originProgress, deltaX, mobileNavWidth)
+      setDrawerProgress(drag.progress)
+    },
+    [mobileNavWidth, setDrawerProgress],
+  )
+
+  const finishDrawerDrag = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const drag = mobileNavDrag.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+      mobileNavDrag.current = null
+      if (drag.axis !== 'horizontal') return
+
+      const elapsed = event.timeStamp - drag.lastTime
+      drag.velocityX = drawerReleaseVelocity(
+        drag.velocityX,
+        event.clientX - drag.lastX,
+        elapsed,
+      )
+
+      suppressClick.current = true
+      window.setTimeout(() => {
+        suppressClick.current = false
+      }, 0)
+      setMobileNavDragging(false)
+      const willOpen = shouldOpenDrawer(drag.progress, drag.velocityX)
+      setMobileNavOpen(willOpen)
+      settleDrawer(willOpen ? 1 : 0, drag.velocityX)
+    },
+    [settleDrawer],
+  )
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -218,7 +432,7 @@ function AppShell() {
         e.preventDefault()
         searchRef.current?.focus()
       } else if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        if (viewRef.current !== 'inbox' && viewRef.current !== 'today' && viewRef.current !== 'upcoming' && !viewRef.current.startsWith('list:')) return
+        if (!acceptsNewTask(viewRef.current)) return
         e.preventDefault()
         setQuickAddOpen(true)
       }
@@ -237,7 +451,8 @@ function AppShell() {
   }, [tasks, view, filters, sort, inlineQuery, lists])
 
   const defaultListId = view.startsWith('list:') ? view.slice(5) : null
-  const defaultDueDate = view === 'today' ? todayStr() : null
+  const defaultDueDate =
+    view === 'today' ? todayStr() : view === 'upcoming' ? addDays(todayStr(), 1) : null
 
   const subtitle =
     view === 'today'
@@ -249,17 +464,37 @@ function AppShell() {
   const filtered = isFilterActive(filters) || inlineQuery.trim() !== ''
 
   return (
- <div className="app-shell flex h-dvh bg-bg text-ink">
+ <div
+      ref={mobileDrawerHostRef}
+      className="app-shell mobile-drawer-host flex h-dvh overflow-hidden bg-bg text-ink"
+      data-drawer-active={mobileNavOpen || mobileNavDragging}
+      data-drawer-dragging={mobileNavDragging}
+      style={{ '--mobile-drawer-width': `${mobileNavWidth}px` } as CSSProperties}
+      onPointerDown={onDrawerPointerDown}
+      onPointerMove={onDrawerPointerMove}
+      onPointerUp={finishDrawerDrag}
+      onPointerCancel={finishDrawerDrag}
+      onClickCapture={(event) => {
+        if (!suppressClick.current) return
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+    >
       <Sidebar
         view={view}
         tasks={tasks}
         lists={lists}
         mobileOpen={mobileNavOpen}
+        mobileDragging={mobileNavDragging}
+        mobileWidth={mobileNavWidth}
         onNavigate={(v) => {
           setView(v)
           setInlineQuery('')
         }}
-        onCloseMobile={() => setMobileNavOpen(false)}
+        onCloseMobile={closeMobileNav}
+        onBackdropClick={() => {
+          if (!suppressClick.current) closeMobileNav()
+        }}
         onAddList={(name, color) => store.addList(name, color)}
         onUpdateList={(id, patch) => store.updateList(id, patch)}
         onDeleteList={(id) => store.deleteList(id)}
@@ -292,12 +527,16 @@ function AppShell() {
         onNoteTag={setNoteTag}
       />
 
+      <div
+        className="mobile-page relative z-10 flex min-w-0 flex-1 overflow-hidden"
+        inert={mobileNavOpen && !mobileNavDragging}
+      >
       {/* The column scrolls; the search bar below it does not. Keeping the bar
           a flex child rather than a fixed overlay is what makes it docked
           instead of floating — it can never cover the page's last row, and on a
           wide screen it stops at the sidebar rather than running under it. */}
  <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto">
  <div
             className={`mx-auto w-full px-4 sm:px-6 ${
               view === 'habits' ? 'max-w-5xl' : 'max-w-2xl'
@@ -317,14 +556,19 @@ function AppShell() {
             <Home
               tasks={tasks}
               lists={lists}
-              onOpenMobileNav={() => setMobileNavOpen(true)}
+              onOpenMobileNav={openMobileNav}
               onNavigate={setView}
+              onOpenNote={(id) => {
+                setNoteTag(null)
+                setView('notes')
+                setOpenNoteId(id)
+              }}
               onEditTask={(t) => setEditingTask(t)}
               store={store}
             />
           ) : view === 'habits' ? (
             <HabitTracker
-              onOpenMobileNav={() => setMobileNavOpen(true)}
+              onOpenMobileNav={openMobileNav}
               filter={habitFilter}
               seedTemplate={seedTemplate}
               editTemplate={editTemplate}
@@ -334,10 +578,10 @@ function AppShell() {
               }}
             />
           ) : view === 'guide' ? (
-            <Guide onOpenMobileNav={() => setMobileNavOpen(true)} onNavigate={setView} />
+            <Guide onOpenMobileNav={openMobileNav} onNavigate={setView} />
           ) : view === 'notes' ? (
             <BrainDump
-              onOpenMobileNav={() => setMobileNavOpen(true)}
+              onOpenMobileNav={openMobileNav}
               tagFilter={noteTag}
               onTagFilter={setNoteTag}
               openNoteId={openNoteId}
@@ -355,7 +599,7 @@ function AppShell() {
             onFiltersChange={setFilters}
             onSortChange={setSort}
             onOpenSearch={openSearch}
-            onOpenMobileNav={() => setMobileNavOpen(true)}
+            onOpenMobileNav={openMobileNav}
             onAddTask={openQuickAdd}
           />
 
@@ -425,7 +669,9 @@ function AppShell() {
                 defaultDueDate={defaultDueDate}
                 autoFocus={quickAddOpen}
                 onCancel={() => setQuickAddOpen(false)}
-                onSubmit={(input) => store.addTask(input)}
+                onSubmit={(input) =>
+                  store.addTask({ ...input, favorite: view === 'favorites' })
+                }
               />
             </div>
           )}
@@ -483,11 +729,12 @@ function AppShell() {
           type="button"
           onClick={() => setQuickAddOpen((o) => !o)}
           aria-label="Add task"
- className="fixed right-5 bottom-20 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
+ className="native-fab fixed right-5 bottom-20 z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full glow bg-accent text-accent-ink transition-transform hover:scale-105 active:scale-95 sm:hidden"
         >
  <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
       )}
+      </div>
 
       {editingTask && (
         <TaskEditor

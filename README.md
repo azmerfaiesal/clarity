@@ -1,17 +1,17 @@
 # Clarity
 
-A polished, minimalist to-do list web app — fast, distraction-free task capture that syncs across every device you sign in on. Built with **React 19, TypeScript, Tailwind CSS 4, Supabase and Lucide icons** (Vite).
+A polished, local-first personal organiser for tasks, habits, and notes. It stays fast offline and syncs across every device you sign in on. Built with **React 19, TypeScript, Tailwind CSS 4, Supabase and Lucide icons** (Vite).
 
 Live at **https://azmerfaiesal.github.io/clarity/**
 
 ## Features
 
-- **Quick capture** — click "Add a task" (or press `N`), type, hit `Enter`. The form stays open so you can add several in a row. Expand for description, due date, priority, list, tags, and reminders. Only the title is required — a task can carry no due date and no reminder, and both are clearable after the fact.
+- **Quick capture** — click "Add a task" (or press `N` in Inbox, Today, Upcoming, Favorites, or a category), type, hit `Enter`. Expand for description, due date, priority, category, tags, and reminders. Only the title is required. The current view supplies useful defaults: Today uses today, Upcoming uses tomorrow, a category preselects itself, and Favorites stars the task so it remains visible there.
 - **Sections** — Home, Tasks, Habits and Notes. Task views (Inbox, Today, Upcoming, Completed, Favorites, Recycle Bin) and lists appear beneath Tasks while that section is active.
 - **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); rename or recolor one from the pencil that appears on hover; deleting a list returns its tasks to Inbox.
 - **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes, and reminders (shown on the row as a clock).
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
-- **Home** — today at a glance: habits due (tickable in place), tasks due, recent notes, each linking through to the section that owns it.
+- **Home** — today at a glance: habits due (tickable in place), tasks due today or already overdue, and the three most recent notes. Selecting a recent note opens that exact note in the editor.
 - **Habits** — daily, weekdays, weekends, picked days, X-per-week or monthly habits, each with a 365-day contribution heatmap, a colour, emoji and optional target streak. One tap logs today. Track by a tick, a **target count** (eight glasses of water) or a **target duration** (thirty minutes reading); the heatmap ramps in four steps as the day fills. Tap the button to add a step, hold it for a slider that sets an exact amount and takes a note on what the session was. Habits can be reordered by dragging, saved as reusable **templates**, given a daily reminder, and a **Writing** habit is derived from the notes themselves, so its history reflects when each note was written and a deleted note takes its day back. Clicking a habit opens a read-only summary of its record; clicking a day in its heatmap opens that day — what happened, where it sits in its streak, and notes describing the day's logs. Each card shows current streak, lifetime total, best streak, completion rate and progress through the current period. Habits can be paused (keeping their history) or deleted.
 - **Notes** — a blank sheet for whatever is on your mind, at the top of the page under the writing streak that measures it: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history in a panel that scrolls on its own, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. **Templates** give the entries that repeat a starting shape — a list, shopping, a daily log, reading, coffee, spending — and every one of them can be rewritten, put away or joined by your own, syncing like everything else. Unsaved text survives a refresh.
 - **Search** — a bar docked to the foot of every page, always there rather than summoned. It searches **tasks and notes together**: task titles, descriptions, lists and tags, and note text and tags, grouped under two headings and walkable with the arrow keys. Picking a task opens its editor; picking a note opens it in the Notes composer. `/` or `Cmd/Ctrl + K` puts the caret in it.
@@ -130,6 +130,10 @@ of claiming the browser cannot do notifications.
 > the installed app — and not once it is closed entirely. That last step needs a
 > push subscription and a server to send from, which this app does not have.
 
+The native iOS build uses Apple's local-notification scheduler instead. It keeps
+a rolling, bounded schedule on the phone, so task and habit reminders can arrive
+after Clarity has been closed. The web/PWA behavior above is unchanged.
+
 ## Sync
 
 Sign in with email + password (Supabase Auth). Everything then lives in six Postgres tables — `clarity_tasks`, `clarity_lists`, `clarity_notes`, `clarity_habits`, `clarity_habit_templates` and `clarity_note_templates` — behind row-level security that scopes every row to `auth.uid()`.
@@ -147,7 +151,7 @@ Sign in with email + password (Supabase Auth). Everything then lives in six Post
 
 | Key | Action |
 | --- | --- |
-| `N` | New task |
+| `N` | New task in Inbox, Today, Upcoming, Favorites, or a category |
 | `/` | Jump to the search bar |
 | `Cmd/Ctrl + K` | Jump to the search bar |
 | `Enter` | Create/save task |
@@ -179,6 +183,32 @@ VITE_LOCAL_ONLY=1   # dev only: skip sign-in, run against localStorage
 
 Sample tasks are seeded on first launch (mixed priorities, dates, lists, and completed states) for signed-out sessions and brand-new accounts.
 
+## iOS app
+
+Clarity also ships as a native iPhone/iPad project through Capacitor. It embeds
+the production React build, so the web app and iOS app share the same screens,
+offline cache, Supabase account and sync behavior. The native layer adds safe
+areas, status-bar theming, keyboard resizing, completion haptics and iOS local
+notifications.
+
+Requirements: macOS, Xcode 26 or newer, Node 22 or newer, and an Apple developer
+team when installing on a physical device or archiving for TestFlight.
+
+```bash
+npm install
+npm run ios:sync   # build the web app and copy it into the Xcode project
+npm run ios:open   # open ios/App/App.xcodeproj in Xcode
+```
+
+In Xcode, select the **App** target, choose **Signing & Capabilities**, and pick
+your team. The bundle identifier is `com.azmerfaiesal.clarity`; change it there
+and in `capacitor.config.ts` if that identifier is not available in your Apple
+developer account. Choose an iPhone simulator or connected device, then Run.
+
+After any React/TypeScript change, run `npm run ios:sync` before rebuilding in
+Xcode. `npm run ios:run` is the command-line equivalent for choosing and running
+an available iOS target.
+
 ## Deployment
 
 Pushing to `main` runs `.github/workflows/deploy.yml`, which builds and publishes to GitHub Pages.
@@ -199,6 +229,11 @@ src/
   utils/         dateUtils.ts, taskUtils.ts (view/search/filter/sort logic),
                  habitUtils.ts (scheduling + streak maths, unit-tested)
   types.ts       Task, TaskList, ViewId, Filters, SortMode
+  native/        Capacitor startup, native theme and haptic bridge
+ios/
+  App/            Xcode project and bundled production web assets
+capacitor.config.ts
+                 iOS app identity and native plugin configuration
 supabase/
   schema.sql     tables, RLS policies, realtime publication
 ```

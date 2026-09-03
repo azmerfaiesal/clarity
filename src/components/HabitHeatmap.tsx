@@ -205,8 +205,10 @@ export function HabitHeatmap({
   return (
     // `overflow-x-auto` clips vertically too, so the scroller needs a little
     // headroom or the firework on an edge cell is guillotined.
-    <div ref={scroller} className="overflow-x-auto">
-      <div className="inline-flex gap-1.5 py-1.5">
+    <div ref={scroller} className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+      {/* End padding keeps the newest cell and its animated today ring fully
+          inside the card when the grid opens scrolled to the present day. */}
+      <div className="inline-flex gap-1.5 py-1.5 pr-2">
         {/* Weekday gutter */}
         <div
           className="grid shrink-0 pt-[var(--month-h)]"

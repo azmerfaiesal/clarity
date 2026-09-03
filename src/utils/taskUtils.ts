@@ -34,7 +34,9 @@ export function tasksForView(tasks: Task[], view: ViewId): Task[] {
     case 'completed':
       return active.filter((t) => t.completed)
     case 'favorites':
-      return active.filter((t) => t.favorite)
+      // Completed favorites are rendered once in the collapsible Completed
+      // section; including them here duplicates the same row.
+      return active.filter((t) => t.favorite && !t.completed)
     default:
       if (view.startsWith('list:')) {
         const listId = view.slice(5)
