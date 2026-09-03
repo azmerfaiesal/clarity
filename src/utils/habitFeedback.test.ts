@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Habit } from '../types'
-import { habitCompletionFeedback } from './habitFeedback'
+import { commitHabitAmount } from './habitFeedback'
 
 const date = '2026-09-04'
 
@@ -29,20 +29,64 @@ function countedHabit(amount: number): Habit {
   }
 }
 
-describe('habitCompletionFeedback', () => {
-  it('gives handleAdjust success when a counted habit reaches its target', () => {
-    expect(habitCompletionFeedback(countedHabit(2), date, 3)).toBe('success')
+describe('commitHabitAmount', () => {
+  it('runs handleAdjust success feedback before mutating the threshold amount', () => {
+    const events: string[] = []
+    const result = commitHabitAmount({
+      habit: countedHabit(2),
+      date,
+      operation: 'adjust',
+      value: 1,
+      feedback: (kind) => events.push(`feedback:${kind}`),
+      mutate: (amount) => events.push(`mutate:${amount}`),
+    })
+
+    expect(result).toEqual({ amount: 3, feedback: 'success' })
+    expect(events).toEqual(['feedback:success', 'mutate:3'])
   })
 
-  it('gives handleAdjust selection when a counted habit falls below its target', () => {
-    expect(habitCompletionFeedback(countedHabit(3), date, 2)).toBe('selection')
+  it('clamps handleAdjust uncompletion before selection feedback and mutation', () => {
+    const events: string[] = []
+    const result = commitHabitAmount({
+      habit: countedHabit(3),
+      date,
+      operation: 'adjust',
+      value: -9,
+      feedback: (kind) => events.push(`feedback:${kind}`),
+      mutate: (amount) => events.push(`mutate:${amount}`),
+    })
+
+    expect(result).toEqual({ amount: 0, feedback: 'selection' })
+    expect(events).toEqual(['feedback:selection', 'mutate:0'])
   })
 
-  it('gives handleSetAmount success when a counted habit reaches its target', () => {
-    expect(habitCompletionFeedback(countedHabit(2), date, 3)).toBe('success')
+  it('rounds handleSetAmount completion before success feedback and mutation', () => {
+    const events: string[] = []
+    const result = commitHabitAmount({
+      habit: countedHabit(2),
+      date,
+      operation: 'set',
+      value: 2.6,
+      feedback: (kind) => events.push(`feedback:${kind}`),
+      mutate: (amount) => events.push(`mutate:${amount}`),
+    })
+
+    expect(result).toEqual({ amount: 3, feedback: 'success' })
+    expect(events).toEqual(['feedback:success', 'mutate:3'])
   })
 
-  it('gives handleSetAmount selection when a counted habit falls below its target', () => {
-    expect(habitCompletionFeedback(countedHabit(3), date, 2)).toBe('selection')
+  it('rounds handleSetAmount uncompletion before selection feedback and mutation', () => {
+    const events: string[] = []
+    const result = commitHabitAmount({
+      habit: countedHabit(3),
+      date,
+      operation: 'set',
+      value: 2.4,
+      feedback: (kind) => events.push(`feedback:${kind}`),
+      mutate: (amount) => events.push(`mutate:${amount}`),
+    })
+
+    expect(result).toEqual({ amount: 2, feedback: 'selection' })
+    expect(events).toEqual(['feedback:selection', 'mutate:2'])
   })
 })

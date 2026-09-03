@@ -13,7 +13,7 @@ import { DayDetail } from './DayDetail'
 import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
 import { nativeFeedback, nativeSelectionHaptic, nativeWarningHaptic } from '../native/platform'
-import { habitCompletionFeedback } from '../utils/habitFeedback'
+import { commitHabitAmount } from '../utils/habitFeedback'
 
 export function HabitTracker({
   onOpenMobileNav,
@@ -133,14 +133,19 @@ export function HabitTracker({
   const handleAdjust = useCallback(
     (habit: Habit, delta: number, date?: string) => {
       const target = date ?? todayStr()
-      const nextAmount = Math.max(0, (habit.logs[target] ?? 0) + delta)
+      const currentAmount = habit.logs[target] ?? 0
+      const { amount: nextAmount, feedback } = commitHabitAmount({
+        habit,
+        date: target,
+        operation: 'adjust',
+        value: delta,
+        feedback: nativeFeedback,
+        mutate: (amount) => adjustCompletion(habit.id, amount - currentAmount, target),
+      })
       const next: Habit = {
         ...habit,
         logs: { ...habit.logs, [target]: nextAmount },
       }
-      const feedback = habitCompletionFeedback(habit, target, nextAmount)
-      if (feedback) nativeFeedback(feedback)
-      adjustCompletion(habit.id, delta, target)
       if (delta <= 0 || feedback !== 'success') return
       const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
@@ -159,11 +164,15 @@ export function HabitTracker({
   const handleSetAmount = useCallback(
     (habit: Habit, amount: number, date?: string) => {
       const target = date ?? todayStr()
-      const nextAmount = Math.max(0, Math.round(amount))
+      const { amount: nextAmount, feedback } = commitHabitAmount({
+        habit,
+        date: target,
+        operation: 'set',
+        value: amount,
+        feedback: nativeFeedback,
+        mutate: (nextAmount) => setAmount(habit.id, nextAmount, target),
+      })
       const next: Habit = { ...habit, logs: { ...habit.logs, [target]: nextAmount } }
-      const feedback = habitCompletionFeedback(habit, target, nextAmount)
-      if (feedback) nativeFeedback(feedback)
-      setAmount(habit.id, nextAmount, target)
       if (feedback !== 'success') return
       const streak = currentStreak(next, todayStr(), firstDay)
       setFlashId(habit.id)
