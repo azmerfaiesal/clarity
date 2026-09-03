@@ -12,6 +12,7 @@ import { HabitIcon } from './HabitIcon'
 import { DayDetail } from './DayDetail'
 import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
+import { nativeSelectionHaptic, nativeWarningHaptic } from '../native/platform'
 
 export function HabitTracker({
   onOpenMobileNav,
@@ -180,6 +181,7 @@ export function HabitTracker({
         )
       )
         return
+      nativeWarningHaptic()
       deleteHabit(habit.id)
     },
     [deleteHabit],
@@ -256,6 +258,7 @@ export function HabitTracker({
         <button
           type="button"
           onClick={() => {
+            nativeSelectionHaptic()
             setEditing(null)
             setFormOpen(true)
           }}

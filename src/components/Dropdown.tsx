@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { nativeSelectionHaptic } from '../native/platform'
 
 interface DropdownProps {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
@@ -83,7 +84,13 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
 
   return (
     <div ref={anchorRef} className="relative">
-      {trigger({ open, toggle: () => setOpen((o) => !o) })}
+      {trigger({
+        open,
+        toggle: () => {
+          if (!open) nativeSelectionHaptic()
+          setOpen(!open)
+        },
+      })}
       {open &&
         createPortal(
           <div

@@ -17,7 +17,7 @@ import type { TaskDraftInput } from './components/TaskComposerFields'
 import { TaskInput } from './components/TaskInput'
 import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
-import { isNativeApp } from './native/platform'
+import { isNativeApp, nativeSelectionHaptic, nativeWarningHaptic } from './native/platform'
 import { useHabits } from './store/habitStore'
 import { loadView, saveView } from './store/storage'
 import { checkReminders, syncNativeReminders } from './store/notifications'
@@ -253,7 +253,14 @@ function AppShell() {
     viewRef.current = view
   }, [view])
 
-  const openQuickAdd = useCallback(() => setQuickAddOpen(true), [])
+  const openQuickAdd = useCallback(() => {
+    nativeSelectionHaptic()
+    setQuickAddOpen(true)
+  }, [])
+  const navigateTo = useCallback((nextView: ViewId) => {
+    nativeSelectionHaptic()
+    setView(nextView)
+  }, [])
   const addTaskFromComposer = useCallback(
     (input: TaskDraftInput) => {
       store.addTask({ ...input, favorite: view === 'favorites' })
@@ -456,6 +463,7 @@ function AppShell() {
       } else if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         if (!acceptsNewTask(viewRef.current)) return
         e.preventDefault()
+        nativeSelectionHaptic()
         setQuickAddOpen(true)
       }
     }
@@ -512,7 +520,7 @@ function AppShell() {
         mobileDragging={mobileNavDragging}
         mobileWidth={mobileNavWidth}
         onNavigate={(v) => {
-          setView(v)
+          navigateTo(v)
           setInlineQuery('')
         }}
         onCloseMobile={closeMobileNav}
@@ -522,7 +530,10 @@ function AppShell() {
         onAddList={(name, color) => store.addList(name, color)}
         onUpdateList={(id, patch) => store.updateList(id, patch)}
         onDeleteList={(id) => store.deleteList(id)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={() => {
+          nativeSelectionHaptic()
+          setSettingsOpen(true)
+        }}
         noteCount={notes.length}
         habitCount={
           // Writing is counted under Notes, where its grid now lives.
@@ -534,15 +545,16 @@ function AppShell() {
         onUseTemplate={(t) => {
           setEditTemplate(null)
           setSeedTemplate(t)
-          setView('habits')
+          navigateTo('habits')
         }}
         onEditTemplate={(t) => {
           setSeedTemplate(null)
           setEditTemplate(t)
-          setView('habits')
+          navigateTo('habits')
         }}
         onDeleteTemplate={(t) => {
           if (window.confirm(`Delete the “${t.name}” template? Habits built from it are kept.`)) {
+            nativeWarningHaptic()
             deleteTemplate(t.id)
           }
         }}
@@ -582,10 +594,10 @@ function AppShell() {
               tasks={tasks}
               lists={lists}
               onOpenMobileNav={openMobileNav}
-              onNavigate={setView}
+              onNavigate={navigateTo}
               onOpenNote={(id) => {
                 setNoteTag(null)
-                setView('notes')
+                navigateTo('notes')
                 setOpenNoteId(id)
               }}
               onEditTask={(t) => setEditingTask(t)}
@@ -603,7 +615,7 @@ function AppShell() {
               }}
             />
           ) : view === 'guide' ? (
-            <Guide onOpenMobileNav={openMobileNav} onNavigate={setView} />
+            <Guide onOpenMobileNav={openMobileNav} onNavigate={navigateTo} />
           ) : view === 'notes' ? (
             <BrainDump
               onOpenMobileNav={openMobileNav}
@@ -717,6 +729,7 @@ function AppShell() {
                 type="button"
                 onClick={() => {
                   if (window.confirm('Permanently delete all tasks in the recycle bin? This cannot be undone.')) {
+                    nativeWarningHaptic()
                     store.emptyTrash()
                   }
                 }}
@@ -739,7 +752,7 @@ function AppShell() {
           onSelectTask={(task) => setEditingTask(task)}
           onSelectNote={(note) => {
             setNoteTag(null)
-            setView('notes')
+            navigateTo('notes')
             setOpenNoteId(note.id)
           }}
         />
@@ -774,7 +787,7 @@ function AppShell() {
       {settingsOpen && (
         <Settings
           onClose={() => setSettingsOpen(false)}
-          onOpenGuide={() => setView('guide')}
+          onOpenGuide={() => navigateTo('guide')}
         />
       )}
 
@@ -782,6 +795,7 @@ function AppShell() {
         <UndoToast
           title={store.lastDeleted.task.title}
           onUndo={() => {
+            nativeSelectionHaptic()
             store.undoDelete()
             setUndoVisible(false)
           }}
@@ -929,6 +943,7 @@ function TrashRows({
                   type="button"
                   onClick={() => {
                     if (window.confirm(`Permanently delete "${t.title}"? This cannot be undone.`)) {
+                      nativeWarningHaptic()
                       store.permanentDelete(t.id)
                     }
                   }}

@@ -5,6 +5,24 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 
 export const isNativeApp = Capacitor.isNativePlatform()
 
+export type NativeFeedback = 'selection' | 'success' | 'warning'
+
+type HapticRequest =
+  | { channel: 'impact'; style: 'light' }
+  | { channel: 'notification'; type: 'success' | 'warning' }
+
+/** A platform-independent description keeps the feedback vocabulary testable. */
+export function hapticRequest(kind: NativeFeedback): HapticRequest {
+  switch (kind) {
+    case 'selection':
+      return { channel: 'impact', style: 'light' }
+    case 'success':
+      return { channel: 'notification', type: 'success' }
+    case 'warning':
+      return { channel: 'notification', type: 'warning' }
+  }
+}
+
 /**
  * WKWebView can retain a page zoom after a simulator pinch or debugger reload.
  * A native app should always reopen at the device width; Clarity's own text
@@ -39,12 +57,29 @@ export function setNativeTheme(theme: 'light' | 'dark'): void {
   void StatusBar.setStyle({ style: theme === 'dark' ? Style.Dark : Style.Light })
 }
 
-export function nativeSelectionHaptic(): void {
+/** Native feedback is best-effort: interaction mutations must never await it. */
+export function nativeFeedback(kind: NativeFeedback): void {
   if (!isNativeApp) return
-  void Haptics.impact({ style: ImpactStyle.Light })
+
+  const request = hapticRequest(kind)
+  if (request.channel === 'impact') {
+    void Haptics.impact({ style: ImpactStyle.Light }).catch(() => undefined)
+    return
+  }
+
+  void Haptics.notification({
+    type: request.type === 'success' ? NotificationType.Success : NotificationType.Warning,
+  }).catch(() => undefined)
+}
+
+export function nativeSelectionHaptic(): void {
+  nativeFeedback('selection')
 }
 
 export function nativeSuccessHaptic(): void {
-  if (!isNativeApp) return
-  void Haptics.notification({ type: NotificationType.Success })
+  nativeFeedback('success')
+}
+
+export function nativeWarningHaptic(): void {
+  nativeFeedback('warning')
 }
