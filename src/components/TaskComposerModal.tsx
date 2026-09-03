@@ -1,4 +1,4 @@
-import type { MouseEvent, RefObject } from 'react'
+import { useState, type MouseEvent, type RefObject } from 'react'
 import type { TaskList } from '../types'
 import { usePresenceValue } from './MotionPresence'
 import {
@@ -25,6 +25,7 @@ export function TaskComposerModal({
   onSubmit,
   onClose,
 }: TaskComposerModalProps) {
+  const [composerSession, setComposerSession] = useState(0)
   const presence = usePresenceValue(open ? true : null, {
     onExited: () => anchorRef.current?.focus(),
   })
@@ -33,7 +34,9 @@ export function TaskComposerModal({
 
   const interactive = presence.phase !== 'exiting'
   const close = () => {
-    if (interactive) onClose()
+    if (!interactive) return
+    setComposerSession((session) => session + 1)
+    onClose()
   }
   const submit = (input: TaskDraftInput) => {
     if (interactive) onSubmit(input)
@@ -64,10 +67,11 @@ export function TaskComposerModal({
         }}
       >
         <TaskComposerFields
+          key={composerSession}
           lists={lists}
           defaultListId={defaultListId}
           defaultDueDate={defaultDueDate}
-          autoFocus
+          autoFocus={interactive}
           onSubmit={submit}
           onCancel={close}
         />

@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MOTION_MS } from '../utils/motion'
@@ -96,6 +96,16 @@ describe('TaskComposerModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('handles Escape from a non-text control through the modal', async () => {
+    const user = userEvent.setup()
+    const { onClose } = renderComposer()
+
+    await user.click(screen.getByLabelText('Category'))
+    await user.keyboard('{Escape}')
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps empty submission disabled', async () => {
     const user = userEvent.setup()
     const { onSubmit, onClose } = renderComposer()
@@ -146,6 +156,46 @@ describe('TaskComposerModal', () => {
 
       expect(screen.queryByRole('dialog', { name: 'Add a task' })).toBeNull()
       expect(document.activeElement).toBe(anchor)
+    } finally {
+      anchor.remove()
+    }
+  })
+
+  it('resets and refocuses when reopening cancels an in-progress exit', () => {
+    const anchor = document.createElement('button')
+    document.body.append(anchor)
+    const anchorRef = { current: anchor }
+    const onSubmit = vi.fn()
+    const onClose = vi.fn()
+    const modal = (open: boolean) => (
+      <TaskComposerModal
+        open={open}
+        anchorRef={anchorRef}
+        lists={lists}
+        defaultListId="work"
+        defaultDueDate="2026-09-04"
+        onSubmit={onSubmit}
+        onClose={onClose}
+      />
+    )
+
+    try {
+      const { rerender } = render(modal(true))
+      fireEvent.change(screen.getByLabelText('Task name'), {
+        target: { value: 'Stale draft' },
+      })
+      fireEvent.click(screen.getByTestId('task-composer-backdrop'))
+
+      rerender(modal(false))
+      expect(screen.getByTestId('task-composer-backdrop').dataset.motionState).toBe('exiting')
+
+      anchor.focus()
+      rerender(modal(true))
+
+      const title = screen.getByLabelText('Task name') as HTMLInputElement
+      expect(title.value).toBe('')
+      expect(document.activeElement).toBe(title)
+      expect(onClose).toHaveBeenCalledTimes(1)
     } finally {
       anchor.remove()
     }
