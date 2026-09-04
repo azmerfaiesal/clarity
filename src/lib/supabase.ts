@@ -12,6 +12,13 @@ const FALLBACK_ANON = 'sb_publishable_sC0C_y4pbJOUEANyk7o8Tg_u5PZpzVs'
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_URL
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_ANON
 
+export const SUPABASE_AUTH_OPTIONS = {
+  persistSession: true,
+  autoRefreshToken: true,
+  detectSessionInUrl: false,
+  flowType: 'pkce',
+} as const
+
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 /**
@@ -128,11 +135,7 @@ export const resilientFetch: typeof fetch = async (input, init) => {
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
+  auth: SUPABASE_AUTH_OPTIONS,
   global: { fetch: resilientFetch },
 })
 

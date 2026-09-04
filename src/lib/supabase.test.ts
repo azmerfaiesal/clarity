@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { SUPABASE_ANON_KEY, SUPABASE_URL, resilientFetch, supabase } from './supabase'
+import {
+  SUPABASE_ANON_KEY,
+  SUPABASE_AUTH_OPTIONS,
+  SUPABASE_URL,
+  resilientFetch,
+  supabase,
+} from './supabase'
 
 /**
  * The point of this wrapper is one flag. A write that loses its tab mid-flight
@@ -33,6 +39,14 @@ function signedIn(token = 'a.real.jwt'): RequestInit['headers'] {
 function bearerOf(init: RequestInit | undefined): string | null {
   return new Headers(init?.headers).get('Authorization')
 }
+
+describe('Supabase authentication configuration', () => {
+  it('uses PKCE with manual callback session detection', () => {
+    expect(SUPABASE_AUTH_OPTIONS.flowType).toBe('pkce')
+    expect(SUPABASE_AUTH_OPTIONS.detectSessionInUrl).toBe(false)
+    expect(SUPABASE_AUTH_OPTIONS.persistSession).toBe(true)
+  })
+})
 
 describe('resilientFetch', () => {
   it('keeps a write alive across the page being suspended', async () => {
