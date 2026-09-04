@@ -7,6 +7,7 @@ import type { AuthResult } from '../auth/operations'
 const boundary = vi.hoisted(() => {
   let native = false
   let liveHandler: ((url: string) => void | Promise<void>) | undefined
+  let authStateHandler: ((event: string, session: unknown) => void) | undefined
 
   const listener = { remove: vi.fn().mockResolvedValue(undefined) }
   const authOperations = {
@@ -40,6 +41,12 @@ const boundary = vi.hoisted(() => {
     setLiveHandler: (handler: (url: string) => void | Promise<void>) => {
       liveHandler = handler
     },
+    setAuthStateHandler: (handler: (event: string, session: unknown) => void) => {
+      authStateHandler = handler
+    },
+    emitAuthState: (session: unknown) => {
+      authStateHandler?.('TOKEN_REFRESHED', session)
+    },
     triggerLiveUrl: async (url: string) => {
       await liveHandler?.(url)
     },
@@ -57,9 +64,10 @@ vi.mock('../auth/flow', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../auth/flow')>()
   return {
     ...actual,
-    isExpectedAuthCallback: (url: string) => {
-      const params = new URL(url).searchParams
-      return params.has('code') || params.has('error')
+    isExpectedAuthCallback: (url: string, native: boolean) => {
+      if (native) return actual.isExpectedAuthCallback(url, true)
+      const candidate = new URL(url)
+      return candidate.origin === window.location.origin && candidate.pathname === '/clarity/'
     },
   }
 })
@@ -120,8 +128,9 @@ beforeEach(() => {
   boundary.resetNative()
   window.history.replaceState({}, '', '/clarity/?view=today')
   boundary.auth.getSession.mockResolvedValue({ data: { session: null } })
-  boundary.auth.onAuthStateChange.mockReturnValue({
-    data: { subscription: { unsubscribe: vi.fn() } },
+  boundary.auth.onAuthStateChange.mockImplementation((handler) => {
+    boundary.setAuthStateHandler(handler)
+    return { data: { subscription: { unsubscribe: vi.fn() } } }
   })
   boundary.auth.signOut.mockResolvedValue({ error: null })
   boundary.authOperations.requestEmailCode.mockResolvedValue(SUCCESS)
@@ -181,6 +190,25 @@ describe('AuthProvider', () => {
     expect(window.location.search).toBe('?view=today')
   })
 
+  it('does not let a stale session snapshot overwrite an auth-state change received while it resolves', async () => {
+    const stale = { access_token: 'stale-token', user: { email: 'stale@example.com' } } as Session
+    const fresh = { access_token: 'fresh-token', user: { email: 'fresh@example.com' } } as Session
+    let resolveSession!: (value: { data: { session: Session } }) => void
+    boundary.auth.getSession.mockImplementation(
+      () => new Promise((resolve) => { resolveSession = resolve }),
+    )
+
+    renderProvider()
+    await waitFor(() => expect(boundary.auth.getSession).toHaveBeenCalledTimes(1))
+
+    await act(async () => {
+      boundary.emitAuthState(fresh)
+      resolveSession({ data: { session: stale } })
+    })
+
+    await waitFor(() => expect(screen.getByTestId('session').textContent).toBe('fresh@example.com'))
+  })
+
   it('consumes cold-launch and live native callbacks, but exchanges a repeated code only once', async () => {
     boundary.resetNative(true)
     boundary.getNativeLaunchUrl.mockResolvedValue('com.azmerfaiesal.clarity://auth/callback?code=cold')
@@ -196,6 +224,36 @@ describe('AuthProvider', () => {
     expect(boundary.authOperations.exchangeOAuthCode).toHaveBeenNthCalledWith(2, 'live')
     expect(boundary.authOperations.exchangeOAuthCode).toHaveBeenCalledTimes(2)
     expect(boundary.closeNativeAuthBrowser).toHaveBeenCalledTimes(3)
+  })
+
+  it('retries the same callback code after its first exchange fails', async () => {
+    boundary.resetNative(true)
+    boundary.authOperations.exchangeOAuthCode
+      .mockResolvedValueOnce({
+        ok: false,
+        issue: { kind: 'network', message: 'Check your connection and try again.' },
+      })
+      .mockResolvedValueOnce({ ok: true, data: SESSION })
+    renderProvider()
+    await loaded()
+
+    await act(async () => {
+      await boundary.triggerLiveUrl('com.azmerfaiesal.clarity://auth/callback?code=retry-code')
+      await boundary.triggerLiveUrl('com.azmerfaiesal.clarity://auth/callback?code=retry-code')
+    })
+
+    expect(boundary.authOperations.exchangeOAuthCode).toHaveBeenNthCalledWith(1, 'retry-code')
+    expect(boundary.authOperations.exchangeOAuthCode).toHaveBeenNthCalledWith(2, 'retry-code')
+  })
+
+  it('rejects a web callback presented as an iOS cold-launch URL', async () => {
+    boundary.resetNative(true)
+    boundary.getNativeLaunchUrl.mockResolvedValue('http://localhost:3000/clarity/?code=wrong-platform')
+    renderProvider()
+    await loaded()
+
+    expect(boundary.authOperations.exchangeOAuthCode).not.toHaveBeenCalled()
+    expect(boundary.closeNativeAuthBrowser).not.toHaveBeenCalled()
   })
 
   it('keeps cancellation quiet and exposes only a safe provider callback issue that can be cleared', async () => {

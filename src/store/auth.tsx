@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [oauthCompleting, setOauthCompleting] = useState(false)
   const [oauthIssue, setOauthIssue] = useState<AuthIssue | null>(null)
   const processedCodes = useRef(new Set<string>())
+  const authStateEpoch = useRef(0)
 
   const consumeCallback = useCallback(async (url: string, native: boolean) => {
     if (!isExpectedAuthCallback(url, native)) return
@@ -94,8 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true
     let listener: PluginListenerHandle | null = null
+    const snapshotEpoch = authStateEpoch.current
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
+      authStateEpoch.current += 1
       if (active) setSession(sess)
     })
 
@@ -113,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { data } = await supabase.auth.getSession()
       if (active) {
-        setSession(data.session)
+        if (authStateEpoch.current === snapshotEpoch) setSession(data.session)
         setLoading(false)
       }
     })()
