@@ -552,7 +552,7 @@ body {
 .motion-overlay[data-motion-state='exiting'] {
   opacity: 0;
 }
-.motion-overlay[data-motion-state='exiting']:not(.native-modal-viewport) {
+.motion-overlay[data-motion-state='exiting'] {
   pointer-events: auto;
 }
 .motion-overlay[data-motion-state='entered'] {

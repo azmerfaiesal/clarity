@@ -107,7 +107,7 @@ describe('motion CSS foundation', () => {
       'padding-left: calc(env(safe-area-inset-left) + 0.75rem)',
     )
     expect(css).toContain(
-      ".motion-overlay[data-motion-state='exiting']:not(.native-modal-viewport) {\n  pointer-events: auto;",
+      ".motion-overlay[data-motion-state='exiting'] {\n  pointer-events: auto;",
     )
   })
 })

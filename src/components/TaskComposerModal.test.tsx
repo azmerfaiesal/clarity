@@ -161,6 +161,44 @@ describe('TaskComposerModal', () => {
     }
   })
 
+  it('keeps backdrop interaction ownership while only the exiting content is inert', () => {
+    const outsideInteraction = vi.fn()
+    const onSubmit = vi.fn()
+    const onClose = vi.fn()
+    const anchorRef = { current: document.createElement('button') }
+    const modal = (open: boolean) => (
+      <div onClick={outsideInteraction}>
+        <TaskComposerModal
+          open={open}
+          anchorRef={anchorRef}
+          lists={lists}
+          defaultListId="work"
+          defaultDueDate="2026-09-04"
+          onSubmit={onSubmit}
+          onClose={onClose}
+        />
+      </div>
+    )
+    const { rerender } = render(modal(true))
+    const backdrop = screen.getByTestId('task-composer-backdrop')
+    const dialog = screen.getByRole('dialog', { name: 'Add a task' })
+    const title = screen.getByLabelText('Task name')
+
+    fireEvent.change(title, { target: { value: 'Must not submit' } })
+    rerender(modal(false))
+
+    expect(backdrop.dataset.motionState).toBe('exiting')
+    expect(backdrop.hasAttribute('inert')).toBe(false)
+    expect(dialog.hasAttribute('inert')).toBe(true)
+
+    fireEvent.click(backdrop)
+    fireEvent.keyDown(title, { key: 'Enter' })
+
+    expect(outsideInteraction).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
   it('resets and refocuses when reopening cancels an in-progress exit', () => {
     const anchor = document.createElement('button')
     document.body.append(anchor)

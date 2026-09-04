@@ -42,7 +42,9 @@ export function TaskComposerModal({
     if (interactive) onSubmit(input)
   }
   const dismissBackdrop = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) close()
+    if (event.target !== event.currentTarget) return
+    event.stopPropagation()
+    close()
   }
 
   return (
@@ -50,13 +52,13 @@ export function TaskComposerModal({
       className="native-modal-viewport motion-overlay fixed inset-0 z-50"
       data-motion-state={presence.phase}
       data-testid="task-composer-backdrop"
-      inert={!interactive}
       onClick={dismissBackdrop}
     >
       <section
         role="dialog"
         aria-modal="true"
         aria-label="Add a task"
+        inert={!interactive}
         className="task-composer-modal motion-dialog"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
