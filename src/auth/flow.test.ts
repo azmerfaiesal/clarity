@@ -27,4 +27,17 @@ describe('authentication callback contract', () => {
     expect(oauthProblemFromUrl(`${NATIVE_AUTH_REDIRECT}?error=access_denied`)).toBe('cancelled')
     expect(oauthProblemFromUrl(`${NATIVE_AUTH_REDIRECT}?error=server_error`)).toBe('provider')
   })
+
+  it('rejects lookalike schemes and paths for native and web callbacks', () => {
+    expect(isExpectedAuthCallback('com.azmerfaiesal.clarity-fake://auth/callback?code=once', true)).toBe(
+      false,
+    )
+    expect(isExpectedAuthCallback('http://azmerfaiesal.github.io/clarity/?code=once', false)).toBe(false)
+    expect(isExpectedAuthCallback('com.azmerfaiesal.clarity://auth/not-callback?code=once', true)).toBe(
+      false,
+    )
+    expect(isExpectedAuthCallback('https://azmerfaiesal.github.io/clarity/not-callback?code=once', false)).toBe(
+      false,
+    )
+  })
 })
