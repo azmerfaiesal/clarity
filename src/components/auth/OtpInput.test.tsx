@@ -57,6 +57,42 @@ describe('OtpInput', () => {
     expect((input as HTMLInputElement).value).toBe('123456')
   })
 
+  it('inserts a pasted code fragment at the current cursor position', async () => {
+    const user = userEvent.setup()
+    render(<ControlledOtpInput initialValue="1234" />)
+
+    const input = screen.getByRole('textbox', { name: /six-digit verification code/i }) as HTMLInputElement
+    await user.click(input)
+    input.setSelectionRange(4, 4)
+    await user.paste('56')
+
+    expect(input.value).toBe('123456')
+  })
+
+  it('replaces only the selected range when a code fragment is pasted', async () => {
+    const user = userEvent.setup()
+    render(<ControlledOtpInput initialValue="123456" />)
+
+    const input = screen.getByRole('textbox', { name: /six-digit verification code/i }) as HTMLInputElement
+    await user.click(input)
+    input.setSelectionRange(2, 4)
+    await user.paste('98')
+
+    expect(input.value).toBe('129856')
+  })
+
+  it('filters non-digit pasted characters without discarding surrounding digits', async () => {
+    const user = userEvent.setup()
+    render(<ControlledOtpInput initialValue="1234" />)
+
+    const input = screen.getByRole('textbox', { name: /six-digit verification code/i }) as HTMLInputElement
+    await user.click(input)
+    input.setSelectionRange(2, 2)
+    await user.paste('x9')
+
+    expect(input.value).toBe('12934')
+  })
+
   it('removes the final digit when Backspace is pressed', async () => {
     const user = userEvent.setup()
     render(<ControlledOtpInput initialValue="123" />)
@@ -73,8 +109,15 @@ describe('OtpInput', () => {
 
     const input = screen.getByRole('textbox', { name: /six-digit verification code/i })
     expect(document.activeElement).toBe(input)
+    expect(input.closest('.otp-input')).not.toBeNull()
+    expect(input.classList.contains('otp-input-control')).toBe(true)
     expect(screen.getAllByTestId('otp-slot')).toHaveLength(6)
-    expect(screen.getByTestId('otp-slots').getAttribute('aria-hidden')).toBe('true')
+    const slots = screen.getByTestId('otp-slots')
+    expect(slots.classList.contains('otp-slots')).toBe(true)
+    expect(slots.getAttribute('aria-hidden')).toBe('true')
+    for (const slot of screen.getAllByTestId('otp-slot')) {
+      expect(slot.classList.contains('otp-slot')).toBe(true)
+    }
   })
 
   it('prevents interaction when disabled', async () => {
