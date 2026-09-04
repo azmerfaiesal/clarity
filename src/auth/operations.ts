@@ -15,14 +15,17 @@ export interface AuthOperations {
 }
 
 export function safeAuthIssue(error: unknown): AuthIssue {
-  const candidate = error as { code?: string; status?: number; message?: string }
-  if (candidate.status === 429) {
+  const candidate =
+    typeof error === 'object' && error !== null
+      ? (error as { code?: string; status?: number; name?: string })
+      : undefined
+  if (candidate?.status === 429) {
     return { kind: 'rate-limited', message: 'Please wait before trying again.' }
   }
-  if (candidate.code === 'otp_expired') {
+  if (candidate?.code === 'otp_expired') {
     return { kind: 'invalid-code', message: 'That code is invalid or has expired.' }
   }
-  if (error instanceof TypeError) {
+  if (error instanceof TypeError || candidate?.name === 'AuthRetryableFetchError') {
     return { kind: 'network', message: 'Check your connection and try again.' }
   }
   return { kind: 'provider', message: 'We could not sign you in. Please try again.' }
