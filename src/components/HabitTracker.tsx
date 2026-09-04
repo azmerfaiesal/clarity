@@ -1,7 +1,7 @@
 import { Menu, Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Habit, HabitFilter, HabitTemplate } from '../types'
-import { useHabits, type HabitDraft } from '../store/habitStore'
+import { useHabits } from '../store/habitStore'
 import { todayStr } from '../utils/dateUtils'
 import { currentStreak, habitStats, isCompletedOn, requiredPerDay } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
@@ -218,16 +218,6 @@ export function HabitTracker({
     [deleteHabit],
   )
 
-  const handleSave = useCallback(
-    (draft: HabitDraft) => {
-      if (editing) updateHabit(editing.id, draft)
-      else addHabit(draft)
-      setFormOpen(false)
-      setEditing(null)
-    },
-    [editing, updateHabit, addHabit],
-  )
-
   const quickAdd = (t: HabitTemplate) =>
     addHabit({
       name: t.name,
@@ -424,17 +414,21 @@ export function HabitTracker({
           templateMode={formPresence.value.templateMode}
           templates={templates}
           onSaveTemplate={(draft) =>
-            saveAsTemplate({ ...(editing ?? ({} as Habit)), ...draft } as Habit)
+            saveAsTemplate({ ...(formPresence.value.habit ?? ({} as Habit)), ...draft } as Habit)
           }
           onDeleteTemplate={deleteTemplate}
           onSave={(draft) => {
-            if (editTemplate) {
-              updateTemplate(editTemplate.id, draft)
+            const request = formPresence.value
+            if (request.templateMode && request.seed) {
+              updateTemplate(request.seed.id, draft)
               setFormOpen(false)
               onTemplateHandled?.()
               return
             }
-            handleSave(draft)
+            if (request.habit) updateHabit(request.habit.id, draft)
+            else addHabit(draft)
+            setFormOpen(false)
+            setEditing(null)
             onTemplateHandled?.()
           }}
           onClose={() => {

@@ -77,6 +77,10 @@ export function Settings({
   const { user, signOut } = useAuth()
   const store = useTaskStore()
   const sync = useSyncHealth()
+  const interactive = phase !== 'exiting'
+  const close = () => {
+    if (interactive) onClose()
+  }
 
   useEffect(() => {
     FONT_KEYS.forEach(ensureFontLoaded)
@@ -96,6 +100,7 @@ export function Settings({
   }, [])
 
   useEffect(() => {
+    if (!interactive) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
@@ -104,7 +109,7 @@ export function Settings({
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  }, [interactive, onClose])
 
   const active = store.tasks.filter((t) => !t.completed && t.deletedAt === null).length
   const completed = store.tasks.filter((t) => t.completed && t.deletedAt === null).length
@@ -114,7 +119,7 @@ export function Settings({
     <div
       data-motion-state={phase}
  className="native-settings-overlay motion-overlay fixed inset-0 z-50 flex justify-start bg-[var(--scrim)] backdrop-blur-[3px]"
-      onClick={onClose}
+      onClick={close}
       role="presentation"
     >
       {/* A drawer pinned to the left edge that fills the overlay's available
@@ -125,6 +130,7 @@ export function Settings({
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
+        inert={!interactive}
         onClick={(e) => e.stopPropagation()}
  className="native-settings-panel motion-dialog h-full w-[86vw] max-w-md origin-left overflow-y-auto rounded-r-xl border-r border-line bg-raised shadow-xl shadow-black/20 dark:shadow-black/70"
       >
@@ -134,7 +140,7 @@ export function Settings({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             aria-label="Close settings"
  className="motion-interactive -mr-3 flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-faint transition-colors hover:bg-surface hover:text-ink"
           >

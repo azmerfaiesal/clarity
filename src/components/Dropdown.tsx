@@ -111,6 +111,7 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
               visibility: pos ? 'visible' : 'hidden',
             }}
             data-motion-state={presence.phase}
+            inert={presence.phase === 'exiting'}
             className="motion-popover fixed z-50 min-w-44 rounded-lg border border-line bg-raised p-1 shadow-xl shadow-black/10 dark:shadow-black/60"
           >
             {children(() => setOpen(false))}

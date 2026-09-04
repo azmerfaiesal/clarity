@@ -37,8 +37,13 @@ export function TaskEditor({
   const [tagsInput, setTagsInput] = useState(task.tags.join(', '))
   const [favorite, setFavorite] = useState(task.favorite)
   const [reminder, setReminder] = useState(() => toDateTimeLocal(task.reminder))
+  const interactive = phase !== 'exiting'
+  const close = () => {
+    if (interactive) onClose()
+  }
 
   useEffect(() => {
+    if (!interactive) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
@@ -47,9 +52,10 @@ export function TaskEditor({
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  }, [interactive, onClose])
 
   const save = () => {
+    if (!interactive) return
     if (!title.trim()) return
     onSave({
       title: title.trim(),
@@ -71,13 +77,14 @@ export function TaskEditor({
     <div
       data-motion-state={phase}
  className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] p-0 backdrop-blur-[3px] sm:items-center sm:p-6"
-      onClick={onClose}
+      onClick={close}
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Edit task"
+        inert={!interactive}
  className="motion-dialog flex max-h-[92dvh] w-full max-w-lg flex-col overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
         onClick={(e) => e.stopPropagation()}
       >
@@ -100,6 +107,7 @@ export function TaskEditor({
             <button
               type="button"
               onClick={() => {
+                if (!interactive) return
                 onDelete()
                 onClose()
               }}
@@ -110,7 +118,7 @@ export function TaskEditor({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={close}
               aria-label="Close"
  className="motion-interactive cursor-pointer rounded-lg p-1.5 text-faint hover:bg-surface"
             >
@@ -131,7 +139,7 @@ export function TaskEditor({
             }}
             placeholder="Task name"
             aria-label="Task name"
-            autoFocus
+            autoFocus={interactive}
  className="w-full bg-transparent text-md font-medium text-ink outline-none placeholder:text-faint"
           />
           <textarea
@@ -240,7 +248,7 @@ export function TaskEditor({
  <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3">
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
  className="motion-interactive cursor-pointer rounded-lg px-3.5 py-2 text-sm font-medium text-muted hover:bg-surface"
           >
             Cancel

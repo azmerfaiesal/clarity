@@ -78,8 +78,13 @@ export function HabitForm({
   const iconPickerPresence = usePresenceValue(pickingIcon ? true : null)
   const [browsing, setBrowsing] = useState(false)
   const [savedTemplate, setSavedTemplate] = useState(false)
+  const interactive = phase !== 'exiting'
+  const close = () => {
+    if (interactive) onClose()
+  }
 
   useEffect(() => {
+    if (!interactive) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !pickingIcon) {
         e.stopPropagation()
@@ -88,7 +93,7 @@ export function HabitForm({
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [onClose, pickingIcon])
+  }, [interactive, onClose, pickingIcon])
 
   const sameDays = (a: number[], b: number[]) =>
     a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i])
@@ -147,6 +152,7 @@ export function HabitForm({
   }
 
   const submit = () => {
+    if (!interactive) return
     if (nameError || scheduleError) {
       setShowErrors(true)
       return
@@ -178,13 +184,14 @@ export function HabitForm({
     <div
       data-motion-state={phase}
       className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
-      onClick={onClose}
+      onClick={close}
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        inert={!interactive}
         onClick={(e) => e.stopPropagation()}
         className="motion-dialog max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
@@ -192,7 +199,7 @@ export function HabitForm({
           <span className="text-sm font-medium text-muted">{title}</span>
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             aria-label="Close"
             className="motion-interactive -mr-1.5 cursor-pointer rounded-md p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
           >
@@ -233,7 +240,7 @@ export function HabitForm({
             </div>
             <div className="min-w-0 flex-1">
               <input
-                autoFocus
+                autoFocus={interactive}
                 value={name}
                 maxLength={NAME_MAX}
                 onChange={(e) => setName(e.target.value)}
@@ -298,7 +305,9 @@ export function HabitForm({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onDeleteTemplate(t.id)}
+                          onClick={() => {
+                            if (interactive) onDeleteTemplate(t.id)
+                          }}
                           aria-label={`Delete template ${t.name}`}
                           className="motion-interactive shrink-0 cursor-pointer rounded p-1 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
                         >
@@ -582,6 +591,7 @@ export function HabitForm({
               type="button"
               disabled={!name.trim()}
               onClick={() => {
+                if (!interactive) return
                 onSaveTemplate(buildDraft())
                 setSavedTemplate(true)
                 window.setTimeout(() => setSavedTemplate(false), 2000)
@@ -595,7 +605,7 @@ export function HabitForm({
           <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={close}
               className="motion-interactive cursor-pointer rounded-md px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               Cancel

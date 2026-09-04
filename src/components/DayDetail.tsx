@@ -50,6 +50,7 @@ export function DayDetail({
   const counted = habit.trackBy !== 'checkoff'
   // Timing only makes sense for minutes, and only for the day being lived.
   const canTime = habit.trackBy === 'duration' && date === today && editable && !!onLogMinutes
+  const interactive = phase !== 'exiting'
 
   useEffect(() => {
     const el = ref.current
@@ -64,6 +65,7 @@ export function DayDetail({
   }, [anchor])
 
   useEffect(() => {
+    if (!interactive) return
     const onPointer = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) onClose()
     }
@@ -79,7 +81,7 @@ export function DayDetail({
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey, true)
     }
-  }, [onClose])
+  }, [interactive, onClose])
 
   const heading = parseDate(date).toLocaleDateString(undefined, {
     weekday: 'short',
@@ -93,6 +95,7 @@ export function DayDetail({
       ref={ref}
       role="dialog"
       aria-label={`${habit.name} on ${date}`}
+      inert={!interactive}
       data-motion-state={phase}
       style={{
         left: pos?.left ?? 0,
@@ -132,7 +135,9 @@ export function DayDetail({
         </div>
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            if (interactive) onClose()
+          }}
           aria-label="Close"
           className="motion-interactive -mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
         >

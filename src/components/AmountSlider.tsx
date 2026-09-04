@@ -33,8 +33,10 @@ export function AmountSlider({
   const step = habit.trackBy === 'duration' ? 5 : 1
   const [value, setValue] = useState(initial)
   const ref = useRef<HTMLDivElement>(null)
+  const interactive = phase !== 'exiting'
 
   useEffect(() => {
+    if (!interactive) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
@@ -50,7 +52,7 @@ export function AmountSlider({
       document.removeEventListener('keydown', onKey, true)
       document.removeEventListener('pointerdown', onPointer)
     }
-  }, [onClose])
+  }, [interactive, onClose])
 
   const pct = Math.min(100, (value / max) * 100)
   const reached = value >= need
@@ -60,6 +62,7 @@ export function AmountSlider({
       ref={ref}
       role="dialog"
       aria-label={`Set amount for ${habit.name}`}
+      inert={!interactive}
       data-motion-state={phase}
       className="motion-popover absolute top-full left-0 z-40 mt-2 w-64 origin-top-left rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
     >
@@ -124,6 +127,7 @@ export function AmountSlider({
         <button
           type="button"
           onClick={() => {
+            if (!interactive) return
             onCommit(value)
             onClose()
           }}

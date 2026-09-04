@@ -83,4 +83,31 @@ describe('motion CSS foundation', () => {
     expect(nativePresentation).toContain('padding-bottom: env(safe-area-inset-bottom)')
     expect(nativePresentation).toContain('padding-left: env(safe-area-inset-left)')
   })
+
+  it('keeps the dedicated native composer gutter out of the generic overlay rule', () => {
+    const genericMotionOverlayStart = css.indexOf(
+      '.native-app .motion-overlay.fixed.inset-0.z-50:not(.native-settings-overlay)',
+    )
+    const genericMotionOverlaySelector = css.slice(
+      genericMotionOverlayStart,
+      css.indexOf('{', genericMotionOverlayStart),
+    )
+    const nativeComposerStart = css.indexOf('.native-app .native-modal-viewport')
+    const nativeComposerRule = css.slice(
+      nativeComposerStart,
+      css.indexOf('\n}', nativeComposerStart),
+    )
+
+    expect(genericMotionOverlayStart).toBeGreaterThanOrEqual(0)
+    expect(genericMotionOverlaySelector).toContain(':not(.native-modal-viewport)')
+    expect(nativeComposerRule).toContain(
+      'padding-right: calc(env(safe-area-inset-right) + 0.75rem)',
+    )
+    expect(nativeComposerRule).toContain(
+      'padding-left: calc(env(safe-area-inset-left) + 0.75rem)',
+    )
+    expect(css).toContain(
+      ".motion-overlay[data-motion-state='exiting']:not(.native-modal-viewport) {\n  pointer-events: auto;",
+    )
+  })
 })

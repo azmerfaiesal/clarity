@@ -33,8 +33,13 @@ export function HabitSummary({
   const firstDay = useWeekStart()
   const s = habitStats(habit, today, firstDay)
   const counted = habit.trackBy !== 'checkoff'
+  const interactive = phase !== 'exiting'
+  const close = () => {
+    if (interactive) onClose()
+  }
 
   useEffect(() => {
+    if (!interactive) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
@@ -43,7 +48,7 @@ export function HabitSummary({
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  }, [interactive, onClose])
 
   const recent = useMemo(() => {
     const out: { date: string; amount: number; done: boolean; due: boolean }[] = []
@@ -68,13 +73,14 @@ export function HabitSummary({
     <div
       data-motion-state={phase}
       className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
-      onClick={onClose}
+      onClick={close}
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`${habit.name} summary`}
+        inert={!interactive}
         onClick={(e) => e.stopPropagation()}
         className="motion-dialog max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
@@ -96,7 +102,7 @@ export function HabitSummary({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             aria-label="Close"
             className="motion-interactive -mr-1.5 cursor-pointer rounded-md p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
           >

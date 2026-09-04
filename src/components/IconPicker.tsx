@@ -23,8 +23,10 @@ export function IconPicker({
   const [tab, setTab] = useState<'icons' | 'emoji'>(value && !value.startsWith('lucide:') ? 'emoji' : 'icons')
   const [query, setQuery] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const interactive = phase !== 'exiting'
 
   useEffect(() => {
+    if (!interactive) return
     const onPointer = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) onClose()
     }
@@ -40,7 +42,7 @@ export function IconPicker({
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey, true)
     }
-  }, [onClose])
+  }, [interactive, onClose])
 
   const found = searchIcons(query)
   const groups = query.trim() ? [{ label: `${found.length} matches`, icons: found }] : ICON_GROUPS
@@ -50,6 +52,7 @@ export function IconPicker({
       ref={ref}
       role="dialog"
       aria-label="Choose icon"
+      inert={!interactive}
       data-motion-state={phase}
       className="motion-popover absolute top-full left-0 z-50 mt-1.5 w-[19rem] origin-top-left overflow-hidden rounded-lg border border-line bg-raised shadow-2xl shadow-black/30 dark:shadow-black/70"
     >
@@ -77,7 +80,7 @@ export function IconPicker({
           <div className="flex items-center gap-2 border-b border-line px-3 py-2">
             <Search className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden />
             <input
-              autoFocus
+              autoFocus={interactive}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search icons… (e.g. gym, water, read)"
@@ -96,7 +99,9 @@ export function IconPicker({
                       type="button"
                       title={alias}
                       aria-label={alias}
-                      onClick={() => onPick(`lucide:${key}`)}
+                      onClick={() => {
+                        if (interactive) onPick(`lucide:${key}`)
+                      }}
                       className={`motion-interactive flex h-9 cursor-pointer items-center justify-center rounded-md ${
                         value === `lucide:${key}`
                           ? 'bg-accent-soft'
@@ -119,7 +124,9 @@ export function IconPicker({
         <div className="grid max-h-64 grid-cols-7 gap-1 overflow-y-auto p-2">
           <button
             type="button"
-            onClick={() => onPick('')}
+            onClick={() => {
+              if (interactive) onPick('')
+            }}
             aria-label="No icon"
             className={`motion-interactive flex h-9 cursor-pointer items-center justify-center rounded-md text-xs ${
               value === '' ? 'bg-accent-soft text-accent' : 'text-faint hover:bg-surface'
@@ -131,7 +138,9 @@ export function IconPicker({
             <button
               key={e}
               type="button"
-              onClick={() => onPick(e)}
+              onClick={() => {
+                if (interactive) onPick(e)
+              }}
               aria-label={`Emoji ${e}`}
               className={`motion-interactive flex h-9 cursor-pointer items-center justify-center rounded-md text-base ${
                 value === e ? 'bg-accent-soft' : 'hover:bg-surface'

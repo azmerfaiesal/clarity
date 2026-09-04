@@ -10,10 +10,13 @@ export function UndoToast({
   onUndo: () => void
   phase: MotionPhase
 }) {
+  const interactive = phase !== 'exiting'
+
   return (
     <div
       role="status"
       data-motion-state={phase}
+      inert={!interactive}
       className="motion-toast fixed bottom-20 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:bottom-6"
     >
       <div className="motion-toast-inner flex items-center gap-3 rounded-lg border border-line bg-raised px-4 py-3 shadow-xl shadow-black/20 backdrop-blur dark:shadow-black/70">
@@ -22,7 +25,9 @@ export function UndoToast({
         </span>
         <button
           type="button"
-          onClick={onUndo}
+          onClick={() => {
+            if (interactive) onUndo()
+          }}
           className="motion-interactive inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-accent hover:bg-accent-soft"
         >
           <Undo2 className="h-3.5 w-3.5" />

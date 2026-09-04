@@ -31,8 +31,13 @@ export function NoteTemplates({
   const { templates, saveTemplate, removeTemplate, resetTemplate } = useNotes()
   /** null = the list; a template = editing it; 'new' = writing one. */
   const [editing, setEditing] = useState<NoteTemplate | 'new' | null>(null)
+  const interactive = phase !== 'exiting'
+  const close = () => {
+    if (interactive) onClose()
+  }
 
   useEffect(() => {
+    if (!interactive) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       e.stopPropagation()
@@ -42,19 +47,20 @@ export function NoteTemplates({
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [onClose, editing])
+  }, [interactive, onClose, editing])
 
   return (
     <div
       data-motion-state={phase}
       className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
-      onClick={onClose}
+      onClick={close}
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Note templates"
+        inert={!interactive}
         onClick={(e) => e.stopPropagation()}
         className="motion-dialog flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
@@ -77,7 +83,7 @@ export function NoteTemplates({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             aria-label="Close templates"
             className="motion-interactive -mr-1.5 shrink-0 cursor-pointer rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
           >

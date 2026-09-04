@@ -240,8 +240,8 @@ body {
 /* All full-screen presentation overlays share this class shape. Settings and
    the task composer deliberately opt out because their dedicated viewports
    already own the same insets. The scrim still paints edge-to-edge. */
-.native-app .anim-fade-in.fixed.inset-0.z-50:not(.native-settings-overlay),
-.native-app .motion-overlay.fixed.inset-0.z-50:not(.native-settings-overlay) {
+.native-app .anim-fade-in.fixed.inset-0.z-50:not(.native-settings-overlay):not(.native-modal-viewport),
+.native-app .motion-overlay.fixed.inset-0.z-50:not(.native-settings-overlay):not(.native-modal-viewport) {
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
@@ -551,6 +551,9 @@ body {
 .motion-overlay[data-motion-state='entering'],
 .motion-overlay[data-motion-state='exiting'] {
   opacity: 0;
+}
+.motion-overlay[data-motion-state='exiting']:not(.native-modal-viewport) {
+  pointer-events: auto;
 }
 .motion-overlay[data-motion-state='entered'] {
   opacity: 1;

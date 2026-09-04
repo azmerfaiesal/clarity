@@ -34,6 +34,7 @@ export function NoteDayDetail({
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
   const [page, setPage] = useState(0)
+  const interactive = phase !== 'exiting'
 
   const pages = Math.max(1, Math.ceil(notes.length / PER_PAGE))
   const shown = notes.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
@@ -52,6 +53,7 @@ export function NoteDayDetail({
   }, [anchor, page, notes.length])
 
   useEffect(() => {
+    if (!interactive) return
     const onPointer = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) onClose()
     }
@@ -67,7 +69,7 @@ export function NoteDayDetail({
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey, true)
     }
-  }, [onClose])
+  }, [interactive, onClose])
 
   const heading = parseDate(date).toLocaleDateString(undefined, {
     weekday: 'short',
@@ -81,6 +83,7 @@ export function NoteDayDetail({
       ref={ref}
       role="dialog"
       aria-label={`Notes written on ${date}`}
+      inert={!interactive}
       data-motion-state={phase}
       style={{
         left: pos?.left ?? 0,
@@ -100,7 +103,9 @@ export function NoteDayDetail({
         </div>
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            if (interactive) onClose()
+          }}
           aria-label="Close"
           className="motion-interactive -mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
         >
