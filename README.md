@@ -6,7 +6,7 @@ Live at **https://azmerfaiesal.github.io/clarity/**
 
 ## Features
 
-- **Quick capture** — click "Add a task" (or press `N` in Inbox, Today, Upcoming, Favorites, or a category), type, hit `Enter`. Expand for description, due date, priority, category, tags, and reminders. Only the title is required. The current view supplies useful defaults: Today uses today, Upcoming uses tomorrow, a category preselects itself, and Favorites stars the task so it remains visible there.
+- **Quick capture** — on desktop, use the inline "Add a task" form (or press `N` in Inbox, Today, Upcoming, Favorites, or a category), type, hit `Enter`. On iPhone, the floating Add button opens that task composer instead. Expand for description, due date, priority, category, tags, and reminders. Only the title is required. The current view supplies useful defaults: Today uses today, Upcoming uses tomorrow, a category preselects itself, and Favorites stars the task so it remains visible there. Cancel, tapping the backdrop, or `Escape` dismisses the composer.
 - **Sections** — Home, Tasks, Habits and Notes. Task views (Inbox, Today, Upcoming, Completed, Favorites, Recycle Bin) and lists appear beneath Tasks while that section is active.
 - **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); rename or recolor one from the pencil that appears on hover; deleting a list returns its tasks to Inbox.
 - **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes, and reminders (shown on the row as a clock).
@@ -189,7 +189,9 @@ Clarity also ships as a native iPhone/iPad project through Capacitor. It embeds
 the production React build, so the web app and iOS app share the same screens,
 offline cache, Supabase account and sync behavior. The native layer adds safe
 areas, status-bar theming, keyboard resizing, completion haptics and iOS local
-notifications.
+notifications. The iPhone composer honors Reduce Motion and uses the iPhone safe
+area in landscape, so its floating Add button and modal remain clear of the notch,
+rounded corners, and home indicator.
 
 Requirements: macOS, Xcode 26 or newer, Node 22 or newer, and an Apple developer
 team when installing on a physical device or archiving for TestFlight.

@@ -120,9 +120,12 @@ export function Guide({
             visible in the Inbox.
           </Feature>
           <Feature name="Quick add follows the view">
-            Adding from a category preselects that category. Today preselects today's date,
-            Upcoming starts with tomorrow, and Favorites stars the new task, so it stays in the
-            view where you captured it. Press{' '}
+            On desktop, the inline Add a task form stays in the task view. On iPhone, the floating
+            Add button opens the same task composer. Adding from a category preselects that
+            category. Today preselects today's date, Upcoming starts with tomorrow, and Favorites
+            stars the new task, so it stays in the view where you captured it. Cancel, tapping the
+            backdrop, or pressing Escape closes the iPhone composer. Its motion respects Reduce
+            Motion, and its layout stays within the iPhone safe area in landscape. Press{' '}
             <kbd className="rounded border border-line bg-surface px-1 py-0.5 font-mono text-2xs text-muted">
               N
             </kbd>{' '}
