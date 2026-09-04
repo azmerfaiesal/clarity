@@ -146,8 +146,6 @@ export function HabitCard({
               }
               if (counted) {
                 const step = habit.trackBy === 'duration' ? 5 : 1
-                if (!s.doneToday && s.amountToday + step >= s.needPerDay) nativeSuccessHaptic()
-                else nativeSelectionHaptic()
                 onAdjust(step)
               } else {
                 if (s.doneToday) nativeSelectionHaptic()

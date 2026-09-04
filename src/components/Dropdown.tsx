@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { nativeSelectionHaptic } from '../native/platform'
+import { clampFixedCoordinate, getSafeViewportBounds } from '../utils/fixedPopover'
 import { usePresenceValue } from './MotionPresence'
 
 interface DropdownProps {
@@ -9,8 +10,6 @@ interface DropdownProps {
   align?: 'left' | 'right'
   label?: string
 }
-
-const MARGIN = 8
 
 /**
  * Popover dropdown: closes on outside click and Escape.
@@ -33,17 +32,19 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
     if (!anchor || !menu) return
     const a = anchor.getBoundingClientRect()
     const m = menu.getBoundingClientRect()
+    const bounds = getSafeViewportBounds()
 
     let top = a.bottom + 6
     let above = false
-    if (top + m.height > window.innerHeight - MARGIN) {
+    if (top + m.height > bounds.bottom) {
       // Not enough room below — flip above the trigger, then clamp.
-      top = Math.max(MARGIN, a.top - m.height - 6)
+      top = a.top - m.height - 6
       above = true
     }
+    top = clampFixedCoordinate(top, bounds.top, bounds.bottom - m.height)
 
     let left = align === 'right' ? a.right - m.width : a.left
-    left = Math.min(Math.max(MARGIN, left), window.innerWidth - m.width - MARGIN)
+    left = clampFixedCoordinate(left, bounds.left, bounds.right - m.width)
 
     setPos({ top, left, above })
   }, [align])
@@ -80,11 +81,15 @@ export function Dropdown({ trigger, children, align = 'right', label }: Dropdown
     document.addEventListener('keydown', onKey, true)
     window.addEventListener('scroll', onReflow, true)
     window.addEventListener('resize', onReflow)
+    window.addEventListener('orientationchange', onReflow)
+    window.visualViewport?.addEventListener('resize', onReflow)
     return () => {
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey, true)
       window.removeEventListener('scroll', onReflow, true)
       window.removeEventListener('resize', onReflow)
+      window.removeEventListener('orientationchange', onReflow)
+      window.visualViewport?.removeEventListener('resize', onReflow)
     }
   }, [open])
 

@@ -133,7 +133,7 @@ export function TaskComposerFields({
               dead. The two shortcuts show whether or not a date is set, so one
               tap is enough. */}
           <label
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
+            className={`motion-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
               dueDate
                 ? 'border-accent/40 bg-accent-soft text-accent'
                 : 'border-line text-muted hover:bg-surface'
@@ -161,7 +161,7 @@ export function TaskComposerFields({
               aria-label="Clear due date"
               title="Clear due date"
               onClick={() => setDueDate(null)}
-              className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
+              className="motion-interactive cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -180,7 +180,7 @@ export function TaskComposerFields({
                 aria-checked={priority === value}
                 title={PRIORITY_LABEL[value]}
                 onClick={() => setPriority(value)}
-                className={`cursor-pointer px-2 py-1 text-xs transition-colors ${
+                className={`motion-interactive cursor-pointer px-2 py-1 text-xs transition-colors ${
                   priority === value ? 'bg-accent-soft' : 'hover:bg-surface'
                 }`}
               >
@@ -245,7 +245,7 @@ export function TaskComposerFields({
               aria-label="Clear reminder"
               title="Clear reminder"
               onClick={() => setReminder('')}
-              className="cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
+              className="motion-interactive cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -257,7 +257,7 @@ export function TaskComposerFields({
         <button
           type="button"
           onClick={close}
-          className="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface"
+          className="motion-interactive cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface"
         >
           Cancel
         </button>
@@ -265,7 +265,7 @@ export function TaskComposerFields({
           type="button"
           onClick={submit}
           disabled={!title.trim()}
-          className="cursor-pointer rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
+          className="motion-primary motion-interactive cursor-pointer rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
         >
           Add task
         </button>
@@ -289,7 +289,7 @@ function QuickDate({
     <button
       type="button"
       onClick={() => onPick(value)}
-      className={`cursor-pointer rounded-md border px-2 py-1 text-xs transition-colors ${
+      className={`motion-interactive cursor-pointer rounded-md border px-2 py-1 text-xs transition-colors ${
         current === value
           ? 'border-accent/50 bg-accent-soft text-accent'
           : 'border-line text-muted hover:bg-surface'

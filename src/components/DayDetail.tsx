@@ -7,6 +7,7 @@ import { useWeekStart } from '../store/theme'
 import { LogNotes } from './LogNotes'
 import { HabitTimer } from './HabitTimer'
 import type { MotionPhase } from '../utils/motion'
+import { getSafeViewportBounds, placeFixedPopover } from '../utils/fixedPopover'
 
 /**
  * One day's record, opened from a heatmap cell: what happened, where it sits in
@@ -56,12 +57,7 @@ export function DayDetail({
     const el = ref.current
     if (!el) return
     const r = el.getBoundingClientRect()
-    const margin = 8
-    setPos({
-      left: Math.min(Math.max(margin, anchor.x - r.width / 2), window.innerWidth - r.width - margin),
-      // Prefer above the cell; drop below when there is no room.
-      top: anchor.y - r.height - 10 < margin ? anchor.y + 18 : anchor.y - r.height - 10,
-    })
+    setPos(placeFixedPopover({ anchor, size: r, bounds: getSafeViewportBounds() }))
   }, [anchor])
 
   useEffect(() => {
@@ -77,9 +73,15 @@ export function DayDetail({
     }
     document.addEventListener('pointerdown', onPointer)
     document.addEventListener('keydown', onKey, true)
+    window.addEventListener('resize', onClose)
+    window.addEventListener('orientationchange', onClose)
+    window.visualViewport?.addEventListener('resize', onClose)
     return () => {
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('resize', onClose)
+      window.removeEventListener('orientationchange', onClose)
+      window.visualViewport?.removeEventListener('resize', onClose)
     }
   }, [interactive, onClose])
 

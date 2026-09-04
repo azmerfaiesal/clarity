@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { BrainDump as Note } from '../types'
 import { parseDate } from '../utils/dateUtils'
 import type { MotionPhase } from '../utils/motion'
+import { getSafeViewportBounds, placeFixedPopover } from '../utils/fixedPopover'
 
 /** Four to a page: enough to recognise a day, few enough to stay a popover. */
 const PER_PAGE = 4
@@ -45,11 +46,7 @@ export function NoteDayDetail({
     const el = ref.current
     if (!el) return
     const r = el.getBoundingClientRect()
-    const margin = 8
-    setPos({
-      left: Math.min(Math.max(margin, anchor.x - r.width / 2), window.innerWidth - r.width - margin),
-      top: anchor.y - r.height - 10 < margin ? anchor.y + 18 : anchor.y - r.height - 10,
-    })
+    setPos(placeFixedPopover({ anchor, size: r, bounds: getSafeViewportBounds() }))
   }, [anchor, page, notes.length])
 
   useEffect(() => {
@@ -65,9 +62,15 @@ export function NoteDayDetail({
     }
     document.addEventListener('pointerdown', onPointer)
     document.addEventListener('keydown', onKey, true)
+    window.addEventListener('resize', onClose)
+    window.addEventListener('orientationchange', onClose)
+    window.visualViewport?.addEventListener('resize', onClose)
     return () => {
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('resize', onClose)
+      window.removeEventListener('orientationchange', onClose)
+      window.visualViewport?.removeEventListener('resize', onClose)
     }
   }, [interactive, onClose])
 
