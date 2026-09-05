@@ -311,6 +311,73 @@ describe('AuthGate Google and session outcomes', () => {
     expect(screen.queryByText('Signing you in…')).toBeNull()
   })
 
+  it('does not reuse failed callback completion copy during a later email OTP exit', async () => {
+    authState.oauthCompleting = true
+    const user = userEvent.setup()
+    const view = renderGate()
+    expect(screen.getByRole('status').textContent).toContain('Signing you in…')
+
+    authState.oauthIssue = {
+      kind: 'provider',
+      message: 'We could not sign you in. Please try again.',
+    }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    authState.oauthCompleting = false
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    await requestCode(user, 'person@example.com')
+    await user.type(screen.getByRole('textbox', { name: 'Six-digit verification code' }), '123456')
+    await user.click(screen.getByRole('button', { name: 'Verify code' }))
+
+    authState.user = { id: 'email-user' }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    expect(document.querySelector(".auth-screen[data-motion-state='exiting']")).toBeTruthy()
+    expect(screen.queryByText('Signing you in…')).toBeNull()
+    expect(screen.getByText('Check your email')).toBeTruthy()
+  })
+
+  it('clears failed callback completion before an unrelated signed-in transition', async () => {
+    authState.oauthCompleting = true
+    const view = renderGate()
+
+    authState.oauthIssue = {
+      kind: 'network',
+      message: 'Check your connection and try again.',
+    }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    authState.oauthCompleting = false
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    authState.user = { id: 'later-user' }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    expect(document.querySelector(".auth-screen[data-motion-state='exiting']")).toBeTruthy()
+    expect(screen.queryByText('Signing you in…')).toBeNull()
+    expect(screen.getByRole('alert').textContent).toBe('Check your connection and try again.')
+  })
+
+  it('clears a quiet dormant callback latch when switching to email OTP', async () => {
+    authState.oauthCompleting = true
+    const user = userEvent.setup()
+    const view = renderGate()
+
+    authState.oauthCompleting = false
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+    await requestCode(user, 'person@example.com')
+
+    authState.user = { id: 'email-user' }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    expect(document.querySelector(".auth-screen[data-motion-state='exiting']")).toBeTruthy()
+    expect(screen.queryByText('Signing you in…')).toBeNull()
+    expect(screen.getByText('Check your email')).toBeTruthy()
+  })
+
   it('surfaces a callback issue once and clears it when switching to email', async () => {
     authState.oauthIssue = {
       kind: 'provider',

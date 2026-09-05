@@ -91,6 +91,7 @@ function AuthGate({ children }: { children: ReactNode }) {
     if (!oauthIssue) return
     // oxlint-disable-next-line react/set-state-in-effect -- Preserve the consumed provider issue after AuthState clears it.
     setError(oauthIssue.message)
+    setOauthCompletionLatched(false)
     clearOauthIssue()
   }, [clearOauthIssue, oauthIssue])
 
@@ -281,6 +282,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   async function requestCode(action: 'request-code' | 'resend') {
     if (pending) return
+    setOauthCompletionLatched(false)
     clearOauthIssue()
 
     const validEmail =
@@ -310,6 +312,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   async function verifyCode() {
     if (pending || code.length !== 6) return
+    setOauthCompletionLatched(false)
     clearOauthIssue()
     setError(null)
     setPending('verify-code')
@@ -324,6 +327,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   async function continueWithGoogle() {
     if (pending) return
+    setOauthCompletionLatched(false)
     clearOauthIssue()
     setError(null)
     setPending('google')
@@ -335,6 +339,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   function changeEmail() {
     if (pending) return
+    setOauthCompletionLatched(false)
     clearOauthIssue()
     setError(null)
     setCode('')
