@@ -136,7 +136,12 @@ after Clarity has been closed. The web/PWA behavior above is unchanged.
 
 ## Sync
 
-Sign in with email + password (Supabase Auth). Everything then lives in six Postgres tables — `clarity_tasks`, `clarity_lists`, `clarity_notes`, `clarity_habits`, `clarity_habit_templates` and `clarity_note_templates` — behind row-level security that scopes every row to `auth.uid()`.
+Clarity requires an account. Enter your email to receive a six-digit sign-in code, or continue
+with Google. Returning users keep the same tasks, habits, and notes when they use the same
+verified email. Apple is not shipped in this phase. Everything then lives in six Postgres tables
+— `clarity_tasks`, `clarity_lists`, `clarity_notes`, `clarity_habits`,
+`clarity_habit_templates` and `clarity_note_templates` — behind row-level security that scopes
+every row to `auth.uid()`.
 
 - **Local first** — every edit hits React state immediately and is cached in `localStorage`, so the UI never waits on the network.
 - **Push** — changed rows only are upserted 400ms after an edit settles; rows removed locally are deleted server-side by the same pass.
@@ -146,6 +151,20 @@ Sign in with email + password (Supabase Auth). Everything then lives in six Post
 - **One retry on a rejected token** — a `401` from `/rest/v1/` triggers a single `refreshSession()` and one retry on the new token. The lone `PGRST303` on a page load was a device coming back from sleep and revalidating in the same instant its token was being refreshed; there is nothing wrong with that request except its token, so it is worth asking again.
 
 `supabase/schema.sql` is the full setup: tables, indexes, RLS policies, and the realtime publication.
+
+Signing out returns to the mandatory login screen. Offline edits remain account-namespaced, so
+they continue to belong only to the account that made them.
+
+The Google client secret belongs only in Supabase provider settings; it is never stored in this
+app or its documentation.
+
+### Auth provider configuration
+
+```text
+Web return: https://azmerfaiesal.github.io/clarity/
+iOS return: com.azmerfaiesal.clarity://auth/callback
+Supabase callback registered in Google: https://pakfyyvdfwxglcjkatqz.supabase.co/auth/v1/callback
+```
 
 ## Keyboard shortcuts
 

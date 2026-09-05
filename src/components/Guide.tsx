@@ -86,6 +86,12 @@ export function Guide({
 
       <Part title="What it is">
         <p>
+          Clarity requires an account. Enter your email to receive a six-digit sign-in code, or
+          continue with Google. Returning users keep the same tasks, habits, and notes when they
+          use the same verified email. Sign in with Apple will appear only after native Apple
+          account support is available.
+        </p>
+        <p>
           Clarity keeps three kinds of thing in one place: the tasks you have to do, the habits
           you are trying to keep, and the notes you write as you go. They are deliberately
           separate — a task is finished once, a habit is never finished, and a note is not asking
@@ -94,8 +100,8 @@ export function Guide({
         </p>
         <p>
           Everything is stored under your account and syncs to every device you sign in on. A
-          device that loses its connection keeps working from its own copy and catches up when it
-          can.
+          device that loses its connection keeps working from its own account-namespaced copy and
+          catches up when it can. Signing out returns you to the mandatory login screen.
         </p>
         <p>
           <strong className="font-medium text-ink">Home</strong> is the daily overview: habits
