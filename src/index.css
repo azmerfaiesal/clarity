@@ -956,6 +956,194 @@ body {
 .anim-fade-out {
   animation: fade-out 200ms ease-in both;
 }
+
+/* Mandatory authentication owns the viewport until a real session exists.
+   The safe-area padding is four-sided because landscape camera cutouts can sit
+   on either horizontal edge. */
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background:
+    radial-gradient(32rem 24rem at 18% 5%, var(--bloom-a), transparent 70%),
+    radial-gradient(28rem 22rem at 95% 90%, var(--bloom-c), transparent 72%),
+    var(--bg);
+  opacity: 0;
+  transition: opacity var(--motion-standard) ease;
+}
+.auth-screen[data-motion-state='entered'] {
+  opacity: 1;
+}
+.auth-screen[data-motion-state='exiting'] {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: var(--motion-exit);
+  transition-timing-function: var(--ease-exit);
+}
+
+.auth-card {
+  width: min(100%, 28rem);
+  transform: translateY(18px);
+  transform-origin: center;
+  scale: 0.96;
+  opacity: 0;
+  transition:
+    transform var(--motion-prominent) var(--ease-spring),
+    scale var(--motion-prominent) var(--ease-spring),
+    opacity var(--motion-standard) ease,
+    box-shadow var(--motion-standard) ease;
+  will-change: transform, scale, opacity;
+}
+.auth-screen[data-motion-state='entered'] .auth-card {
+  transform: translateY(0);
+  scale: 1;
+  opacity: 1;
+  will-change: auto;
+}
+.auth-screen[data-motion-state='exiting'] .auth-card {
+  transform: translateY(-8px);
+  scale: 1.04;
+  opacity: 1;
+}
+.auth-card[data-invalid='true'] {
+  animation: auth-invalid 360ms var(--ease-spring);
+  box-shadow: 0 0 32px -8px var(--danger);
+}
+.auth-card[data-auth-success='true'] {
+  box-shadow:
+    0 0 0 1px var(--success-soft),
+    0 0 42px -7px var(--success);
+}
+.auth-card[data-auth-success='true'] .auth-mark {
+  box-shadow: 0 0 28px -4px var(--success);
+}
+
+.auth-step {
+  animation: auth-step-enter var(--motion-standard) var(--ease-spring) both;
+}
+.auth-provider-button {
+  transition:
+    scale var(--motion-press) var(--ease-spring),
+    opacity var(--motion-press) ease,
+    border-color var(--motion-standard) ease,
+    background-color var(--motion-standard) ease,
+    box-shadow var(--motion-standard) ease;
+}
+.auth-provider-button:hover {
+  box-shadow: 0 0 24px -8px var(--glow);
+}
+.auth-provider-button:active {
+  scale: 0.98;
+}
+
+.otp-input {
+  width: 100%;
+  isolation: isolate;
+}
+.otp-input-control {
+  min-width: 0;
+  font-size: 16px;
+}
+.otp-slots {
+  width: 100%;
+}
+.otp-slot {
+  min-width: 0;
+  transform: translateY(8px);
+  scale: 0.94;
+  opacity: 0;
+  animation: auth-slot-enter var(--motion-standard) var(--ease-spring) both;
+  animation-delay: min(calc(var(--otp-index) * 34ms), 170ms);
+  transition:
+    scale var(--motion-press) var(--ease-spring),
+    border-color var(--motion-press) ease,
+    background-color var(--motion-press) ease,
+    box-shadow var(--motion-press) ease;
+}
+.otp-slot:nth-child(1) {
+  --otp-index: 0;
+}
+.otp-slot:nth-child(2) {
+  --otp-index: 1;
+}
+.otp-slot:nth-child(3) {
+  --otp-index: 2;
+}
+.otp-slot:nth-child(4) {
+  --otp-index: 3;
+}
+.otp-slot:nth-child(5) {
+  --otp-index: 4;
+}
+.otp-slot:nth-child(6) {
+  --otp-index: 5;
+}
+.otp-input:focus-within .otp-slot {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+}
+.otp-slot[data-filled='true'] {
+  scale: 1;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 16px -7px var(--glow);
+}
+.otp-input[data-invalid='true'] .otp-slot {
+  border-color: var(--danger);
+}
+
+@keyframes auth-step-enter {
+  from {
+    transform: translateX(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes auth-slot-enter {
+  from {
+    transform: translateY(8px);
+    scale: 0.94;
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    scale: 1;
+    opacity: 1;
+  }
+}
+@keyframes auth-invalid {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35% {
+    transform: translateX(-5px);
+  }
+  68% {
+    transform: translateX(4px);
+  }
+}
+
+@media (orientation: landscape) {
+  .auth-card {
+    max-width: calc(
+      100vw - max(1rem, env(safe-area-inset-left)) - max(1rem, env(safe-area-inset-right))
+    );
+    max-height: calc(
+      100dvh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom))
+    );
+    overflow-y: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1007,6 +1195,27 @@ body {
   .motion-page-enter {
     animation: motion-content-fade var(--motion-press) ease both !important;
     animation-delay: 0ms !important;
+  }
+  .auth-screen,
+  .auth-card,
+  .auth-card[data-invalid='true'],
+  .auth-card[data-auth-success='true'],
+  .auth-step,
+  .auth-provider-button,
+  .otp-slot {
+    transform: none !important;
+    scale: 1 !important;
+    animation: motion-content-fade var(--motion-press) ease both !important;
+    animation-delay: 0ms !important;
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+    transition-timing-function: ease !important;
+  }
+  .auth-screen[data-motion-state='entering'] .auth-card,
+  .auth-screen[data-motion-state='entered'] .auth-card,
+  .auth-screen[data-motion-state='exiting'] .auth-card {
+    transform: none !important;
+    scale: 1 !important;
   }
 }
 

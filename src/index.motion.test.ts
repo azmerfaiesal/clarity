@@ -110,4 +110,52 @@ describe('motion CSS foundation', () => {
       ".motion-overlay[data-motion-state='exiting'] {\n  pointer-events: auto;",
     )
   })
+
+  it('defines the premium login, OTP, invalid, and success motion hooks', () => {
+    expect(css).toContain('.auth-screen')
+    expect(css).toContain('.auth-card')
+    expect(css).toContain('.auth-step')
+    expect(css).toContain('.auth-provider-button')
+    expect(css).toContain('.otp-input')
+    expect(css).toContain('.otp-input-control')
+    expect(css).toContain('.otp-slots')
+    expect(css).toContain('.otp-slot')
+    expect(css).toContain(".auth-card[data-invalid='true']")
+    expect(css).toContain(".auth-card[data-auth-success='true']")
+    expect(css).toContain(".auth-screen[data-motion-state='exiting']")
+  })
+
+  it('keeps login motion on composited visual properties with bounded OTP staggering', () => {
+    const authMotion = css.slice(css.indexOf('.auth-screen'), css.indexOf('@media (prefers-reduced-motion: reduce)'))
+
+    expect(authMotion).toContain('transform: translateY(18px)')
+    expect(authMotion).toContain('scale: 0.96')
+    expect(authMotion).toContain('opacity: 0')
+    expect(authMotion).toContain('animation-delay: min(calc(var(--otp-index) * 34ms), 170ms)')
+    expect(authMotion).not.toMatch(/transition[^;]*(?:width|height|top|right|bottom|left|margin|padding)/)
+  })
+
+  it('protects the login on all safe-area sides including landscape notches', () => {
+    const authScreenStart = css.indexOf('.auth-screen')
+    const authScreenRule = css.slice(authScreenStart, css.indexOf('\n}', authScreenStart))
+
+    expect(authScreenRule).toContain('env(safe-area-inset-top)')
+    expect(authScreenRule).toContain('env(safe-area-inset-right)')
+    expect(authScreenRule).toContain('env(safe-area-inset-bottom)')
+    expect(authScreenRule).toContain('env(safe-area-inset-left)')
+    expect(css).toMatch(/orientation:\s*landscape[\s\S]*safe-area-inset-left[\s\S]*safe-area-inset-right/)
+  })
+
+  it('removes login travel, scale, shake, and stagger while retaining a short fade', () => {
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+
+    expect(css).toMatch(/prefers-reduced-motion[\s\S]*\.auth-card/)
+    expect(css).toMatch(/prefers-reduced-motion[\s\S]*\.otp-slot/)
+    expect(reducedMotion).toContain('.auth-step')
+    expect(reducedMotion).toContain('transform: none !important')
+    expect(reducedMotion).toContain('scale: 1 !important')
+    expect(reducedMotion).toContain('animation-delay: 0ms !important')
+    expect(reducedMotion).toContain('transition-property: opacity !important')
+    expect(reducedMotion).toContain('transition-duration: var(--motion-press) !important')
+  })
 })
