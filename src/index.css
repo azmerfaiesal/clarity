@@ -1196,7 +1196,23 @@ body {
     animation: motion-content-fade var(--motion-press) ease both !important;
     animation-delay: 0ms !important;
   }
-  .auth-screen,
+  .auth-screen {
+    transform: none !important;
+    scale: 1 !important;
+    animation: none !important;
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+    transition-timing-function: ease !important;
+  }
+  .auth-screen[data-motion-state='entering'],
+  .auth-screen[data-motion-state='entered'] {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .auth-screen[data-motion-state='exiting'] {
+    opacity: 0 !important;
+    animation: none !important;
+  }
   .auth-card,
   .auth-card[data-invalid='true'],
   .auth-card[data-auth-success='true'],

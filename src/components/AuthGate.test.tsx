@@ -224,6 +224,26 @@ describe('AuthGate mandatory login', () => {
       (screen.getByRole('button', { name: 'Resend code in 60s' }) as HTMLButtonElement).disabled,
     ).toBe(true)
   })
+
+  it('expires resend from wall time after interval callbacks were suspended', async () => {
+    vi.useFakeTimers()
+    const startedAt = new Date('2026-09-05T08:00:00.000Z')
+    vi.setSystemTime(startedAt)
+    renderGate()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Email' }), {
+      target: { value: 'person@example.com' },
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    })
+    expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeTruthy()
+
+    vi.setSystemTime(new Date(startedAt.getTime() + 60_000))
+    act(() => window.dispatchEvent(new Event('focus')))
+
+    const resend = screen.getByRole('button', { name: 'Resend code' }) as HTMLButtonElement
+    expect(resend.disabled).toBe(false)
+  })
 })
 
 describe('AuthGate Google and session outcomes', () => {
@@ -271,6 +291,26 @@ describe('AuthGate Google and session outcomes', () => {
     expect(screen.queryByRole('button', { name: 'Continue with Google' })).toBeNull()
   })
 
+  it('retains callback completion copy through authenticated exit without flashing login UI', () => {
+    authState.oauthCompleting = true
+    const view = renderGate()
+    expect(screen.getByRole('status').textContent).toContain('Signing you in…')
+
+    vi.useFakeTimers()
+    authState.user = { id: 'google-user' }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+    authState.oauthCompleting = false
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    expect(document.querySelector(".auth-screen[data-motion-state='exiting']")).toBeTruthy()
+    expect(screen.getByRole('status').textContent).toContain('Signing you in…')
+    expect(screen.queryByRole('textbox', { name: 'Email' })).toBeNull()
+    expect(screen.queryByRole('textbox', { name: 'Six-digit verification code' })).toBeNull()
+
+    act(() => vi.advanceTimersByTime(280))
+    expect(screen.queryByText('Signing you in…')).toBeNull()
+  })
+
   it('surfaces a callback issue once and clears it when switching to email', async () => {
     authState.oauthIssue = {
       kind: 'provider',
@@ -314,6 +354,54 @@ describe('AuthGate Google and session outcomes', () => {
       </AuthGate>,
     )
     expect(haptics.success).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns to a fresh email screen after authenticated exit completes and the user signs out', async () => {
+    verifyEmailCode.mockResolvedValue({
+      ok: false,
+      issue: { kind: 'provider', message: 'That code is invalid or has expired.' },
+    })
+    const user = userEvent.setup()
+    const view = renderGate()
+    await requestCode(user, 'prior@example.com')
+    await user.type(screen.getByRole('textbox', { name: 'Six-digit verification code' }), '123456')
+    await user.click(screen.getByRole('button', { name: 'Verify code' }))
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    vi.useFakeTimers()
+    authState.user = { id: 'user-1' }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+    act(() => vi.advanceTimersByTime(280))
+    expect(document.querySelector('.auth-screen')).toBeNull()
+
+    authState.user = null
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    expect((screen.getByRole('textbox', { name: 'Email' }) as HTMLInputElement).value).toBe('')
+    expect(screen.queryByRole('textbox', { name: 'Six-digit verification code' })).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('button', { name: /resend code/i })).toBeNull()
+    expect(document.querySelector(".auth-card[data-auth-step='email']")).toBeTruthy()
+  })
+
+  it('shows a fresh email screen when sign-out reverses an authenticated exit in progress', async () => {
+    const user = userEvent.setup()
+    const view = renderGate()
+    await requestCode(user, 'prior@example.com')
+    await user.type(screen.getByRole('textbox', { name: 'Six-digit verification code' }), '123456')
+
+    authState.user = { id: 'user-1' }
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+    expect(document.querySelector(".auth-screen[data-motion-state='exiting']")).toBeTruthy()
+
+    authState.user = null
+    view.rerender(<AuthGate><main>Private workspace</main></AuthGate>)
+
+    expect((screen.getByRole('textbox', { name: 'Email' }) as HTMLInputElement).value).toBe('')
+    expect(screen.queryByText(/prior@example\.com/i)).toBeNull()
+    expect(screen.queryByRole('textbox', { name: 'Six-digit verification code' })).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(document.querySelector(".auth-card[data-auth-step='email']")).toBeTruthy()
   })
 
   it('skips the login entrance for an already-restored session', () => {

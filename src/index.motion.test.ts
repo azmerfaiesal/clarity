@@ -158,4 +158,18 @@ describe('motion CSS foundation', () => {
     expect(reducedMotion).toContain('transition-property: opacity !important')
     expect(reducedMotion).toContain('transition-duration: var(--motion-press) !important')
   })
+
+  it('keeps reduced-motion login opacity authoritative for every presence phase', () => {
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+
+    expect(reducedMotion).toContain(
+      ".auth-screen[data-motion-state='entering'],\n  .auth-screen[data-motion-state='entered'] {\n    opacity: 1 !important;\n    animation: none !important;",
+    )
+    expect(reducedMotion).toContain(
+      ".auth-screen[data-motion-state='exiting'] {\n    opacity: 0 !important;\n    animation: none !important;",
+    )
+    expect(reducedMotion).toMatch(
+      /\.auth-screen[\s\S]*transition-property:\s*opacity !important;[\s\S]*transition-duration:\s*var\(--motion-press\) !important;/,
+    )
+  })
 })

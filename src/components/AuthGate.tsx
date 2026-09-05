@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import {
   nativeSelectionHaptic,
@@ -38,19 +38,54 @@ function AuthGate({ children }: { children: ReactNode }) {
   const [code, setCode] = useState('')
   const [pending, setPending] = useState<PendingAction>(null)
   const [resendIn, setResendIn] = useState(0)
+  const [resendDeadline, setResendDeadline] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [freshLoginRequired, setFreshLoginRequired] = useState(false)
+  const [oauthCompletionLatched, setOauthCompletionLatched] = useState(false)
   const emailInputRef = useRef<HTMLInputElement>(null)
   const previouslySignedOut = useRef(false)
-  const loginPresence = usePresenceValue(!loading && !user ? 'login' : null)
-  const resendActive = resendIn > 0
+  const resetLoginState = useCallback(() => {
+    setStep('email')
+    setEmail('')
+    setCode('')
+    setPending(null)
+    setResendIn(0)
+    setResendDeadline(null)
+    setError(null)
+    setFreshLoginRequired(false)
+    setOauthCompletionLatched(false)
+  }, [])
+  const loginPresence = usePresenceValue(!loading && !user ? 'login' : null, {
+    onExited: resetLoginState,
+  })
+  const presentingFreshLogin = !user && freshLoginRequired
+  const presentedStep = presentingFreshLogin ? 'email' : step
+  const presentedEmail = presentingFreshLogin ? '' : email
+  const presentedCode = presentingFreshLogin ? '' : code
+  const presentedResendIn = presentingFreshLogin ? 0 : resendIn
+  const presentedError = presentingFreshLogin ? null : error
+  const presentOauthCompletion =
+    oauthCompleting ||
+    (loginPresence?.phase === 'exiting' && oauthCompletionLatched)
+
+  const refreshResendIn = useCallback(() => {
+    if (resendDeadline === null) return
+    const remaining = Math.max(0, Math.ceil((resendDeadline - Date.now()) / 1_000))
+    setResendIn(remaining)
+    if (remaining === 0) setResendDeadline(null)
+  }, [resendDeadline])
 
   useEffect(() => {
-    if (!resendActive) return
-    const interval = window.setInterval(() => {
-      setResendIn((current) => Math.max(0, current - 1))
-    }, 1_000)
-    return () => window.clearInterval(interval)
-  }, [resendActive])
+    if (resendDeadline === null) return
+    const interval = window.setInterval(refreshResendIn, 1_000)
+    window.addEventListener('focus', refreshResendIn)
+    document.addEventListener('visibilitychange', refreshResendIn)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refreshResendIn)
+      document.removeEventListener('visibilitychange', refreshResendIn)
+    }
+  }, [refreshResendIn, resendDeadline])
 
   useEffect(() => {
     if (!oauthIssue) return
@@ -60,10 +95,24 @@ function AuthGate({ children }: { children: ReactNode }) {
   }, [clearOauthIssue, oauthIssue])
 
   useEffect(() => {
+    if (!oauthCompleting) return
+    // oxlint-disable-next-line react/set-state-in-effect -- Retain callback progress through the presence exit.
+    setOauthCompletionLatched(true)
+  }, [oauthCompleting])
+
+  useEffect(() => {
+    if (!loading && !user && freshLoginRequired) {
+      // oxlint-disable-next-line react/set-state-in-effect -- Clear the retained form before a cancelled exit can expose it.
+      resetLoginState()
+    }
+  }, [freshLoginRequired, loading, resetLoginState, user])
+
+  useEffect(() => {
     if (!loading && !user) previouslySignedOut.current = true
     if (user && previouslySignedOut.current) {
       triggerHaptic(nativeSuccessHaptic)
       previouslySignedOut.current = false
+      setFreshLoginRequired(true)
     }
   }, [loading, user])
 
@@ -85,8 +134,8 @@ function AuthGate({ children }: { children: ReactNode }) {
       <section
         aria-labelledby="auth-heading"
         className="auth-card rounded-2xl border border-line bg-raised p-7 shadow-xl shadow-black/10 dark:shadow-black/40"
-        data-auth-step={step}
-        data-invalid={Boolean(error) || undefined}
+        data-auth-step={presentedStep}
+        data-invalid={Boolean(presentedError) || undefined}
         data-auth-success={loginPresence.phase === 'exiting' || undefined}
       >
         <header className="mb-6 flex items-center gap-3">
@@ -101,14 +150,14 @@ function AuthGate({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {oauthCompleting ? (
+        {presentOauthCompletion ? (
           <div role="status" className="flex min-h-44 items-center justify-center gap-2 text-sm text-ink">
             <Loader2 className="h-5 w-5 animate-spin text-accent" />
             Signing you in…
           </div>
         ) : (
-          <div className="auth-step" key={step}>
-            {step === 'email' ? (
+          <div className="auth-step" key={presentedStep}>
+            {presentedStep === 'email' ? (
               <>
                 <div className="mb-5">
                   <h2 className="text-lg font-semibold text-ink">Welcome</h2>
@@ -126,10 +175,10 @@ function AuthGate({ children }: { children: ReactNode }) {
                   type="email"
                   autoComplete="email"
                   required
-                  value={email}
+                  value={presentedEmail}
                   onChange={(event) => {
                     setEmail(event.currentTarget.value)
-                    if (error) setError(null)
+                    if (presentedError) setError(null)
                   }}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') void requestCode('request-code')
@@ -170,24 +219,24 @@ function AuthGate({ children }: { children: ReactNode }) {
                 <div className="mb-5">
                   <h2 className="text-lg font-semibold text-ink">Check your email</h2>
                   <p className="mt-1 text-sm leading-relaxed text-faint">
-                    Enter the six-digit code sent to {email.trim().toLowerCase()}.
+                    Enter the six-digit code sent to {presentedEmail.trim().toLowerCase()}.
                   </p>
                 </div>
 
                 <OtpInput
-                  value={code}
+                  value={presentedCode}
                   onChange={(next) => {
                     setCode(next)
-                    if (error) setError(null)
+                    if (presentedError) setError(null)
                   }}
                   disabled={pending === 'verify-code'}
-                  invalid={Boolean(error)}
+                  invalid={Boolean(presentedError)}
                   autoFocus
                 />
 
                 <button
                   type="button"
-                  disabled={pending !== null || code.length !== 6}
+                  disabled={pending !== null || presentedCode.length !== 6}
                   onClick={() => void verifyCode()}
                   className="motion-primary motion-interactive mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-ink hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -198,11 +247,11 @@ function AuthGate({ children }: { children: ReactNode }) {
                 <div className="mt-4 flex flex-col items-center gap-2">
                   <button
                     type="button"
-                    disabled={pending !== null || resendIn > 0}
+                    disabled={pending !== null || presentedResendIn > 0}
                     onClick={() => void requestCode('resend')}
                     className="motion-interactive cursor-pointer rounded-md px-2 py-1 text-sm font-medium text-accent hover:text-accent-hi disabled:cursor-not-allowed disabled:text-faint"
                   >
-                    {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+                    {presentedResendIn > 0 ? `Resend code in ${presentedResendIn}s` : 'Resend code'}
                   </button>
                   <button
                     type="button"
@@ -216,9 +265,9 @@ function AuthGate({ children }: { children: ReactNode }) {
               </>
             )}
 
-            {error && (
+            {presentedError && (
               <p role="alert" className="mt-4 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-                {error}
+                {presentedError}
               </p>
             )}
           </div>
@@ -255,6 +304,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 
     setCode('')
     setStep('code')
+    setResendDeadline(Date.now() + EMAIL_OTP_COOLDOWN_SECONDS * 1_000)
     setResendIn(EMAIL_OTP_COOLDOWN_SECONDS)
   }
 
