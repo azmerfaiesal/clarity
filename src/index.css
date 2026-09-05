@@ -383,6 +383,87 @@ body {
 }
 
 /*
+ * The brand mark is a quiet ambient beacon. Its decorative layers sit outside
+ * the fixed 1.75rem icon box, so the mark can breathe without disturbing the
+ * Clarity label or becoming a control in its own right.
+ */
+.clarity-beacon {
+  position: relative;
+  isolation: isolate;
+}
+.clarity-beacon::before,
+.clarity-beacon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.clarity-beacon::before {
+  background: color-mix(in srgb, var(--accent) 56%, transparent);
+  filter: blur(7px);
+  animation: clarity-beacon-breathe 3.5s ease-in-out infinite;
+}
+.clarity-beacon::after {
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  animation: clarity-beacon-ring 3.5s var(--ease-spring) infinite;
+}
+.clarity-beacon > svg {
+  animation: clarity-beacon-icon 3.5s ease-in-out infinite;
+}
+.clarity-beacon[data-drawer-open='true']::after {
+  animation:
+    clarity-beacon-open 900ms var(--ease-spring) both,
+    clarity-beacon-ring 3.5s 900ms var(--ease-spring) infinite;
+}
+
+@keyframes clarity-beacon-breathe {
+  0%,
+  100% {
+    opacity: 0.38;
+    scale: 0.9;
+  }
+  50% {
+    opacity: 0.88;
+    scale: 1.3;
+  }
+}
+@keyframes clarity-beacon-ring {
+  0%,
+  58% {
+    opacity: 0;
+    scale: 0.94;
+  }
+  68% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.78;
+  }
+}
+@keyframes clarity-beacon-icon {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.05;
+  }
+}
+@keyframes clarity-beacon-open {
+  from {
+    opacity: 0.9;
+    scale: 0.9;
+  }
+  to {
+    opacity: 0;
+    scale: 2;
+  }
+}
+
+/*
  * Disclosure animation for the sidebar sections. grid-template-rows animates
  * where height:auto cannot, so the panel can size itself to its content and
  * still slide rather than snap.
@@ -1232,6 +1313,19 @@ body {
   .auth-screen[data-motion-state='exiting'] .auth-card {
     transform: none !important;
     scale: 1 !important;
+  }
+  .clarity-beacon,
+  .clarity-beacon::before,
+  .clarity-beacon::after,
+  .clarity-beacon > svg {
+    animation: none !important;
+    scale: 1 !important;
+  }
+  .clarity-beacon::before {
+    opacity: 0.5;
+  }
+  .clarity-beacon::after {
+    display: none;
   }
 }
 

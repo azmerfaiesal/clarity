@@ -172,4 +172,17 @@ describe('motion CSS foundation', () => {
       /\.auth-screen[\s\S]*transition-property:\s*opacity !important;[\s\S]*transition-duration:\s*var\(--motion-press\) !important;/,
     )
   })
+
+  it('keeps the non-interactive brand beacon ambient, drawer-responsive, and motion-safe', () => {
+    const sidebar = readFileSync(resolve(process.cwd(), 'src/components/Sidebar.tsx'), 'utf8')
+
+    expect(css).toContain('@keyframes clarity-beacon-breathe')
+    expect(css).toContain('@keyframes clarity-beacon-ring')
+    expect(css).toContain('.clarity-beacon::after')
+    expect(css).toContain(".clarity-beacon[data-drawer-open='true']")
+    expect(css).toMatch(/prefers-reduced-motion[\s\S]*\.clarity-beacon/)
+    expect(sidebar).toContain('className="clarity-beacon')
+    expect(sidebar).toContain('data-drawer-open={mobileOpen || undefined}')
+    expect(sidebar).toContain('>Clarity</span>')
+  })
 })

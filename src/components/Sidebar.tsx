@@ -375,8 +375,12 @@ export function Sidebar({
     <div className="flex h-full min-h-0 flex-col">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 pt-5 pb-5">
-        <div className="glow flex h-7 w-7 items-center justify-center rounded-md bg-accent">
-          <CheckCircle2 className="h-4 w-4 text-accent-ink" strokeWidth={2.5} />
+        <div
+          className="clarity-beacon glow flex h-7 w-7 items-center justify-center rounded-md bg-accent"
+          data-drawer-open={mobileOpen || undefined}
+          aria-hidden="true"
+        >
+          <CheckCircle2 className="relative z-10 h-4 w-4 text-accent-ink" strokeWidth={2.5} />
         </div>
         <span className="text-md font-semibold tracking-[-0.01em] text-ink">Clarity</span>
         <button
