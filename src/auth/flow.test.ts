@@ -14,10 +14,12 @@ describe('authentication callback contract', () => {
     expect(authRedirectUrl(false, 'https://azmerfaiesal.github.io/clarity/?view=today')).toBe(
       WEB_AUTH_REDIRECT,
     )
+    expect(authRedirectUrl(false, 'http://localhost:5173/?view=today')).toBe('http://localhost:5173/')
   })
 
-  it('accepts only Clarity callbacks and extracts one code', () => {
+  it('accepts only approved callbacks and extracts one code', () => {
     expect(isExpectedAuthCallback(`${NATIVE_AUTH_REDIRECT}?code=once`, true)).toBe(true)
+    expect(isExpectedAuthCallback('http://localhost:5173/?code=once', false)).toBe(true)
     expect(isExpectedAuthCallback('com.azmerfaiesal.clarity://evil/callback?code=once', true)).toBe(
       false,
     )
@@ -33,6 +35,8 @@ describe('authentication callback contract', () => {
       false,
     )
     expect(isExpectedAuthCallback('http://azmerfaiesal.github.io/clarity/?code=once', false)).toBe(false)
+    expect(isExpectedAuthCallback('http://localhost:5174/?code=once', false)).toBe(false)
+    expect(isExpectedAuthCallback('http://localhost.evil.example:5173/?code=once', false)).toBe(false)
     expect(isExpectedAuthCallback('com.azmerfaiesal.clarity://auth/not-callback?code=once', true)).toBe(
       false,
     )

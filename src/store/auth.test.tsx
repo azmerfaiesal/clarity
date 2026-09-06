@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+// @vitest-environment-options {"url":"http://localhost:5173/"}
+
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
@@ -60,17 +63,6 @@ vi.mock('../auth/operations', () => ({
       ? { kind: 'network', message: 'Check your connection and try again.' }
       : { kind: 'provider', message: 'We could not sign you in. Please try again.' },
 }))
-vi.mock('../auth/flow', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../auth/flow')>()
-  return {
-    ...actual,
-    isExpectedAuthCallback: (url: string, native: boolean) => {
-      if (native) return actual.isExpectedAuthCallback(url, true)
-      const candidate = new URL(url)
-      return candidate.origin === window.location.origin && candidate.pathname === '/clarity/'
-    },
-  }
-})
 vi.mock('../lib/supabase', () => ({ supabase: { auth: boundary.auth } }))
 vi.mock('../native/authBrowser', () => ({
   closeNativeAuthBrowser: boundary.closeNativeAuthBrowser,
@@ -126,7 +118,7 @@ async function loaded() {
 beforeEach(() => {
   vi.clearAllMocks()
   boundary.resetNative()
-  window.history.replaceState({}, '', '/clarity/?view=today')
+  window.history.replaceState({}, '', '/?view=today')
   boundary.auth.getSession.mockResolvedValue({ data: { session: null } })
   boundary.auth.onAuthStateChange.mockImplementation((handler) => {
     boundary.setAuthStateHandler(handler)
@@ -162,7 +154,7 @@ describe('AuthProvider', () => {
   })
 
   it.each([
-    [false, 'http://localhost:3000/clarity/'],
+    [false, 'http://localhost:5173/'],
     [true, 'com.azmerfaiesal.clarity://auth/callback'],
   ])('launches Google using the correct %s redirect destination', async (native, redirectTo) => {
     boundary.resetNative(native)
@@ -180,13 +172,13 @@ describe('AuthProvider', () => {
   })
 
   it('exchanges an initial web callback once and removes OAuth parameters from the current path', async () => {
-    window.history.replaceState({}, '', '/clarity/?view=today&code=web-once')
+    window.history.replaceState({}, '', '/?view=today&code=web-once')
     renderProvider()
 
     await loaded()
 
     expect(boundary.authOperations.exchangeOAuthCode).toHaveBeenCalledWith('web-once')
-    expect(window.location.pathname).toBe('/clarity/')
+    expect(window.location.pathname).toBe('/')
     expect(window.location.search).toBe('?view=today')
   })
 
