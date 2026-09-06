@@ -61,7 +61,11 @@ export function createAuthOperations(client: SupabaseClient): AuthOperations {
       try {
         const { data, error } = await client.auth.signInWithOAuth({
           provider: 'google',
-          options: { redirectTo, skipBrowserRedirect: true },
+          options: {
+            redirectTo,
+            skipBrowserRedirect: true,
+            queryParams: { prompt: 'select_account' },
+          },
         })
         if (error) return failed(error)
         if (!data.url) return failed(new Error('Authorization URL missing'))

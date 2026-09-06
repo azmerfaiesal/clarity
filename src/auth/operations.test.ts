@@ -148,7 +148,11 @@ describe('Supabase authentication operations', () => {
 
     expect(auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true },
+      options: {
+        redirectTo: NATIVE_AUTH_REDIRECT,
+        skipBrowserRedirect: true,
+        queryParams: { prompt: 'select_account' },
+      },
     })
     expect(result).toEqual({ ok: true, data: { url: 'https://accounts.google.test' } })
   })

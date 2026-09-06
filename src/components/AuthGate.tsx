@@ -14,6 +14,23 @@ type PendingAction = 'request-code' | 'verify-code' | 'resend' | 'google' | null
 
 export const EMAIL_OTP_COOLDOWN_SECONDS = 60
 
+function GmailIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-7 w-7"
+      viewBox="0 0 48 48"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title>Gmail</title>
+      <path fill="#4285F4" d="M6 10.8 14 17v23H7a3 3 0 0 1-3-3V12.4c0-1.7.9-2.2 2-1.6Z" />
+      <path fill="#34A853" d="M42 10.8 34 17v23h7a3 3 0 0 0 3-3V12.4c0-1.7-.9-2.2-2-1.6Z" />
+      <path fill="#FBBC04" d="M34 17 42 10.8V8.5c0-2.6-3-4.1-5.1-2.5L24 15.7 34 23.2Z" />
+      <path fill="#EA4335" d="M14 17 6 10.8V8.5C6 5.9 9 4.4 11.1 6L24 15.7 34 8.2V17L24 24.5Z" />
+    </svg>
+  )
+}
+
 function triggerHaptic(effect: () => void): void {
   try {
     effect()
@@ -207,12 +224,16 @@ function AuthGate({ children }: { children: ReactNode }) {
 
                 <button
                   type="button"
+                  aria-label={pending === 'google' ? 'Opening Google…' : 'Continue with Google'}
                   disabled={pending !== null}
                   onClick={() => void continueWithGoogle()}
-                  className="auth-provider-button motion-interactive flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-line-strong bg-surface px-4 py-3 text-sm font-semibold text-ink hover:border-accent hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60"
+                  className="auth-provider-button motion-interactive mx-auto flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl border border-line-strong bg-surface shadow-lg shadow-black/5 hover:border-accent hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60 dark:shadow-black/30"
                 >
-                  {pending === 'google' && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {pending === 'google' ? 'Opening Google…' : 'Continue with Google'}
+                  {pending === 'google' ? (
+                    <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <GmailIcon />
+                  )}
                 </button>
               </>
             ) : (
