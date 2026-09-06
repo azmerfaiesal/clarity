@@ -14,19 +14,31 @@ type PendingAction = 'request-code' | 'verify-code' | 'resend' | 'google' | null
 
 export const EMAIL_OTP_COOLDOWN_SECONDS = 60
 
-function GmailIcon() {
+function GoogleIcon() {
   return (
     <svg
       aria-hidden="true"
       className="h-7 w-7"
-      viewBox="0 0 48 48"
+      viewBox="0 0 18 18"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title>Gmail</title>
-      <path fill="#4285F4" d="M6 10.8 14 17v23H7a3 3 0 0 1-3-3V12.4c0-1.7.9-2.2 2-1.6Z" />
-      <path fill="#34A853" d="M42 10.8 34 17v23h7a3 3 0 0 0 3-3V12.4c0-1.7-.9-2.2-2-1.6Z" />
-      <path fill="#FBBC04" d="M34 17 42 10.8V8.5c0-2.6-3-4.1-5.1-2.5L24 15.7 34 23.2Z" />
-      <path fill="#EA4335" d="M14 17 6 10.8V8.5C6 5.9 9 4.4 11.1 6L24 15.7 34 8.2V17L24 24.5Z" />
+      <title>Google</title>
+      <path
+        fill="#4285F4"
+        d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.797 2.716v2.258h2.91C16.66 14.25 17.64 11.892 17.64 9.205Z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.468-.806 5.957-2.181l-2.91-2.258c-.805.54-1.835.86-3.047.86-2.344 0-4.328-1.584-5.037-3.71H.956v2.333A9 9 0 0 0 9 18Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.963 10.711A5.41 5.41 0 0 1 3.682 9c0-.594.102-1.172.281-1.711V4.956H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.044l3.007-2.333Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.579c1.322 0 2.508.454 3.442 1.345l2.582-2.581C13.464.891 11.43 0 9 0A9 9 0 0 0 .956 4.956l3.007 2.333C4.672 5.162 6.656 3.579 9 3.579Z"
+      />
     </svg>
   )
 }
@@ -232,7 +244,7 @@ function AuthGate({ children }: { children: ReactNode }) {
                   {pending === 'google' ? (
                     <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
                   ) : (
-                    <GmailIcon />
+                    <GoogleIcon />
                   )}
                 </button>
               </>

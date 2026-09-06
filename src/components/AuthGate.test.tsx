@@ -88,7 +88,7 @@ describe('AuthGate mandatory login', () => {
     expect(screen.getByRole('textbox', { name: 'Email' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
     const google = screen.getByRole('button', { name: 'Continue with Google' })
-    expect(google.querySelector('svg title')?.textContent).toBe('Gmail')
+    expect(google.querySelector('svg title')?.textContent).toBe('Google')
     expect(screen.queryByText('Continue with Google')).toBeNull()
     expect(screen.queryByLabelText(/password/i)).toBeNull()
     expect(screen.queryByText(/create account|sign up|no account/i)).toBeNull()
