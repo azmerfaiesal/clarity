@@ -313,6 +313,9 @@ export function seedTasks(): Task[] {
   const base = {
     description: '',
     reminder: null,
+    recurrence: null,
+    recurrenceSeriesId: null,
+    recurrenceSequence: null,
     completedAt: null,
     updatedAt: iso(0),
     deletedAt: null,

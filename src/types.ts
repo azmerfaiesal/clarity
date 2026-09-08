@@ -1,5 +1,13 @@
 export type Priority = 'none' | 'low' | 'medium' | 'high'
 
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+export type TaskRecurrence =
+  | { frequency: 'daily' }
+  | { frequency: 'selectedDays'; weekdays: Weekday[] }
+  | { frequency: 'weekly' }
+  | { frequency: 'monthly'; preferredDay: number }
+
 export interface Task {
   id: string
   title: string
@@ -11,6 +19,9 @@ export interface Task {
   tags: string[]
   favorite: boolean
   reminder: string | null // ISO datetime
+  recurrence: TaskRecurrence | null
+  recurrenceSeriesId: string | null
+  recurrenceSequence: number | null
   sortOrder: number
   createdAt: string
   completedAt: string | null
