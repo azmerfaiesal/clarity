@@ -1,9 +1,11 @@
 import { Bell, Calendar, Flag, Inbox, Star, Tag, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { Priority, Task, TaskList } from '../types'
+import type { Priority, Task, TaskList, TaskRecurrence } from '../types'
 import { formatTimestamp, fromDateTimeLocal, toDateTimeLocal } from '../utils/dateUtils'
+import { taskRecurrenceAnchor } from '../utils/taskRecurrence'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
 import type { MotionPhase } from '../utils/motion'
+import { TaskRecurrenceField } from './TaskRecurrenceField'
 
 const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high']
 
@@ -37,6 +39,11 @@ export function TaskEditor({
   const [tagsInput, setTagsInput] = useState(task.tags.join(', '))
   const [favorite, setFavorite] = useState(task.favorite)
   const [reminder, setReminder] = useState(() => toDateTimeLocal(task.reminder))
+  const [recurrence, setRecurrence] = useState<TaskRecurrence | null>(task.recurrence)
+  const recurrenceAnchor = taskRecurrenceAnchor({
+    reminder: fromDateTimeLocal(reminder),
+    dueDate,
+  })
   const interactive = phase !== 'exiting'
   const close = () => {
     if (interactive) onClose()
@@ -54,6 +61,10 @@ export function TaskEditor({
     return () => document.removeEventListener('keydown', onKey, true)
   }, [interactive, onClose])
 
+  useEffect(() => {
+    if (!recurrenceAnchor && recurrence) setRecurrence(null)
+  }, [recurrenceAnchor, recurrence])
+
   const save = () => {
     if (!interactive) return
     if (!title.trim()) return
@@ -69,6 +80,7 @@ export function TaskEditor({
         .filter(Boolean),
       favorite,
       reminder: fromDateTimeLocal(reminder),
+      recurrence: recurrenceAnchor ? recurrence : null,
     })
     onClose()
   }
@@ -203,6 +215,12 @@ export function TaskEditor({
               />
             </Field>
           </div>
+
+          <TaskRecurrenceField
+            value={recurrence}
+            anchor={recurrenceAnchor}
+            onChange={setRecurrence}
+          />
 
           <div>
  <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-faint">

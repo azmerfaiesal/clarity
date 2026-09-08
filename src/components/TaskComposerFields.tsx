@@ -1,8 +1,10 @@
 import { Bell, Calendar, Flag, Inbox, Tag, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { Priority, TaskList } from '../types'
+import type { Priority, TaskList, TaskRecurrence } from '../types'
 import { addDays, fromDateTimeLocal, todayStr } from '../utils/dateUtils'
+import { taskRecurrenceAnchor } from '../utils/taskRecurrence'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
+import { TaskRecurrenceField } from './TaskRecurrenceField'
 
 const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high']
 
@@ -21,6 +23,7 @@ export type TaskDraftInput = {
   listId: string | null
   tags: string[]
   reminder: string | null
+  recurrence: TaskRecurrence | null
 }
 
 export type TaskComposerFieldsProps = {
@@ -48,11 +51,20 @@ export function TaskComposerFields({
   const [listId, setListId] = useState<string | null>(defaultListId ?? null)
   const [tagsInput, setTagsInput] = useState('')
   const [reminder, setReminder] = useState('')
+  const [recurrence, setRecurrence] = useState<TaskRecurrence | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
+  const recurrenceAnchor = taskRecurrenceAnchor({
+    reminder: fromDateTimeLocal(reminder),
+    dueDate,
+  })
 
   useEffect(() => {
     if (autoFocus) titleRef.current?.focus({ preventScroll: true })
   }, [autoFocus])
+
+  useEffect(() => {
+    if (!recurrenceAnchor && recurrence) setRecurrence(null)
+  }, [recurrenceAnchor, recurrence])
 
   const reset = () => {
     setTitle('')
@@ -62,6 +74,7 @@ export function TaskComposerFields({
     setListId(defaultListId ?? null)
     setTagsInput('')
     setReminder('')
+    setRecurrence(null)
   }
 
   const submit = () => {
@@ -78,6 +91,7 @@ export function TaskComposerFields({
         .map((tag) => tag.trim().replace(/^#/, ''))
         .filter(Boolean),
       reminder: fromDateTimeLocal(reminder),
+      recurrence: recurrenceAnchor ? recurrence : null,
     })
     reset()
     onCancel()
@@ -250,6 +264,14 @@ export function TaskComposerFields({
               <X className="h-3.5 w-3.5" />
             </button>
           )}
+
+          <div className="w-full basis-full pt-1">
+            <TaskRecurrenceField
+              value={recurrence}
+              anchor={recurrenceAnchor}
+              onChange={setRecurrence}
+            />
+          </div>
         </div>
       </div>
 

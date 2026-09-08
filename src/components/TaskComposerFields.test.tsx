@@ -33,4 +33,50 @@ describe('TaskComposerFields motion class contract', () => {
     })
     expectMotionInteractive(screen.getByRole('button', { name: 'Clear reminder' }))
   })
+
+  it('submits a selected weekday recurrence', () => {
+    const onSubmit = vi.fn()
+    render(
+      <TaskComposerFields
+        lists={[]}
+        defaultDueDate="2026-09-04"
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Task name'), { target: { value: 'Training' } })
+    fireEvent.click(screen.getByRole('button', { name: /repeat/i }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Selected days' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Monday' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Wednesday' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Friday' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add task' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recurrence: { frequency: 'selectedDays', weekdays: [1, 3] },
+      }),
+    )
+  })
+
+  it('clears recurrence when the final schedule anchor is removed', () => {
+    const onSubmit = vi.fn()
+    render(
+      <TaskComposerFields
+        lists={[]}
+        defaultDueDate="2026-09-04"
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Task name'), { target: { value: 'Training' } })
+    fireEvent.click(screen.getByRole('button', { name: /repeat/i }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Daily' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear due date' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add task' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ recurrence: null }))
+  })
 })
