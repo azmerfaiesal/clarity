@@ -33,6 +33,9 @@ create table if not exists public.clarity_tasks (
   tags         jsonb not null default '[]'::jsonb,
   favorite     boolean not null default false,
   reminder     timestamptz,
+  recurrence   jsonb,
+  recurrence_series_id text,
+  recurrence_sequence integer,
   sort_order   bigint not null default 0,
   created_at   timestamptz not null default now(),
   completed_at timestamptz,
@@ -40,8 +43,18 @@ create table if not exists public.clarity_tasks (
   deleted_at   timestamptz
 );
 
+-- Existing projects need explicit ALTER statements because CREATE TABLE IF
+-- NOT EXISTS does not add newly introduced columns.
+alter table public.clarity_tasks
+  add column if not exists recurrence jsonb,
+  add column if not exists recurrence_series_id text,
+  add column if not exists recurrence_sequence integer;
+
 create index if not exists clarity_tasks_user_idx on public.clarity_tasks (user_id);
 create index if not exists clarity_tasks_updated_idx on public.clarity_tasks (user_id, updated_at);
+create index if not exists clarity_tasks_series_idx
+  on public.clarity_tasks (user_id, recurrence_series_id)
+  where recurrence_series_id is not null;
 
 alter table public.clarity_tasks enable row level security;
 

@@ -1,6 +1,7 @@
 import type { BrainDump, Habit, HabitTemplate, Task, TaskList } from '../types'
 import type { NoteTemplateRow } from './noteTemplates'
 import { supabase } from '../lib/supabase'
+import { normalizeTaskRecurrence } from '../utils/taskRecurrence'
 import { reportSyncError, reportSyncOk } from './syncHealth'
 
 /**
@@ -475,7 +476,8 @@ function noteToRow(n: BrainDump, userId: string) {
 
 // ---- row <-> model mapping ----
 
-function rowToTask(r: Record<string, unknown>): Task {
+export function rowToTask(r: Record<string, unknown>): Task {
+  const recurrence = normalizeTaskRecurrence(r.recurrence)
   return {
     id: String(r.id),
     title: String(r.title ?? ''),
@@ -487,9 +489,15 @@ function rowToTask(r: Record<string, unknown>): Task {
     tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
     favorite: Boolean(r.favorite),
     reminder: (r.reminder as string | null) ?? null,
-    recurrence: null,
-    recurrenceSeriesId: null,
-    recurrenceSequence: null,
+    recurrence,
+    recurrenceSeriesId:
+      recurrence && typeof r.recurrence_series_id === 'string' ? r.recurrence_series_id : null,
+    recurrenceSequence:
+      recurrence &&
+      Number.isInteger(r.recurrence_sequence) &&
+      Number(r.recurrence_sequence) >= 0
+        ? Number(r.recurrence_sequence)
+        : null,
     sortOrder: Number(r.sort_order ?? 0),
     createdAt: String(r.created_at ?? new Date().toISOString()),
     completedAt: (r.completed_at as string | null) ?? null,
@@ -498,7 +506,7 @@ function rowToTask(r: Record<string, unknown>): Task {
   }
 }
 
-function taskToRow(t: Task, userId: string) {
+export function taskToRow(t: Task, userId: string) {
   return {
     id: t.id,
     user_id: userId,
@@ -511,6 +519,9 @@ function taskToRow(t: Task, userId: string) {
     tags: t.tags,
     favorite: t.favorite,
     reminder: t.reminder,
+    recurrence: t.recurrence,
+    recurrence_series_id: t.recurrenceSeriesId,
+    recurrence_sequence: t.recurrenceSequence,
     sort_order: t.sortOrder,
     created_at: t.createdAt,
     completed_at: t.completedAt,
