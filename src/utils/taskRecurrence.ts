@@ -73,3 +73,76 @@ export function taskRecurrenceAnchor(
   const dueDate = parseDate(task.dueDate)
   return Number.isNaN(dueDate.getTime()) || toDateStr(dueDate) !== task.dueDate ? null : dueDate
 }
+
+export type NextTaskOccurrence = {
+  anchor: Date
+  reminder: string | null
+  dueDate: string | null
+}
+
+function addCalendarDays(date: Date, count: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + count)
+  return next
+}
+
+function nextSelectedDay(anchor: Date, weekdays: Weekday[]): Date {
+  let candidate = addCalendarDays(anchor, 1)
+  while (!weekdays.includes(candidate.getDay() as Weekday)) {
+    candidate = addCalendarDays(candidate, 1)
+  }
+  return candidate
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate()
+}
+
+function nextMonth(anchor: Date, preferredDay: number): Date {
+  const candidate = new Date(anchor)
+  candidate.setDate(1)
+  candidate.setMonth(candidate.getMonth() + 1)
+  candidate.setDate(Math.min(preferredDay, daysInMonth(candidate.getFullYear(), candidate.getMonth())))
+  return candidate
+}
+
+function advance(anchor: Date, recurrence: TaskRecurrence): Date {
+  switch (recurrence.frequency) {
+    case 'daily':
+      return addCalendarDays(anchor, 1)
+    case 'selectedDays':
+      return nextSelectedDay(anchor, recurrence.weekdays)
+    case 'weekly':
+      return addCalendarDays(anchor, 7)
+    case 'monthly':
+      return nextMonth(anchor, recurrence.preferredDay)
+  }
+}
+
+function localDayNumber(date: Date): number {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000
+}
+
+export function nextTaskOccurrence(
+  task: Pick<Task, 'reminder' | 'dueDate' | 'recurrence'>,
+  completedAt: Date,
+): NextTaskOccurrence | null {
+  const recurrence = normalizeTaskRecurrence(task.recurrence)
+  const anchor = taskRecurrenceAnchor(task)
+  if (!recurrence || !anchor || Number.isNaN(completedAt.getTime())) return null
+
+  let nextAnchor = advance(anchor, recurrence)
+  while (nextAnchor <= completedAt) nextAnchor = advance(nextAnchor, recurrence)
+
+  const dayDelta = localDayNumber(nextAnchor) - localDayNumber(anchor)
+  const dueDate = task.dueDate ? toDateStr(addCalendarDays(parseDate(task.dueDate), dayDelta)) : null
+  const reminder = task.reminder && !Number.isNaN(new Date(task.reminder).getTime())
+    ? nextAnchor.toISOString()
+    : null
+
+  return { anchor: nextAnchor, reminder, dueDate }
+}
+
+export function recurringOccurrenceId(seriesId: string, sequence: number): string {
+  return `rec:${seriesId}:${sequence}`
+}
