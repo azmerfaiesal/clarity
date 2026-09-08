@@ -72,6 +72,25 @@ describe('planNativeReminders', () => {
     expect(plans[0]).toMatchObject({ kind: 'task', entityId: 'open', body: 'Task open' })
   })
 
+  it('schedules only the next active occurrence from a recurring series', () => {
+    const completed = task('series-current', new Date(2026, 8, 2, 11), {
+      completed: true,
+      recurrence: { frequency: 'daily' },
+      recurrenceSeriesId: 'series-a',
+      recurrenceSequence: 0,
+    })
+    const next = task('rec:series-a:1', new Date(2026, 8, 3, 11), {
+      recurrence: { frequency: 'daily' },
+      recurrenceSeriesId: 'series-a',
+      recurrenceSequence: 1,
+    })
+
+    const plans = planNativeReminders([completed, next], [], now)
+
+    expect(plans).toHaveLength(1)
+    expect(plans[0]).toMatchObject({ kind: 'task', entityId: 'rec:series-a:1' })
+  })
+
   it('rolls habit reminders forward and skips completed dates', () => {
     const plans = planNativeReminders(
       [],

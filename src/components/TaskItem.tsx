@@ -1,6 +1,7 @@
-import { AlarmClock, Calendar, Copy, Flag, MoreHorizontal, Star, Trash2 } from 'lucide-react'
+import { AlarmClock, Calendar, Copy, Flag, MoreHorizontal, Repeat2, Star, Trash2 } from 'lucide-react'
 import type { Task, TaskList } from '../types'
 import { formatDateTime, formatDueDate, formatReminder } from '../utils/dateUtils'
+import { formatTaskRecurrence, taskRecurrenceAnchor } from '../utils/taskRecurrence'
 import { PRIORITY_LABEL } from '../utils/taskUtils'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
 import { TaskCheckbox } from './TaskCheckbox'
@@ -32,6 +33,14 @@ export function TaskItem({
 }) {
   const due = formatDueDate(task.dueDate)
   const reminder = formatReminder(task.reminder)
+  const recurrenceAnchor = taskRecurrenceAnchor(task)
+  const recurrenceSummary =
+    task.recurrence && recurrenceAnchor
+      ? formatTaskRecurrence(task.recurrence, recurrenceAnchor)
+      : null
+  const recurrenceLabel = recurrenceSummary
+    ? `Repeats ${recurrenceSummary.charAt(0).toLowerCase()}${recurrenceSummary.slice(1)}`
+    : null
   const list = lists.find((l) => l.id === task.listId)
 
   return (
@@ -70,7 +79,7 @@ export function TaskItem({
           <p className="mt-0.5 truncate text-sm text-muted">{task.description}</p>
         )}
 
-        {(due || reminder || list || task.tags.length > 0 || task.priority !== 'none') && (
+        {(due || reminder || recurrenceSummary || list || task.tags.length > 0 || task.priority !== 'none') && (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-2xs tracking-tight">
             {due && (
               <span
@@ -96,6 +105,16 @@ export function TaskItem({
                 <AlarmClock className="h-3 w-3" aria-hidden />
                 <span className="sr-only">Reminder set for </span>
                 {reminder}
+              </span>
+            )}
+            {recurrenceSummary && recurrenceLabel && (
+              <span
+                className="inline-flex items-center gap-1 text-faint"
+                aria-label={recurrenceLabel}
+                title={recurrenceLabel}
+              >
+                <Repeat2 className="h-3 w-3" aria-hidden />
+                <span aria-hidden>{recurrenceSummary}</span>
               </span>
             )}
             {task.priority !== 'none' && (
