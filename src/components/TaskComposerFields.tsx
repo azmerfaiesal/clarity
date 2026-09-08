@@ -62,9 +62,15 @@ export function TaskComposerFields({
     if (autoFocus) titleRef.current?.focus({ preventScroll: true })
   }, [autoFocus])
 
-  useEffect(() => {
-    if (!recurrenceAnchor && recurrence) setRecurrence(null)
-  }, [recurrenceAnchor, recurrence])
+  const updateDueDate = (next: string | null) => {
+    setDueDate(next)
+    if (!next && !reminder) setRecurrence(null)
+  }
+
+  const updateReminder = (next: string) => {
+    setReminder(next)
+    if (!next && !dueDate) setRecurrence(null)
+  }
 
   const reset = () => {
     setTitle('')
@@ -158,23 +164,23 @@ export function TaskComposerFields({
               type="date"
               aria-label="Due date"
               value={dueDate ?? ''}
-              onChange={(event) => setDueDate(event.target.value || null)}
+              onChange={(event) => updateDueDate(event.target.value || null)}
               className="cursor-pointer bg-transparent text-xs outline-none dark:[color-scheme:dark]"
             />
           </label>
-          <QuickDate label="Today" value={todayStr()} current={dueDate} onPick={setDueDate} />
+          <QuickDate label="Today" value={todayStr()} current={dueDate} onPick={updateDueDate} />
           <QuickDate
             label="Tomorrow"
             value={addDays(todayStr(), 1)}
             current={dueDate}
-            onPick={setDueDate}
+            onPick={updateDueDate}
           />
           {dueDate && (
             <button
               type="button"
               aria-label="Clear due date"
               title="Clear due date"
-              onClick={() => setDueDate(null)}
+              onClick={() => updateDueDate(null)}
               className="motion-interactive cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
             >
               <X className="h-3.5 w-3.5" />
@@ -249,7 +255,7 @@ export function TaskComposerFields({
               type="datetime-local"
               aria-label="Reminder"
               value={reminder}
-              onChange={(event) => setReminder(event.target.value)}
+              onChange={(event) => updateReminder(event.target.value)}
               className="cursor-pointer bg-transparent text-xs outline-none dark:[color-scheme:dark]"
             />
           </label>
@@ -258,7 +264,7 @@ export function TaskComposerFields({
               type="button"
               aria-label="Clear reminder"
               title="Clear reminder"
-              onClick={() => setReminder('')}
+              onClick={() => updateReminder('')}
               className="motion-interactive cursor-pointer rounded p-0.5 text-faint transition-colors hover:text-danger"
             >
               <X className="h-3.5 w-3.5" />

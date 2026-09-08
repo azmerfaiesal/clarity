@@ -61,9 +61,15 @@ export function TaskEditor({
     return () => document.removeEventListener('keydown', onKey, true)
   }, [interactive, onClose])
 
-  useEffect(() => {
-    if (!recurrenceAnchor && recurrence) setRecurrence(null)
-  }, [recurrenceAnchor, recurrence])
+  const updateDueDate = (next: string | null) => {
+    setDueDate(next)
+    if (!next && !reminder) setRecurrence(null)
+  }
+
+  const updateReminder = (next: string) => {
+    setReminder(next)
+    if (!next && !dueDate) setRecurrence(null)
+  }
 
   const save = () => {
     if (!interactive) return
@@ -167,13 +173,13 @@ export function TaskEditor({
             <Field
               label="Due date"
               icon={<Calendar className="h-3.5 w-3.5" />}
-              onClear={dueDate ? () => setDueDate(null) : undefined}
+              onClear={dueDate ? () => updateDueDate(null) : undefined}
             >
               <input
                 type="date"
                 aria-label="Due date"
                 value={dueDate ?? ''}
-                onChange={(e) => setDueDate(e.target.value || null)}
+                onChange={(e) => updateDueDate(e.target.value || null)}
                 className="w-full bg-transparent text-sm text-ink outline-none"
               />
             </Field>
@@ -204,13 +210,13 @@ export function TaskEditor({
             <Field
               label="Reminder"
               icon={<Bell className="h-3.5 w-3.5" />}
-              onClear={reminder ? () => setReminder('') : undefined}
+              onClear={reminder ? () => updateReminder('') : undefined}
             >
               <input
                 type="datetime-local"
                 aria-label="Reminder"
                 value={reminder}
-                onChange={(e) => setReminder(e.target.value)}
+                onChange={(e) => updateReminder(e.target.value)}
                 className="w-full bg-transparent text-sm text-ink outline-none"
               />
             </Field>
