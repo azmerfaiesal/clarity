@@ -516,6 +516,51 @@ body {
   min-height: 0;
 }
 
+/* Task recurrence expands from its trigger without changing the dialog's
+   horizontal bounds. The scale and accent bloom are intentionally stronger
+   than a utility popover so the scheduling choice feels consequential. */
+.motion-repeat-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transform-origin: top center;
+  scale: 0.94;
+  filter: drop-shadow(0 0 0 transparent);
+  transition:
+    grid-template-rows var(--motion-prominent) var(--ease-spring),
+    opacity var(--motion-standard) ease,
+    transform var(--motion-prominent) var(--ease-spring),
+    scale var(--motion-prominent) var(--ease-spring),
+    filter var(--motion-standard) ease,
+    max-height 0s var(--motion-prominent),
+    visibility 0s var(--motion-prominent);
+}
+.motion-repeat-panel[data-open='true'] {
+  grid-template-rows: 1fr;
+  max-height: 28rem;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  scale: 1;
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--glow) 34%, transparent));
+  transition:
+    grid-template-rows var(--motion-prominent) var(--ease-spring),
+    opacity var(--motion-standard) ease,
+    transform var(--motion-prominent) var(--ease-spring),
+    scale var(--motion-prominent) var(--ease-spring),
+    filter var(--motion-standard) ease,
+    max-height 0s,
+    visibility 0s;
+}
+.motion-repeat-panel > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
 /*
  * Streak flame. The glow is the habit's own colour, passed in as --flame, and
  * breathes on the same slow cycle as the list swatches so the two read as one
@@ -1263,6 +1308,14 @@ body {
   .motion-popover[data-motion-state='entered'],
   .motion-popover[data-motion-state='exiting'] {
     scale: 1 !important;
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+  }
+  .motion-repeat-panel,
+  .motion-repeat-panel[data-open='true'] {
+    transform: translateY(0) !important;
+    scale: 1 !important;
+    filter: none !important;
     transition-property: opacity !important;
     transition-duration: var(--motion-press) !important;
   }

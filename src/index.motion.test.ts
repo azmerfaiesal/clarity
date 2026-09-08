@@ -43,6 +43,13 @@ describe('motion CSS foundation', () => {
     }
   })
 
+  it('animates the recurring-task disclosure and neutralizes it for reduced motion', () => {
+    expect(css).toContain('.motion-repeat-panel')
+    expect(css).toContain(".motion-repeat-panel[data-open='true']")
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+    expect(reducedMotion).toContain('.motion-repeat-panel')
+  })
+
   it('neutralizes independent scale, transforms, and long transitions for reduced motion', () => {
     const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
 
