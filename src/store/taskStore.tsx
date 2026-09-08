@@ -8,8 +8,14 @@ import {
   useRef,
   type ReactNode,
 } from 'react'
-import type { Priority, Task, TaskList } from '../types'
+import type { Priority, Task, TaskList, TaskRecurrence } from '../types'
 import { makeId } from '../utils/taskUtils'
+import {
+  nextTaskOccurrence,
+  normalizeTaskRecurrence,
+  recurringOccurrenceId,
+  taskRecurrenceAnchor,
+} from '../utils/taskRecurrence'
 import {
   LOCAL_SCOPE,
   clearScope,
@@ -42,7 +48,7 @@ import {
  * changes back in.
  */
 
-interface State {
+export interface TaskState {
   /** Cache namespace: the signed-in user's id, or `local` before sign-in. */
   scope: string
   tasks: Task[]
@@ -52,7 +58,7 @@ interface State {
   ready: boolean
 }
 
-type Action =
+export type TaskAction =
   | { type: 'SET_SCOPE'; scope: string; tasks: Task[]; lists: TaskList[] }
   | {
       type: 'MERGE_SERVER'
@@ -73,7 +79,7 @@ type Action =
   | { type: 'PERMANENT_DELETE'; id: string }
   | { type: 'EMPTY_TRASH' }
   | { type: 'CLEAR_UNDO' }
-  | { type: 'TOGGLE_COMPLETE'; id: string }
+  | { type: 'TOGGLE_COMPLETE'; id: string; now?: string }
   | { type: 'TOGGLE_FAVORITE'; id: string }
   | { type: 'DUPLICATE_TASK'; id: string }
   | { type: 'CLEAR_COMPLETED' }
@@ -111,8 +117,26 @@ function reconcile<T extends { id: string }>(
   return removed
 }
 
-function reducer(state: State, action: Action): State {
-  const now = new Date().toISOString()
+function normalizedTaskPatch(task: Task, patch: Partial<Task>): Partial<Task> {
+  const merged = { ...task, ...patch }
+  const recurrence = normalizeTaskRecurrence(merged.recurrence)
+  if (!recurrence || !taskRecurrenceAnchor(merged)) {
+    return { ...patch, recurrence: null, recurrenceSeriesId: null, recurrenceSequence: null }
+  }
+
+  return {
+    ...patch,
+    recurrence,
+    recurrenceSeriesId: task.recurrenceSeriesId ?? makeId(),
+    recurrenceSequence:
+      Number.isInteger(task.recurrenceSequence) && Number(task.recurrenceSequence) >= 0
+        ? task.recurrenceSequence
+        : 0,
+  }
+}
+
+export function taskReducer(state: TaskState, action: TaskAction): TaskState {
+  const now = 'now' in action && action.now ? action.now : new Date().toISOString()
 
   switch (action.type) {
     case 'SET_SCOPE':
@@ -157,7 +181,9 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         tasks: state.tasks.map((t) =>
-          t.id === action.id ? { ...t, ...action.patch, updatedAt: now } : t,
+          t.id === action.id
+            ? { ...t, ...normalizedTaskPatch(t, action.patch), updatedAt: now }
+            : t,
         ),
       }
 
@@ -214,15 +240,62 @@ function reducer(state: State, action: Action): State {
     case 'CLEAR_UNDO':
       return state.lastDeleted ? { ...state, lastDeleted: null } : state
 
-    case 'TOGGLE_COMPLETE':
-      return {
-        ...state,
-        tasks: state.tasks.map((t) => {
-          if (t.id !== action.id) return t
-          const completed = !t.completed
-          return { ...t, completed, completedAt: completed ? now : null, updatedAt: now }
-        }),
+    case 'TOGGLE_COMPLETE': {
+      const source = state.tasks.find((task) => task.id === action.id)
+      if (!source || source.deletedAt) return state
+
+      const completed = !source.completed
+      if (!completed) {
+        return {
+          ...state,
+          tasks: state.tasks.map((task) =>
+            task.id === source.id
+              ? { ...task, completed: false, completedAt: null, updatedAt: now }
+              : task,
+          ),
+        }
       }
+
+      const recurrence = normalizeTaskRecurrence(source.recurrence)
+      const occurrence = recurrence ? nextTaskOccurrence(source, new Date(now)) : null
+      const sequence =
+        Number.isInteger(source.recurrenceSequence) && Number(source.recurrenceSequence) >= 0
+          ? Number(source.recurrenceSequence)
+          : 0
+      const seriesId = source.recurrenceSeriesId ?? source.id
+      const completedTask: Task = {
+        ...source,
+        completed: true,
+        completedAt: now,
+        updatedAt: now,
+        recurrence,
+        recurrenceSeriesId: recurrence ? seriesId : null,
+        recurrenceSequence: recurrence ? sequence : null,
+      }
+      const tasks = state.tasks.map((task) => (task.id === source.id ? completedTask : task))
+      if (!occurrence) return { ...state, tasks }
+
+      const nextSequence = sequence + 1
+      const nextId = recurringOccurrenceId(seriesId, nextSequence)
+      if (tasks.some((task) => task.id === nextId)) return { ...state, tasks }
+
+      const nextTask: Task = {
+        ...source,
+        id: nextId,
+        completed: false,
+        dueDate: occurrence.dueDate,
+        reminder: occurrence.reminder,
+        recurrence,
+        recurrenceSeriesId: seriesId,
+        recurrenceSequence: nextSequence,
+        sortOrder: new Date(now).getTime(),
+        createdAt: now,
+        completedAt: null,
+        updatedAt: now,
+        deletedAt: null,
+      }
+      return { ...state, tasks: [...tasks, nextTask] }
+    }
 
     case 'TOGGLE_FAVORITE':
       return {
@@ -235,6 +308,7 @@ function reducer(state: State, action: Action): State {
     case 'DUPLICATE_TASK': {
       const source = state.tasks.find((t) => t.id === action.id)
       if (!source) return state
+      const recurrence = normalizeTaskRecurrence(source.recurrence)
       const copy: Task = {
         ...source,
         id: makeId(),
@@ -242,6 +316,9 @@ function reducer(state: State, action: Action): State {
         completed: false,
         completedAt: null,
         deletedAt: null,
+        recurrence,
+        recurrenceSeriesId: recurrence ? makeId() : null,
+        recurrenceSequence: recurrence ? 0 : null,
         sortOrder: Date.now(),
         createdAt: now,
         updatedAt: now,
@@ -287,7 +364,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function initState(): State {
+function initState(): TaskState {
   return {
     scope: LOCAL_SCOPE,
     tasks: loadTasks(LOCAL_SCOPE) ?? [],
@@ -300,7 +377,7 @@ function initState(): State {
 export interface TaskStore {
   tasks: Task[]
   lists: TaskList[]
-  lastDeleted: State['lastDeleted']
+  lastDeleted: TaskState['lastDeleted']
   /** True once this account's server data has loaded (or failed to). */
   ready: boolean
   addTask: (input: {
@@ -311,6 +388,7 @@ export interface TaskStore {
     listId?: string | null
     tags?: string[]
     reminder?: string | null
+    recurrence?: TaskRecurrence | null
     favorite?: boolean
   }) => Task
   updateTask: (id: string, patch: Partial<Task>) => void
@@ -334,7 +412,7 @@ const TaskContext = createContext<TaskStore | null>(null)
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
-  const [state, dispatch] = useReducer(reducer, undefined, initState)
+  const [state, dispatch] = useReducer(taskReducer, undefined, initState)
 
   const { scope, ready } = state
 
@@ -494,6 +572,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const addTask: TaskStore['addTask'] = useCallback((input) => {
     const stamp = new Date().toISOString()
+    const recurrence = normalizeTaskRecurrence(input.recurrence)
+    const anchor = taskRecurrenceAnchor({
+      reminder: input.reminder ?? null,
+      dueDate: input.dueDate ?? null,
+    })
+    const scheduledRecurrence = anchor ? recurrence : null
     const task: Task = {
       id: makeId(),
       title: input.title.trim(),
@@ -505,9 +589,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       tags: input.tags ?? [],
       favorite: input.favorite ?? false,
       reminder: input.reminder ?? null,
-      recurrence: null,
-      recurrenceSeriesId: null,
-      recurrenceSequence: null,
+      recurrence: scheduledRecurrence,
+      recurrenceSeriesId: scheduledRecurrence ? makeId() : null,
+      recurrenceSequence: scheduledRecurrence ? 0 : null,
       sortOrder: Date.now(),
       createdAt: stamp,
       completedAt: null,

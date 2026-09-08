@@ -2,6 +2,7 @@ import type { BrainDump, Habit, HabitTemplate, Task, TaskList } from '../types'
 import { addDays, todayStr } from '../utils/dateUtils'
 import { makeId } from '../utils/taskUtils'
 import type { NoteTemplateRow } from './noteTemplates'
+import { normalizeTaskRecurrence } from '../utils/taskRecurrence'
 
 /**
  * Local persistence layer.
@@ -54,7 +55,22 @@ function write(key: string, value: unknown): void {
 }
 
 export function loadTasks(scope: string): Task[] | null {
-  return read<Task[]>(tasksKey(scope))
+  const tasks = read<Task[]>(tasksKey(scope))
+  if (!tasks) return null
+  return tasks.map((task) => {
+    const recurrence = normalizeTaskRecurrence(task.recurrence)
+    const recurrenceSeriesId =
+      recurrence && typeof task.recurrenceSeriesId === 'string'
+        ? task.recurrenceSeriesId
+        : null
+    const recurrenceSequence =
+      recurrence &&
+      Number.isInteger(task.recurrenceSequence) &&
+      Number(task.recurrenceSequence) >= 0
+        ? Number(task.recurrenceSequence)
+        : null
+    return { ...task, recurrence, recurrenceSeriesId, recurrenceSequence }
+  })
 }
 
 export function saveTasks(scope: string, tasks: Task[]): void {
