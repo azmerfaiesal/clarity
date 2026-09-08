@@ -85,7 +85,7 @@ function viewTitle(view: ViewId, lists: { id: string; name: string }[]): string 
     case 'notes':
       return 'Notes'
     case 'habits':
-      return 'My Habits'
+      return 'My Routines'
     case 'guide':
       return 'How Clarity works'
     case 'home':
@@ -559,7 +559,7 @@ function AppShell() {
           navigateTo('habits')
         }}
         onDeleteTemplate={(t) => {
-          if (window.confirm(`Delete the “${t.name}” template? Habits built from it are kept.`)) {
+          if (window.confirm(`Delete the “${t.name}” template? Routines built from it are kept.`)) {
             nativeWarningHaptic()
             deleteTemplate(t.id)
           }

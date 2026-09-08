@@ -125,7 +125,7 @@ export function DayDetail({
             ) : date > today ? (
               <span className="text-faint">Still to come</span>
             ) : date < habit.createdAt.slice(0, 10) ? (
-              <span className="text-faint">Before this habit existed</span>
+              <span className="text-faint">Before this routine existed</span>
             ) : !due ? (
               <span className="text-faint">Not scheduled</span>
             ) : date === today ? (

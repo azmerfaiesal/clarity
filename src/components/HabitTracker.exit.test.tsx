@@ -51,7 +51,7 @@ describe('HabitTracker exiting form boundary', () => {
     }
     const { rerender } = render(<HabitTracker {...props} editTemplate={template} />)
 
-    const nameInput = await screen.findByLabelText('Habit name')
+    const nameInput = await screen.findByLabelText('Routine name')
     const dialog = screen.getByRole('dialog', { name: 'Edit template' })
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     rerender(<HabitTracker {...props} editTemplate={null} />)

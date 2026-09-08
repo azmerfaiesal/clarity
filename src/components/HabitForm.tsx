@@ -121,7 +121,7 @@ export function HabitForm({
     else if (daysOfWeek.length === 0) setDaysOfWeek([1, 3, 5])
   }
 
-  const nameError = !name.trim() ? 'Give the habit a name.' : null
+  const nameError = !name.trim() ? 'Give the routine a name.' : null
   const scheduleError =
     repetitionType === 'weekly' && daysOfWeek.length === 0
       ? 'Pick at least one day.'
@@ -178,7 +178,7 @@ export function HabitForm({
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
 
   const targetLabel = trackBy === 'duration' ? 'minutes' : 'times'
-  const title = templateMode ? 'Edit template' : habit ? 'Edit habit' : 'New habit'
+  const title = templateMode ? 'Edit template' : habit ? 'Edit routine' : 'New routine'
 
   return (
     <div
@@ -248,7 +248,7 @@ export function HabitForm({
                   if (e.key === 'Enter') submit()
                 }}
                 placeholder="e.g. Exercise 30min, Read 10 pages…"
-                aria-label="Habit name"
+                aria-label="Routine name"
                 className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none placeholder:text-faint focus:border-accent"
               />
               <span className="mt-1 flex items-center justify-between text-3xs">
@@ -277,7 +277,7 @@ export function HabitForm({
               <div className="anim-fade-slide-in mt-2 rounded-lg border border-line bg-surface p-2">
                 {templates.length === 0 ? (
                   <p className="px-1 py-3 text-center text-xs text-faint">
-                    No templates yet. Build a habit you like, then save it as one.
+                    No templates yet. Build a routine you like, then save it as one.
                   </p>
                 ) : (
                   <ul className="space-y-0.5" role="list">
@@ -504,7 +504,7 @@ export function HabitForm({
           {/* Colour */}
           <div>
             <span className="mb-1.5 block text-xs font-medium text-faint">Colour</span>
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Habit color">
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Routine color">
               {HABIT_COLORS.map((c) => (
                 <button
                   key={c}

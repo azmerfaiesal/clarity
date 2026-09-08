@@ -293,7 +293,7 @@ export function HabitCard({
             <span className="text-3xs text-faint">days</span>
           </span>
           <Dropdown
-            label="Habit actions"
+            label="Routine actions"
             trigger={({ toggle }) => (
               <button
                 type="button"
@@ -314,7 +314,7 @@ export function HabitCard({
                     close()
                   }}
                 >
-                  Edit habit
+                  Edit routine
                 </MenuItem>
                 <MenuItem
                   icon={
@@ -329,7 +329,7 @@ export function HabitCard({
                     close()
                   }}
                 >
-                  {archived ? 'Resume habit' : 'Pause habit'}
+                  {archived ? 'Resume routine' : 'Pause routine'}
                 </MenuItem>
                 <MenuItem
                   icon={<BookmarkPlus className="h-4 w-4" />}

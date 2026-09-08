@@ -131,7 +131,7 @@ function TemplateRow({
       <button
         type="button"
         onClick={onUse}
-        title={`Start a habit from ${template.name}`}
+        title={`Start a routine from ${template.name}`}
         className={`motion-interactive flex w-full cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2.5 text-left text-xs text-muted transition-colors hover:bg-surface hover:text-ink ${
           onEdit ? 'pr-12' : 'pr-2.5'
         }`}
@@ -598,7 +598,7 @@ export function Sidebar({
         </div>
         <NavItem
           icon={<Target className="h-4 w-4" />}
-          label="Habits"
+          label="Routines"
           count={habitCount}
           active={view === 'habits'}
           expanded={habitsOpen}
@@ -668,7 +668,7 @@ export function Sidebar({
                     </span>
                     {templates.length === 0 ? (
                       <p className="px-2.5 py-1 text-3xs text-faint">
-                        Save a habit as a template and it lands here.
+                        Save a routine as a template and it lands here.
                       </p>
                     ) : (
                       templates.map((t) => (

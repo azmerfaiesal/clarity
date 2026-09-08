@@ -208,7 +208,7 @@ export function HabitTracker({
         !window.confirm(
           `Delete “${habit.name}” and its history?\n\n${days} day${
             days === 1 ? '' : 's'
-          } of history will be lost. To keep it instead, pause the habit.`,
+          } of history will be lost. To keep it instead, pause the routine.`,
         )
       )
         return
@@ -268,12 +268,12 @@ export function HabitTracker({
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">
-            My Habits
+            My Routines
           </h1>
           <p className="mt-1 font-mono text-2xs tracking-[0.06em] text-faint uppercase">
             {dueToday.length > 0
               ? `${doneToday}/${dueToday.length} done today`
-              : `${active.length} ${active.length === 1 ? 'habit' : 'habits'}`}
+              : `${active.length} ${active.length === 1 ? 'routine' : 'routines'}`}
           </p>
         </div>
         <button
@@ -286,7 +286,7 @@ export function HabitTracker({
           className="motion-primary motion-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink hover:bg-accent-hi"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-          <span className="hidden sm:inline">New habit</span>
+          <span className="hidden sm:inline">New routine</span>
         </button>
       </header>
 

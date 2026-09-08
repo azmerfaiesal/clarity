@@ -300,7 +300,7 @@ export function Settings({
 
         <Section title="Reminders">
           <p className="text-sm text-muted">
-            Get a notification when a task reminder comes due, or when a habit is still open at its
+            Get a notification when a task reminder comes due, or when a routine is still open at its
             reminder time.
           </p>
           {notifyState === 'unsupported' ? (
@@ -382,7 +382,7 @@ export function Settings({
             ))}
           </div>
           <p className="mt-2 text-xs text-faint">
-            Sets the row order in every habit grid, and the week a “× per week” habit counts
+            Sets the row order in every routine grid, and the week a “× per week” routine counts
             against — so a streak can shift when you change it.
           </p>
         </Section>

@@ -1,18 +1,18 @@
 # Clarity
 
-A polished, local-first personal organiser for tasks, habits, and notes. It stays fast offline and syncs across every device you sign in on. Built with **React 19, TypeScript, Tailwind CSS 4, Supabase and Lucide icons** (Vite).
+A polished, local-first personal organiser for tasks, routines, and notes. It stays fast offline and syncs across every device you sign in on. Built with **React 19, TypeScript, Tailwind CSS 4, Supabase and Lucide icons** (Vite).
 
 Live at **https://azmerfaiesal.github.io/clarity/**
 
 ## Features
 
 - **Quick capture** — on desktop, use the inline "Add a task" form (or press `N` in Inbox, Today, Upcoming, Favorites, or a category), type, hit `Enter`. On iPhone, the floating Add button opens that task composer instead. Expand for description, due date, priority, category, tags, and reminders. Only the title is required. The current view supplies useful defaults: Today uses today, Upcoming uses tomorrow, a category preselects itself, and Favorites stars the task so it remains visible there. Cancel, tapping the backdrop, or `Escape` dismisses the composer.
-- **Sections** — Home, Tasks, Habits and Notes. Task views (Inbox, Today, Upcoming, Completed, Favorites, Recycle Bin) and lists appear beneath Tasks while that section is active.
+- **Sections** — Home, Tasks, Routines and Notes. Task views (Inbox, Today, Upcoming, Completed, Favorites, Recycle Bin) and lists appear beneath Tasks while that section is active.
 - **Custom lists** — create colored lists (Personal, Work, Shopping, Projects seeded); rename or recolor one from the pencil that appears on hover; deleting a list returns its tasks to Inbox.
-- **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes, and reminders (shown on the row as a clock).
+- **Tasks** — create, edit (modal editor), complete/uncomplete, duplicate, favorite, priorities (none/low/medium/high with subtle flag indicators), tags, notes, and reminders (shown on the row as a clock). A dated task can repeat daily, weekly, monthly, or on selected weekdays. Completing one keeps the finished occurrence and creates the next future occurrence automatically; monthly schedules preserve their preferred day and clamp to the last valid day in shorter months.
 - **Recycle Bin** — deleting a task moves it to the bin, with a 6-second **Undo** toast. Restore from the bin, delete forever, or empty it. "Clear completed" also moves to the bin rather than destroying anything. Trashed tasks are hidden from every view and from search.
-- **Home** — today at a glance: habits due (tickable in place), tasks due today or already overdue, and the three most recent notes. Selecting a recent note opens that exact note in the editor.
-- **Habits** — daily, weekdays, weekends, picked days, X-per-week or monthly habits, each with a 365-day contribution heatmap, a colour, emoji and optional target streak. One tap logs today. Track by a tick, a **target count** (eight glasses of water) or a **target duration** (thirty minutes reading); the heatmap ramps in four steps as the day fills. Tap the button to add a step, hold it for a slider that sets an exact amount and takes a note on what the session was. Habits can be reordered by dragging, saved as reusable **templates**, given a daily reminder, and a **Writing** habit is derived from the notes themselves, so its history reflects when each note was written and a deleted note takes its day back. Clicking a habit opens a read-only summary of its record; clicking a day in its heatmap opens that day — what happened, where it sits in its streak, and notes describing the day's logs. Each card shows current streak, lifetime total, best streak, completion rate and progress through the current period. Habits can be paused (keeping their history) or deleted.
+- **Home** — today at a glance: routines due (tickable in place), tasks due today or already overdue, and the three most recent notes. Selecting a recent note opens that exact note in the editor.
+- **Routines** — daily, weekdays, weekends, picked days, X-per-week or monthly routines, each with a 365-day contribution heatmap, a colour, emoji and optional target streak. One tap logs today. Track by a tick, a **target count** (eight glasses of water) or a **target duration** (thirty minutes reading); the heatmap ramps in four steps as the day fills. Tap the button to add a step, hold it for a slider that sets an exact amount and takes a note on what the session was. Routines can be reordered by dragging, saved as reusable **templates**, given a daily reminder, and a **Writing** routine is derived from the notes themselves, so its history reflects when each note was written and a deleted note takes its day back. Clicking a routine opens a read-only summary of its record; clicking a day in its heatmap opens that day — what happened, where it sits in its streak, and notes describing the day's logs. Each card shows current streak, lifetime total, best streak, completion rate and progress through the current period. Routines can be paused (keeping their history) or deleted.
 - **Notes** — a blank sheet for whatever is on your mind, at the top of the page under the writing streak that measures it: start typing straight away, tag it if you feel like it, `Cmd/Ctrl + Enter` to save. Free-form tags, chronological history in a panel that scrolls on its own, search across text and tags, tag filtering, and inline editing that reuses the same writing surface instead of a dialog. **Templates** give the entries that repeat a starting shape — a list, shopping, a daily log, reading, coffee, spending — and every one of them can be rewritten, put away or joined by your own, syncing like everything else. Unsaved text survives a refresh.
 - **Search** — a bar docked to the foot of every page, always there rather than summoned. It searches **tasks and notes together**: task titles, descriptions, lists and tags, and note text and tags, grouped under two headings and walkable with the arrow keys. Picking a task opens its editor; picking a note opens it in the Notes composer. `/` or `Cmd/Ctrl + K` puts the caret in it.
 - **Filters** — status, priority, due date, list, favorites-only, with active-count badge and one-click clear.
@@ -100,11 +100,11 @@ Adding one silently opts that element out of the setting.
 
 ### Reminders
 
-Tasks carry a reminder instant; habits carry a local `HH:MM` that recurs on the
+Tasks carry a reminder instant; routines carry a local `HH:MM` that recurs on the
 days they are due. Enable notifications in Settings and Clarity raises a browser
-notification when a task reminder comes due, or when a habit is still open at
+notification when a task reminder comes due, or when a routine is still open at
 its time. Firing is deduplicated in `localStorage`, so a reload does not
-re-announce and a habit nags once a day rather than every sweep.
+re-announce and a routine nudges once a day rather than every sweep.
 
 The page decides *when* a reminder is due; `public/sw.js` is *how* it is shown.
 That split is not decoration — `new Notification(...)` throws `Illegal
@@ -131,13 +131,13 @@ of claiming the browser cannot do notifications.
 > push subscription and a server to send from, which this app does not have.
 
 The native iOS build uses Apple's local-notification scheduler instead. It keeps
-a rolling, bounded schedule on the phone, so task and habit reminders can arrive
+a rolling, bounded schedule on the phone, so task and routine reminders can arrive
 after Clarity has been closed. The web/PWA behavior above is unchanged.
 
 ## Sync
 
 Clarity requires an account. Enter your email to receive a six-digit sign-in code, or continue
-with Google. Returning users keep the same tasks, habits, and notes when they use the same
+with Google. Returning users keep the same tasks, routines, and notes when they use the same
 verified email. Apple is not shipped in this phase. Everything then lives in six Postgres tables
 — `clarity_tasks`, `clarity_lists`, `clarity_notes`, `clarity_habits`,
 `clarity_habit_templates` and `clarity_note_templates` — behind row-level security that scopes

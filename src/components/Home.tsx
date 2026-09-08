@@ -98,7 +98,7 @@ export function Home({
 
       {/* Habits */}
       <Section
-        title="Habits"
+        title="Routines"
         meta={dueHabits.length > 0 ? `${habitsDone}/${dueHabits.length} done` : undefined}
         onOpen={() => onNavigate('habits')}
       >

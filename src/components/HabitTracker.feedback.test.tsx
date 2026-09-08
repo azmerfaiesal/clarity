@@ -72,6 +72,10 @@ describe('HabitTracker counted-card feedback boundary', () => {
   it('emits one success event before the counted-habit mutation', () => {
     render(<HabitTracker onOpenMobileNav={vi.fn()} />)
 
+    expect(screen.getByRole('heading', { name: 'My Routines' })).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Read' }))
+    expect(screen.getByRole('menu', { name: 'Routine actions' })).not.toBeNull()
+    events.length = 0
     fireEvent.click(screen.getByRole('button', { name: /Log for Read/ }))
 
     expect(events).toEqual(['feedback:success', 'mutate'])

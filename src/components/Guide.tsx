@@ -87,14 +87,14 @@ export function Guide({
       <Part title="What it is">
         <p>
           Clarity requires an account. Enter your email to receive a six-digit sign-in code, or
-          continue with Google. Returning users keep the same tasks, habits, and notes when they
+          continue with Google. Returning users keep the same tasks, routines, and notes when they
           use the same verified email. Sign in with Apple will appear only after native Apple
           account support is available.
         </p>
         <p>
-          Clarity keeps three kinds of thing in one place: the tasks you have to do, the habits
+          Clarity keeps three kinds of thing in one place: the tasks you have to do, the routines
           you are trying to keep, and the notes you write as you go. They are deliberately
-          separate — a task is finished once, a habit is never finished, and a note is not asking
+          separate — a task is finished once, a routine continues, and a note is not asking
           anything of you at all. Most apps blur those together and end up serving none of them
           well.
         </p>
@@ -104,7 +104,7 @@ export function Guide({
           catches up when it can. Signing out returns you to the mandatory login screen.
         </p>
         <p>
-          <strong className="font-medium text-ink">Home</strong> is the daily overview: habits
+          <strong className="font-medium text-ink">Home</strong> is the daily overview: routines
           scheduled for today, tasks due today or already overdue, and your three most recent
           notes. Opening a recent note takes you straight back into its editor.
         </p>
@@ -142,6 +142,13 @@ export function Guide({
             small clock on the task and raises a browser notification at the time you set — see
             the limitation under Notifications below.
           </Feature>
+          <Feature name="Repeating tasks">
+            A dated task can repeat daily, weekly, monthly, or on any combination of Monday through
+            Sunday. Marking it complete keeps that occurrence in Completed and creates the next
+            occurrence automatically. If several dates have passed, Clarity skips missed slots and
+            schedules the first future one. Monthly tasks keep their preferred day and use the last
+            valid day in shorter months.
+          </Feature>
           <Feature name="Priority, tags and search">
             Three priority flags, free-form tags, and a search bar docked to the foot of every
             page — press{' '}
@@ -154,7 +161,7 @@ export function Guide({
         </div>
       </Part>
 
-      <Part title="Habits">
+      <Part title="Routines">
         <div className="space-y-3">
           <Feature name="How often">
             Daily, particular days of the week, a number of times per week, or particular dates of
@@ -163,7 +170,7 @@ export function Guide({
             Tuesday to Wednesday.
           </Feature>
           <Feature name="Timing a session">
-            A habit measured in minutes gets a stopwatch: open today's box in
+            A routine measured in minutes gets a stopwatch: open today's box in
             the grid and start it. It keeps running if you close the popup or the
             tab — the elapsed time comes from the clock rather than a counter — and
             stopping logs the whole session to the day, rounded to the nearest
@@ -181,13 +188,13 @@ export function Guide({
             to open it, log it after the fact, or write a line about what you did.
           </Feature>
           <Feature name="Streaks">
-            Counted in days, or in weeks for a “× per week” habit. A day that is still open never
+            Counted in days, or in weeks for a “× per week” routine. A day that is still open never
             breaks a streak — only a day that has actually passed unmet does.
           </Feature>
           <Feature name="Templates">
-            Under Habits in the sidebar. Suggestions to start from, plus anything you save as a
+            Under Routines in the sidebar. Suggestions to start from, plus anything you save as a
             template yourself, which you can then edit or remove. A template is a blueprint: it
-            makes new habits and is not linked to the ones already made from it.
+            makes new routines and is not linked to the ones already made from it.
           </Feature>
 
         </div>
@@ -206,7 +213,7 @@ export function Guide({
           </Feature>
           <Feature name="The writing streak">
             A grid of the days you wrote something, at the top of this page rather than under
-            Habits, since it is a picture of these notes. It ticks itself and is derived rather
+            Routines, since it is a picture of these notes. It ticks itself and is derived rather
             than recorded, so notes written before you started tracking still count and deleting
             one takes its day back. Click any day to see what you wrote then — four at a time,
             with pages if there were more.
@@ -226,7 +233,7 @@ export function Guide({
             want the same settings.
           </Feature>
           <Feature name="Week starts on">
-            Sunday or Monday. Not only cosmetic: it decides the week a “× per week” habit counts
+            Sunday or Monday. Not only cosmetic: it decides the week a “× per week” routine counts
             against, so a streak can shift when you change it.
           </Feature>
           <Feature name="Notifications">
@@ -244,7 +251,7 @@ export function Guide({
               {isNativeApp ? 'Make reminders useful.' : 'Put it on your home screen.'}
             </strong>{' '}
             {isNativeApp
-              ? 'Give Clarity notification permission, then attach times only to the tasks and habits that genuinely need a nudge.'
+              ? 'Give Clarity notification permission, then attach times only to the tasks and routines that genuinely need a nudge.'
               : 'On a phone, Share → Add to Home Screen gives you an icon and a full screen, and it behaves like an app from then on.'}
           </Tip>
           <Tip>
@@ -253,7 +260,7 @@ export function Guide({
             wrong category.
           </Tip>
           <Tip>
-            <strong className="font-medium text-ink">Start with two habits, not eight.</strong>{' '}
+            <strong className="font-medium text-ink">Start with two routines, not eight.</strong>{' '}
             The grid is honest, and eight rows of mostly-missed days is discouraging in a way that
             two rows of mostly-kept ones is not. Add more once the first two are boring.
           </Tip>
