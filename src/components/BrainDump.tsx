@@ -15,6 +15,8 @@ import { useWeekStart } from '../store/theme'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
 import { usePresenceValue } from './MotionPresence'
 
+const NOTE_AUTOSAVE_IDLE_MS = 5_000
+
 /**
  * Stats are derived, so they need a habit even when there is not one yet. This
  * stands in for the writing habit until it is created, and reads as zero.
@@ -130,11 +132,27 @@ export function BrainDump({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLElement>(null)
   const tagRef = useRef<HTMLInputElement>(null)
+  const autosaveTimerRef = useRef<number | null>(null)
+  const autosaveInFlightRef = useRef<Promise<void> | null>(null)
+  const activeNoteIdRef = useRef<string | null>(null)
+  const composerSessionRef = useRef(0)
+  const changeVersionRef = useRef(0)
   // Set for the moment between mousedown on a suggestion and its click, so the
   // input's blur handler knows not to commit the half-typed draft underneath.
   const pickingRef = useRef(false)
 
   const editing = editingId ? notes.find((n) => n.id === editingId) : undefined
+
+  const markDirty = useCallback(() => {
+    changeVersionRef.current += 1
+    setDirty(true)
+  }, [])
+
+  const clearAutosaveTimer = useCallback(() => {
+    if (autosaveTimerRef.current === null) return
+    window.clearTimeout(autosaveTimerRef.current)
+    autosaveTimerRef.current = null
+  }, [])
 
   // Recover anything left in the composer by a previous session.
   useEffect(() => {
@@ -163,6 +181,9 @@ export function BrainDump({
   }, [content, tags, dirty, editingId, writeDraft])
 
   const reset = useCallback(() => {
+    clearAutosaveTimer()
+    composerSessionRef.current += 1
+    activeNoteIdRef.current = null
     setContent('')
     setTags([])
     setTagDraft('')
@@ -171,7 +192,7 @@ export function BrainDump({
     setEditingId(null)
     setDirty(false)
     discardDraft()
-  }, [discardDraft])
+  }, [clearAutosaveTimer, discardDraft])
 
   const commitTag = useCallback(
     (raw: string) => {
@@ -179,25 +200,76 @@ export function BrainDump({
       if (!tag) return
       setTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]))
       setTagDraft('')
-      setDirty(true)
+      markDirty()
     },
-    [],
+    [markDirty],
   )
 
+  const autosave = useCallback(() => {
+    const body = content.trim()
+    if (!body) return Promise.resolve()
+
+    const version = changeVersionRef.current
+    const session = composerSessionRef.current
+    const pending = normalizeTag(tagDraft)
+    const finalTags = pending && !tags.includes(pending) ? [...tags, pending] : tags
+
+    const run = async () => {
+      const noteId = activeNoteIdRef.current
+      if (noteId) {
+        await updateNote(noteId, { content: body, tags: finalTags })
+      } else {
+        const note = await createNote(body, finalTags)
+        if (composerSessionRef.current !== session) return
+        activeNoteIdRef.current = note.id
+        discardDraft()
+        setEditingId(note.id)
+      }
+
+      if (composerSessionRef.current === session && changeVersionRef.current === version) {
+        setDirty(false)
+      }
+    }
+
+    const previous = autosaveInFlightRef.current
+    const operation = (previous ? previous.catch(() => undefined) : Promise.resolve()).then(run)
+    autosaveInFlightRef.current = operation
+    void operation.finally(() => {
+      if (autosaveInFlightRef.current === operation) autosaveInFlightRef.current = null
+    })
+    return operation
+  }, [content, tags, tagDraft, updateNote, createNote, discardDraft])
+
+  useEffect(() => {
+    clearAutosaveTimer()
+    if (!dirty || !content.trim()) return
+
+    autosaveTimerRef.current = window.setTimeout(() => {
+      autosaveTimerRef.current = null
+      void autosave()
+    }, NOTE_AUTOSAVE_IDLE_MS)
+
+    return clearAutosaveTimer
+  }, [content, tags, tagDraft, dirty, autosave, clearAutosaveTimer])
+
   const save = useCallback(async () => {
+    clearAutosaveTimer()
+    const inFlightAutosave = autosaveInFlightRef.current
+    if (inFlightAutosave) await inFlightAutosave
     // A trailing tag still in the input counts as typed, not lost.
     const pending = normalizeTag(tagDraft)
     const finalTags = pending && !tags.includes(pending) ? [...tags, pending] : tags
     const body = content.trim()
     if (!body) return
-    if (editingId) {
-      await updateNote(editingId, { content: body, tags: finalTags })
+    const noteId = activeNoteIdRef.current
+    if (noteId) {
+      await updateNote(noteId, { content: body, tags: finalTags })
     } else {
       await createNote(body, finalTags)
     }
     reset()
     textareaRef.current?.focus()
-  }, [content, tags, tagDraft, editingId, updateNote, createNote, reset])
+  }, [content, tags, tagDraft, updateNote, createNote, reset, clearAutosaveTimer])
 
   /**
    * Drop a template into the composer. Anything already written is kept and
@@ -213,7 +285,7 @@ export function BrainDump({
       if (template.tags.length) {
         setTags((prev) => [...prev, ...template.tags.filter((t) => !prev.includes(t))])
       }
-      setDirty(true)
+      markDirty()
       // After the value has landed, or the caret would be set against the old
       // one and the browser would drop it at the end.
       window.setTimeout(() => {
@@ -223,13 +295,15 @@ export function BrainDump({
         el.setSelectionRange(caret, caret)
       }, 0)
     },
-    [content],
+    [content, markDirty],
   )
 
   const openForEdit = useCallback(
     (note: Note) => {
       if (dirty && !window.confirm('Discard the note you are writing?')) return
       discardDraft()
+      composerSessionRef.current += 1
+      activeNoteIdRef.current = note.id
       setEditingId(note.id)
       setContent(note.content)
       setTags(note.tags)
@@ -332,10 +406,10 @@ export function BrainDump({
       }
       if (e.key === 'Backspace' && !tagDraft && tags.length) {
         setTags((prev) => prev.slice(0, -1))
-        setDirty(true)
+        markDirty()
       }
     },
-    [suggestions, highlight, tagDraft, tags, commitTag],
+    [suggestions, highlight, tagDraft, tags, commitTag, markDirty],
   )
 
   const byDay = useMemo(() => {
@@ -510,7 +584,7 @@ export function BrainDump({
           value={content}
           onChange={(e) => {
             setContent(e.target.value)
-            setDirty(true)
+            markDirty()
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -537,7 +611,7 @@ export function BrainDump({
                     type="button"
                     onClick={() => {
                       setTags((prev) => prev.filter((t) => t !== tag))
-                      setDirty(true)
+                      markDirty()
                     }}
                     aria-label={`Remove tag ${tag}`}
                     className="motion-interactive cursor-pointer text-faint transition-colors hover:text-danger"
@@ -562,6 +636,7 @@ export function BrainDump({
                   setTagDraft(e.target.value)
                   setSuggestDismissed(false)
                   setHighlight(0)
+                  markDirty()
                 }}
                 onKeyDown={onTagKeyDown}
                 onBlur={() => {

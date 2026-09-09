@@ -50,8 +50,9 @@ import { mergeSnapshot } from './merge'
  * the offline cache namespaced per account, Supabase is the cross-device
  * record — but much smaller, because notes have no views, filters or bin.
  *
- * Notes save on an explicit action rather than on a debounce, so writes go out
- * immediately and the caller can await one to drive a Saving…/Saved indicator.
+ * Create and update operations write immediately when the composer calls them.
+ * The composer owns its idle debounce and can await these operations to drive
+ * the Saving…/Saved indicator without duplicating persistence policy here.
  */
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'

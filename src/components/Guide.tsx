@@ -203,8 +203,9 @@ export function Guide({
       <Part title="Notes">
         <div className="space-y-3">
           <Feature name="A blank sheet">
-            No title, no folder, no structure. Write, tag if you feel like it, save. The composer
-            sits at the foot of the page under what you have already written.
+            No title, no folder, no structure. Write and tag if you feel like it. After five idle
+            seconds Clarity saves in place without closing the composer; Save or Cmd/Ctrl + Enter
+            finishes immediately.
           </Feature>
           <Feature name="Tags">
             The only organisation there is. Start typing and Clarity offers the tags you already
@@ -219,8 +220,9 @@ export function Guide({
             with pages if there were more.
           </Feature>
           <Feature name="Nothing is lost">
-            A note in progress is kept as you type, so closing the tab mid-thought costs nothing.
-            Clicking an earlier note opens it in the same composer rather than a dialog.
+            A new note is kept as a local draft until its first autosave, so closing the tab
+            mid-thought costs nothing. Clicking an earlier note opens it in the same composer
+            rather than a dialog, and later autosaves update that note instead of making copies.
           </Feature>
         </div>
       </Part>
