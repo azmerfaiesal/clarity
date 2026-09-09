@@ -773,9 +773,9 @@ function AppShell() {
           onClick={openQuickAdd}
           aria-label="Add task"
           aria-expanded={quickAddOpen}
- className="native-fab motion-primary motion-interactive fixed z-30 flex h-13 w-13 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-ink"
+          className="native-fab motion-primary motion-interactive fixed z-30 flex cursor-pointer items-center justify-center bg-accent text-accent-ink hover:bg-accent-hi"
         >
- <Plus className="h-6 w-6" strokeWidth={2.5} />
+          <Plus className="h-5 w-5" strokeWidth={2.5} />
         </button>
       )}
       </div>

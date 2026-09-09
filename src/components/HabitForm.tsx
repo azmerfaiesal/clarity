@@ -1,5 +1,5 @@
 import { BookmarkPlus, Lightbulb, Pencil, Trash2, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import type { Habit, HabitTemplate, RepetitionType, TrackBy } from '../types'
 import type { HabitDraft } from '../store/habitStore'
 import { WEEKDAYS, ordinal } from '../utils/habitUtils'
@@ -37,6 +37,7 @@ export function HabitForm({
   onDeleteTemplate,
   onClose,
   phase,
+  anchorRef,
 }: {
   habit?: Habit
   /** Values to start from when this is not an edit — a template being used. */
@@ -49,6 +50,8 @@ export function HabitForm({
   onDeleteTemplate: (id: string) => void
   onClose: () => void
   phase: MotionPhase
+  /** Add-button origin for the create-only reveal and collapse motion. */
+  anchorRef?: RefObject<HTMLElement | null>
 }) {
   // Everything below reads from one source: the habit being edited, or the
   // template being used or edited, or nothing at all.
@@ -78,6 +81,7 @@ export function HabitForm({
   const iconPickerPresence = usePresenceValue(pickingIcon ? true : null)
   const [browsing, setBrowsing] = useState(false)
   const [savedTemplate, setSavedTemplate] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const interactive = phase !== 'exiting'
   const close = () => {
     if (interactive) onClose()
@@ -94,6 +98,36 @@ export function HabitForm({
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
   }, [interactive, onClose, pickingIcon])
+
+  useLayoutEffect(() => {
+    const anchor = anchorRef?.current
+    const dialog = dialogRef.current
+    if (!anchor || !dialog) return
+
+    const positionFromAnchor = () => {
+      // Measure the laid-out panel without its entrance transform. The inline
+      // values are removed before paint, leaving CSS to animate the real panel.
+      dialog.style.setProperty('transition', 'none')
+      dialog.style.setProperty('transform', 'none')
+      dialog.style.setProperty('scale', '1')
+      const anchorBox = anchor.getBoundingClientRect()
+      const dialogBox = dialog.getBoundingClientRect()
+      dialog.style.removeProperty('transition')
+      dialog.style.removeProperty('transform')
+      dialog.style.removeProperty('scale')
+
+      const x =
+        anchorBox.left + anchorBox.width / 2 - (dialogBox.left + dialogBox.width / 2)
+      const y =
+        anchorBox.top + anchorBox.height / 2 - (dialogBox.top + dialogBox.height / 2)
+      dialog.style.setProperty('--routine-anchor-x', `${Math.round(x)}px`)
+      dialog.style.setProperty('--routine-anchor-y', `${Math.round(y)}px`)
+    }
+
+    positionFromAnchor()
+    window.addEventListener('resize', positionFromAnchor)
+    return () => window.removeEventListener('resize', positionFromAnchor)
+  }, [anchorRef])
 
   const sameDays = (a: number[], b: number[]) =>
     a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i])
@@ -183,17 +217,22 @@ export function HabitForm({
   return (
     <div
       data-motion-state={phase}
-      className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
+      className={`motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6${
+        anchorRef ? ' routine-composer-viewport' : ''
+      }`}
       onClick={close}
       role="presentation"
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         inert={!interactive}
         onClick={(e) => e.stopPropagation()}
-        className="motion-dialog max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+        className={`motion-dialog max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70${
+          anchorRef ? ' routine-composer-modal' : ''
+        }`}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <span className="text-sm font-medium text-muted">{title}</span>

@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HabitTemplate } from '../types'
 import { HabitTracker } from './HabitTracker'
 
@@ -41,6 +41,25 @@ const template: HabitTemplate = {
 describe('HabitTracker exiting form boundary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('restores focus to the add button after its composer collapses', () => {
+    vi.useFakeTimers()
+    render(<HabitTracker onOpenMobileNav={vi.fn()} />)
+
+    const addButton = screen.getByRole('button', { name: 'New routine' })
+    fireEvent.click(addButton)
+    expect(screen.getByRole('dialog', { name: 'New routine' })).not.toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    act(() => vi.advanceTimersByTime(300))
+
+    expect(screen.queryByRole('dialog', { name: 'New routine' })).toBeNull()
+    expect(document.activeElement).toBe(addButton)
   })
 
   it('does not turn a closing template edit into a new habit when Enter is pressed', async () => {

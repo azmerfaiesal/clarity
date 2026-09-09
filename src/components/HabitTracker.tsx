@@ -1,5 +1,5 @@
 import { Menu, Plus } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Habit, HabitFilter, HabitTemplate } from '../types'
 import { useHabits } from '../store/habitStore'
 import { todayStr } from '../utils/dateUtils'
@@ -58,6 +58,9 @@ export function HabitTracker({
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Habit | null>(null)
+  const [formAnchoredToAdd, setFormAnchoredToAdd] = useState(false)
+  const addButtonRef = useRef<HTMLButtonElement>(null)
+  const restoreAddFocusRef = useRef(false)
   const [toast, setToast] = useState<string | null>(null)
   const [flashId, setFlashId] = useState<string | null>(null)
   // The day just finished, and on which habit. Cleared on a timer so the same
@@ -73,11 +76,18 @@ export function HabitTracker({
             habit: editing,
             seed: editTemplate ?? seedTemplate,
             templateMode: editTemplate !== null,
+            anchoredToAdd: formAnchoredToAdd,
           }
         : null,
-    [editTemplate, editing, formOpen, seedTemplate],
+    [editTemplate, editing, formAnchoredToAdd, formOpen, seedTemplate],
   )
-  const formPresence = usePresenceValue(formRequest)
+  const formPresence = usePresenceValue(formRequest, {
+    onExited: () => {
+      if (!restoreAddFocusRef.current) return
+      restoreAddFocusRef.current = false
+      addButtonRef.current?.focus()
+    },
+  })
   const toastPresence = usePresenceValue(toast)
 
   useEffect(() => {
@@ -239,6 +249,8 @@ export function HabitTracker({
   // habit, or on the template itself.
   useEffect(() => {
     if (!seedTemplate && !editTemplate) return
+    restoreAddFocusRef.current = false
+    setFormAnchoredToAdd(false)
     setEditing(null)
     setFormOpen(true)
   }, [seedTemplate, editTemplate])
@@ -277,13 +289,17 @@ export function HabitTracker({
           </p>
         </div>
         <button
+          ref={addButtonRef}
           type="button"
+          aria-label="New routine"
           onClick={() => {
             nativeSelectionHaptic()
+            restoreAddFocusRef.current = true
+            setFormAnchoredToAdd(true)
             setEditing(null)
             setFormOpen(true)
           }}
-          className="motion-primary motion-interactive inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink hover:bg-accent-hi"
+          className="motion-primary motion-interactive inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-accent text-sm font-medium text-accent-ink hover:bg-accent-hi sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
           <span className="hidden sm:inline">New routine</span>
@@ -337,6 +353,8 @@ export function HabitTracker({
                 onPickDay={(date, anchor) => setDay({ habit: h, date, anchor })}
                 onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
+                  restoreAddFocusRef.current = false
+                  setFormAnchoredToAdd(false)
                   setEditing(h)
                   setFormOpen(true)
                 }}
@@ -367,6 +385,8 @@ export function HabitTracker({
                 onPickDay={(date, anchor) => setDay({ habit: h, date, anchor })}
                 onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
+                  restoreAddFocusRef.current = false
+                  setFormAnchoredToAdd(false)
                   setEditing(h)
                   setFormOpen(true)
                 }}
@@ -412,6 +432,7 @@ export function HabitTracker({
           habit={formPresence.value.habit ?? undefined}
           seed={formPresence.value.seed ?? undefined}
           templateMode={formPresence.value.templateMode}
+          anchorRef={formPresence.value.anchoredToAdd ? addButtonRef : undefined}
           templates={templates}
           onSaveTemplate={(draft) =>
             saveAsTemplate({ ...(formPresence.value.habit ?? ({} as Habit)), ...draft } as Habit)

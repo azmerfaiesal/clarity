@@ -69,6 +69,22 @@ describe('motion CSS foundation', () => {
     expect(css).toContain('.native-app .native-modal-viewport')
   })
 
+  it('keeps the mobile task add control square and defines button-origin routine motion', () => {
+    const fabStart = css.indexOf('.native-fab')
+    const fabRule = css.slice(fabStart, css.indexOf('\n}', fabStart))
+
+    expect(fabRule).toContain('width: 2.75rem')
+    expect(fabRule).toContain('height: 2.75rem')
+    expect(fabRule).toContain('border-radius: var(--radius-md)')
+    expect(css).toContain('.routine-composer-viewport')
+    expect(css).toContain('.routine-composer-modal')
+    expect(css).toContain('var(--routine-anchor-x)')
+    expect(css).toContain('var(--routine-anchor-y)')
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+    expect(reducedMotion).toContain('.routine-composer-modal')
+    expect(reducedMotion).toContain('filter: none !important')
+  })
+
   it('keeps native toasts inside two-sided safe bounds and protects every full-screen dialog', () => {
     const nativeToast = css.slice(
       css.indexOf('.native-app .anim-toast-in'),

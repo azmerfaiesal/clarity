@@ -201,6 +201,9 @@ body {
 .native-fab {
   right: 1.25rem;
   bottom: 4.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
 }
 
 .native-app .native-fab {
@@ -728,6 +731,61 @@ body {
   scale: 0.985;
   transition-duration: var(--motion-exit), var(--motion-exit), var(--motion-exit);
   transition-timing-function: var(--ease-exit), var(--ease-exit), var(--ease-exit);
+}
+
+/* The create-routine sheet grows from the header add control. Keeping this
+   selector create-only leaves edit and template dialogs on the standard modal
+   motion while giving the primary action a stronger spatial connection. */
+.routine-composer-viewport {
+  transition:
+    opacity var(--motion-standard) ease,
+    backdrop-filter var(--motion-prominent) ease;
+}
+.routine-composer-modal {
+  --routine-anchor-x: 0px;
+  --routine-anchor-y: 0px;
+  transform-origin: center;
+  filter: blur(0);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 46px -7px var(--glow),
+    0 24px 64px -28px rgb(0 0 0 / 0.78);
+  transition:
+    opacity var(--motion-standard) ease,
+    transform 520ms var(--ease-spring),
+    scale 520ms var(--ease-spring),
+    filter var(--motion-standard) ease,
+    box-shadow var(--motion-prominent) ease;
+}
+.routine-composer-viewport[data-motion-state='entering'],
+.routine-composer-viewport[data-motion-state='exiting'] {
+  backdrop-filter: blur(0);
+}
+.routine-composer-viewport[data-motion-state='entering'] .routine-composer-modal {
+  opacity: 0;
+  transform: translate(var(--routine-anchor-x), var(--routine-anchor-y));
+  scale: 0.14;
+  filter: blur(2px);
+  box-shadow: 0 0 24px -5px var(--glow);
+}
+.routine-composer-viewport[data-motion-state='entered'] .routine-composer-modal {
+  opacity: 1;
+  transform: translate(0, 0);
+  scale: 1;
+  filter: blur(0);
+}
+.routine-composer-viewport[data-motion-state='exiting'] .routine-composer-modal {
+  opacity: 0;
+  transform: translate(var(--routine-anchor-x), var(--routine-anchor-y));
+  scale: 0.2;
+  filter: blur(1.5px);
+  box-shadow: 0 0 18px -6px var(--glow);
+  transition-duration:
+    var(--motion-exit), var(--motion-exit), var(--motion-exit), var(--motion-exit),
+    var(--motion-exit);
+  transition-timing-function:
+    var(--ease-exit), var(--ease-exit), var(--ease-exit), var(--ease-exit),
+    var(--ease-exit);
 }
 .motion-overlay[data-motion-state='entering'] .native-settings-panel {
   transform: translateX(-100%);
@@ -1318,6 +1376,11 @@ body {
     filter: none !important;
     transition-property: opacity !important;
     transition-duration: var(--motion-press) !important;
+  }
+  .routine-composer-viewport,
+  .routine-composer-modal {
+    backdrop-filter: none !important;
+    filter: none !important;
   }
   .motion-toast-inner {
     transform: translateY(0) !important;
