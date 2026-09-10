@@ -52,6 +52,8 @@ describe('HabitTracker exiting form boundary', () => {
     render(<HabitTracker onOpenMobileNav={vi.fn()} />)
 
     const addButton = screen.getByRole('button', { name: 'New routine' })
+    expect(addButton.classList.contains('h-[30px]')).toBe(true)
+    expect(addButton.classList.contains('w-11')).toBe(true)
     fireEvent.click(addButton)
     expect(screen.getByRole('dialog', { name: 'New routine' })).not.toBeNull()
 

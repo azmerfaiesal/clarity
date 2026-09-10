@@ -65,16 +65,16 @@ describe('motion CSS foundation', () => {
     expect(css).toContain('padding-left: env(safe-area-inset-left)')
     expect(css).toContain('padding-right: env(safe-area-inset-right)')
     expect(css).toContain('right: calc(1.25rem + env(safe-area-inset-right))')
-    expect(css).toContain('bottom: calc(4.25rem + env(safe-area-inset-bottom))')
+    expect(css).toContain('bottom: calc(4.25rem - 20px + env(safe-area-inset-bottom))')
     expect(css).toContain('.native-app .native-modal-viewport')
   })
 
-  it('keeps the mobile task add control square and defines button-origin routine motion', () => {
+  it('keeps the mobile task add control at 44 by 30 and defines button-origin routine motion', () => {
     const fabStart = css.indexOf('.native-fab')
     const fabRule = css.slice(fabStart, css.indexOf('\n}', fabStart))
 
-    expect(fabRule).toContain('width: 2.75rem')
-    expect(fabRule).toContain('height: 2.75rem')
+    expect(fabRule).toContain('width: 44px')
+    expect(fabRule).toContain('height: 30px')
     expect(fabRule).toContain('border-radius: var(--radius-md)')
     expect(css).toContain('.routine-composer-viewport')
     expect(css).toContain('.routine-composer-modal')

@@ -20,12 +20,12 @@ import { AmountSlider } from './AmountSlider'
 import { FlameIcon } from './FlameIcon'
 import { HabitIcon } from './HabitIcon'
 import { Dropdown, MenuDivider, MenuItem } from './Dropdown'
-import { HabitHeatmap, HabitMonthRows, HeatmapLegend } from './HabitHeatmap'
+import { HabitMonthRows, HeatmapLegend } from './HabitHeatmap'
 import { loadHabitRange, saveHabitRange } from '../store/storage'
 import { nativeSelectionHaptic, nativeSuccessHaptic } from '../native/platform'
 import { usePresenceValue } from './MotionPresence'
 
-type Range = 'month' | 'quarter' | 'year'
+type Range = 'month' | 'fourMonths' | 'twelveMonths'
 
 /**
  * One habit: a large check to log today on the left, the streak and lifetime
@@ -75,7 +75,9 @@ export function HabitCard({
   // and remembered, so the choice survives leaving the page.
   const [range, setRange] = useState<Range>(() => {
     const saved = loadHabitRange(habit.id)
-    return saved === 'month' || saved === 'quarter' || saved === 'year' ? saved : 'year'
+    if (saved === 'month') return 'month'
+    if (saved === 'fourMonths' || saved === 'quarter') return 'fourMonths'
+    return 'twelveMonths'
   })
   const pickRange = (r: Range) => {
     setRange(r)
@@ -368,8 +370,8 @@ export function HabitCard({
             {(
               [
                 ['month', 'This month'],
-                ['quarter', 'This quarter'],
-                ['year', 'Last 365 days'],
+                ['fourMonths', 'Last 4 months'],
+                ['twelveMonths', 'Last 12 months'],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -388,16 +390,12 @@ export function HabitCard({
           </div>
           <HeatmapLegend habit={habit} />
         </div>
-        {range === 'year' ? (
-          <HabitHeatmap habit={habit} burstDate={burstDate} onPickDay={onPickDay} />
-        ) : (
-          <HabitMonthRows
-            habit={habit}
-            span={range}
-            burstDate={burstDate}
-            onPickDay={onPickDay}
-          />
-        )}
+        <HabitMonthRows
+          habit={habit}
+          span={range}
+          burstDate={burstDate}
+          onPickDay={onPickDay}
+        />
       </div>
 
       {/* Secondary stats */}

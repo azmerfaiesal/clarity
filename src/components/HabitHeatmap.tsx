@@ -353,7 +353,7 @@ function MonthFlow({
 }
 
 /**
- * The current month, or the three months of the current quarter, as one row of
+ * Rolling calendar-month windows, ending with the current month, as one row of
  * days each — numbered underneath.
  *
  * The year grid answers "how has this gone"; these answer "where am I now",
@@ -369,7 +369,7 @@ export function HabitMonthRows({
   onPickDay,
 }: {
   habit: Habit
-  span?: 'month' | 'quarter'
+  span?: 'month' | 'fourMonths' | 'twelveMonths'
   cell?: number
   /** The day just finished, if any — it gets a firework. */
   burstDate?: string | null
@@ -382,29 +382,25 @@ export function HabitMonthRows({
 
   const months = useMemo(() => {
     const d = parseDate(today)
-    const first = span === 'quarter' ? Math.floor(d.getMonth() / 3) * 3 : d.getMonth()
-    const count = span === 'quarter' ? 3 : 1
-    return Array.from({ length: count }, (_, i) => ({ year: d.getFullYear(), month: first + i }))
+    const count = span === 'twelveMonths' ? 12 : span === 'fourMonths' ? 4 : 1
+    return Array.from({ length: count }, (_, i) => {
+      const month = new Date(d.getFullYear(), d.getMonth() - (count - 1 - i), 1)
+      return { year: month.getFullYear(), month: month.getMonth() }
+    })
   }, [today, span])
 
   const rows = useMemo(() => {
     const d = parseDate(today)
-    const year = d.getFullYear()
-    // The quarter is the three-month block containing today, so the current
-    // month is always the first, middle or last row rather than a moving one.
-    const first = span === 'quarter' ? Math.floor(d.getMonth() / 3) * 3 : d.getMonth()
-    const count = span === 'quarter' ? 3 : 1
-    return Array.from({ length: count }, (_, i) => {
-      const m = first + i
-      const start = `${year}-${String(m + 1).padStart(2, '0')}-01`
-      const days = new Date(year, m + 1, 0).getDate()
+    return months.map(({ year, month }) => {
+      const start = `${year}-${String(month + 1).padStart(2, '0')}-01`
+      const days = new Date(year, month + 1, 0).getDate()
       return {
-        label: MONTHS[m],
-        current: m === d.getMonth(),
+        label: MONTHS[month],
+        current: year === d.getFullYear() && month === d.getMonth(),
         days: Array.from({ length: days }, (_, k) => cellFor(habit, addDays(start, k), today)),
       }
     })
-  }, [habit, today, span])
+  }, [habit, months, today])
 
   if (narrow) {
     return (

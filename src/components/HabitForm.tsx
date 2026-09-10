@@ -1,5 +1,6 @@
 import { BookmarkPlus, Lightbulb, Pencil, Trash2, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import type { Habit, HabitTemplate, RepetitionType, TrackBy } from '../types'
 import type { HabitDraft } from '../store/habitStore'
 import { WEEKDAYS, ordinal } from '../utils/habitUtils'
@@ -214,7 +215,7 @@ export function HabitForm({
   const targetLabel = trackBy === 'duration' ? 'minutes' : 'times'
   const title = templateMode ? 'Edit template' : habit ? 'Edit routine' : 'New routine'
 
-  return (
+  return createPortal(
     <div
       data-motion-state={phase}
       className={`motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6${
@@ -659,6 +660,7 @@ export function HabitForm({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

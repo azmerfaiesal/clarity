@@ -200,15 +200,15 @@ body {
 
 .native-fab {
   right: 1.25rem;
-  bottom: 4.25rem;
-  width: 2.75rem;
-  height: 2.75rem;
+  bottom: calc(4.25rem - 20px);
+  width: 44px;
+  height: 30px;
   border-radius: var(--radius-md);
 }
 
 .native-app .native-fab {
   right: calc(1.25rem + env(safe-area-inset-right));
-  bottom: calc(4.25rem + env(safe-area-inset-bottom));
+  bottom: calc(4.25rem - 20px + env(safe-area-inset-bottom));
 }
 
 .native-app .mobile-sidebar {
