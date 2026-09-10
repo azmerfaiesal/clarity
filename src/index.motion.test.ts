@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
+const appSource = readFileSync(resolve(process.cwd(), 'src/App.tsx'), 'utf8')
 
 describe('motion CSS foundation', () => {
   it('defines shared motion tokens and lifecycle selectors', () => {
@@ -65,7 +66,11 @@ describe('motion CSS foundation', () => {
     expect(css).toContain('padding-left: env(safe-area-inset-left)')
     expect(css).toContain('padding-right: env(safe-area-inset-right)')
     expect(css).toContain('right: calc(1.25rem + env(safe-area-inset-right))')
-    expect(css).toContain('bottom: calc(4.25rem - 20px + env(safe-area-inset-bottom))')
+    expect(css).toContain('bottom: calc(100% + 4px)')
+    expect(appSource).toContain('className="native-search-dock relative shrink-0"')
+    expect(appSource.indexOf('className="native-search-dock relative shrink-0"')).toBeLessThan(
+      appSource.indexOf('<GlobalSearch'),
+    )
     expect(css).toContain('.native-app .native-modal-viewport')
   })
 

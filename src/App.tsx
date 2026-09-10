@@ -750,34 +750,38 @@ function AppShell() {
           </div>
         </div>
 
-        <GlobalSearch
-          tasks={tasks}
-          lists={lists}
-          notes={notes}
-          inputRef={searchRef}
-          onSelectTask={(task) => setEditingTask(task)}
-          onSelectNote={(note) => {
-            setNoteTag(null)
-            navigateTo('notes')
-            setOpenNoteId(note.id)
-          }}
-        />
-      </main>
+        <div className="native-search-dock relative shrink-0">
+          {/* Dock-relative placement keeps the compact control fully above
+              search as font sizing and safe-area insets change. Shrinking
+              it from 44px to 30px moves its top edge 20px lower while the
+              four-pixel gap protects every part of the control. */}
+          {compactTaskEntry && acceptsNewTask(view) && (
+            <button
+              ref={fabRef}
+              type="button"
+              onClick={openQuickAdd}
+              aria-label="Add task"
+              aria-expanded={quickAddOpen}
+              className="native-fab motion-primary motion-interactive absolute z-30 flex cursor-pointer items-center justify-center bg-accent text-accent-ink hover:bg-accent-hi"
+            >
+              <Plus className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          )}
 
-      {/* Mobile FAB. Only where a new task would land somewhere sensible.
-          It clears the search bar rather than sitting on top of it. */}
-      {compactTaskEntry && acceptsNewTask(view) && (
-        <button
-          ref={fabRef}
-          type="button"
-          onClick={openQuickAdd}
-          aria-label="Add task"
-          aria-expanded={quickAddOpen}
-          className="native-fab motion-primary motion-interactive fixed z-30 flex cursor-pointer items-center justify-center bg-accent text-accent-ink hover:bg-accent-hi"
-        >
-          <Plus className="h-5 w-5" strokeWidth={2.5} />
-        </button>
-      )}
+          <GlobalSearch
+            tasks={tasks}
+            lists={lists}
+            notes={notes}
+            inputRef={searchRef}
+            onSelectTask={(task) => setEditingTask(task)}
+            onSelectNote={(note) => {
+              setNoteTag(null)
+              navigateTo('notes')
+              setOpenNoteId(note.id)
+            }}
+          />
+        </div>
+      </main>
       </div>
 
       {editingTaskPresence && (
