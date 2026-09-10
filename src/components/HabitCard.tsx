@@ -109,6 +109,7 @@ export function HabitCard({
 
   return (
     <article
+      data-clarity-entity={`routine:${habit.id}`}
       className={`motion-content min-w-0 max-w-full rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
         justCompleted ? 'border-success' : 'border-line'
       } ${archived ? 'opacity-60' : ''}`}

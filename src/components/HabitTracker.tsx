@@ -299,7 +299,7 @@ export function HabitTracker({
             setEditing(null)
             setFormOpen(true)
           }}
-          className="motion-primary motion-interactive inline-flex h-[30px] w-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-accent text-sm font-medium text-accent-ink hover:bg-accent-hi sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
+          className="routine-header-add motion-primary motion-interactive inline-flex h-[30px] w-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-accent text-sm font-medium text-accent-ink hover:bg-accent-hi sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
           <span className="hidden sm:inline">New routine</span>

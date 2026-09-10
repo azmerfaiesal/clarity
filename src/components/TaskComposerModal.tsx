@@ -1,10 +1,11 @@
-import { useState, type MouseEvent, type RefObject } from 'react'
+import { useRef, useState, type MouseEvent, type RefObject } from 'react'
 import type { TaskList } from '../types'
 import { usePresenceValue } from './MotionPresence'
 import {
   TaskComposerFields,
   type TaskDraftInput,
 } from './TaskComposerFields'
+import { useComposerAnchor } from './useComposerAnchor'
 
 export type TaskComposerModalProps = {
   open: boolean
@@ -26,9 +27,11 @@ export function TaskComposerModal({
   onClose,
 }: TaskComposerModalProps) {
   const [composerSession, setComposerSession] = useState(0)
+  const dialogRef = useRef<HTMLElement>(null)
   const presence = usePresenceValue(open ? true : null, {
     onExited: () => anchorRef.current?.focus(),
   })
+  useComposerAnchor(anchorRef, dialogRef, open)
 
   if (!presence) return null
 
@@ -55,11 +58,12 @@ export function TaskComposerModal({
       onClick={dismissBackdrop}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Add a task"
         inert={!interactive}
-        className="task-composer-modal motion-dialog"
+        className="task-composer-modal anchored-composer-modal motion-dialog"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && !event.defaultPrevented) {

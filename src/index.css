@@ -210,6 +210,122 @@ body {
   right: calc(1.25rem + env(safe-area-inset-right));
 }
 
+/* Native creation lives beside search. The visible control stays at the
+   requested 44×30 while its wrapper supplies a forgiving 44×44 touch target. */
+.composer-launcher {
+  position: relative;
+  z-index: 46;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+}
+.composer-launcher-trigger {
+  display: grid;
+  width: 44px;
+  height: 30px;
+  cursor: pointer;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.composer-launcher-plus {
+  transition: transform 480ms var(--ease-spring);
+}
+.composer-launcher[data-open='true'] .composer-launcher-plus {
+  transform: rotate(135deg) scale(1.08);
+}
+.composer-launcher-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+.composer-launcher-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  cursor: default;
+  border: 0;
+  background: rgb(0 0 0 / 0.36);
+  opacity: 0;
+  backdrop-filter: blur(0);
+  transition:
+    opacity var(--motion-standard) ease,
+    backdrop-filter var(--motion-prominent) ease;
+}
+.composer-launcher-actions {
+  position: fixed;
+  top: var(--composer-anchor-y);
+  left: var(--composer-anchor-x);
+  z-index: 42;
+  width: 0;
+  height: 0;
+}
+.composer-launcher-action {
+  --composer-action-x: 0px;
+  --composer-action-y: 0px;
+  position: absolute;
+  top: -22px;
+  left: -22px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--raised);
+  color: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0) scale(0.18);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 28px -8px var(--glow),
+    0 14px 34px -16px rgb(0 0 0 / 0.72);
+  transition:
+    transform 520ms var(--ease-spring),
+    opacity 220ms ease,
+    box-shadow var(--motion-standard) ease;
+  transition-delay: calc(var(--composer-action-index) * 46ms);
+  will-change: transform, opacity;
+}
+.composer-launcher-action:nth-child(1) {
+  --composer-action-x: 0px;
+  --composer-action-y: -76px;
+}
+.composer-launcher-action:nth-child(2) {
+  --composer-action-x: -58px;
+  --composer-action-y: -56px;
+}
+.composer-launcher-action:nth-child(3) {
+  --composer-action-x: -84px;
+  --composer-action-y: -10px;
+}
+.composer-launcher-layer[data-open='true'] .composer-launcher-scrim {
+  opacity: 1;
+  pointer-events: auto;
+  backdrop-filter: blur(2.5px);
+}
+.composer-launcher-layer[data-open='true'] .composer-launcher-action {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(var(--composer-action-x), var(--composer-action-y), 0) scale(1);
+}
+.composer-launcher-layer:not([data-open='true']) .composer-launcher-action {
+  transition-delay: calc((2 - var(--composer-action-index)) * 28ms);
+  transition-duration: var(--motion-standard), var(--motion-press), var(--motion-standard);
+  transition-timing-function: var(--ease-exit), ease, ease;
+}
+
+.native-app .header-add-task,
+.native-app .routine-header-add {
+  display: none;
+}
+
 .native-app .mobile-sidebar {
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top);
@@ -819,6 +935,52 @@ body {
     0 0 38px -6px var(--glow),
     0 18px 55px -24px rgb(0 0 0 / 0.72);
 }
+.note-composer-modal {
+  width: min(100%, 34rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--raised);
+}
+.anchored-composer-modal {
+  --composer-anchor-x: 0px;
+  --composer-anchor-y: 0px;
+  transform-origin: center;
+  filter: blur(0);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 46px -7px var(--glow),
+    0 24px 64px -28px rgb(0 0 0 / 0.78);
+  transition:
+    opacity var(--motion-standard) ease,
+    transform 520ms var(--ease-spring),
+    scale 520ms var(--ease-spring),
+    filter var(--motion-standard) ease,
+    box-shadow var(--motion-prominent) ease;
+}
+.native-modal-viewport[data-motion-state='entering'] .anchored-composer-modal {
+  opacity: 0;
+  transform: translate(var(--composer-anchor-x), var(--composer-anchor-y));
+  scale: 0.14;
+  filter: blur(2px);
+  box-shadow: 0 0 24px -5px var(--glow);
+}
+.native-modal-viewport[data-motion-state='entered'] .anchored-composer-modal {
+  opacity: 1;
+  transform: translate(0, 0);
+  scale: 1;
+  filter: blur(0);
+}
+.native-modal-viewport[data-motion-state='exiting'] .anchored-composer-modal {
+  opacity: 0;
+  transform: translate(var(--composer-anchor-x), var(--composer-anchor-y));
+  scale: 0.2;
+  filter: blur(1.5px);
+  transition-duration: var(--motion-exit);
+  transition-timing-function: var(--ease-exit);
+}
 .native-app .native-modal-viewport {
   padding-top: calc(env(safe-area-inset-top) + 0.75rem);
   padding-right: calc(env(safe-area-inset-right) + 0.75rem);
@@ -826,6 +988,11 @@ body {
   padding-left: calc(env(safe-area-inset-left) + 0.75rem);
 }
 .native-app .task-composer-modal {
+  max-height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem
+  );
+}
+.native-app .note-composer-modal {
   max-height: calc(
     100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem
   );
@@ -840,6 +1007,20 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+@keyframes creation-reveal {
+  0% {
+    box-shadow: 0 0 0 0 var(--glow);
+  }
+  38% {
+    box-shadow: 0 0 34px 2px var(--glow);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.creation-reveal {
+  animation: creation-reveal 1.1s var(--ease-spring) both;
 }
 .motion-content,
 .motion-content-enter,
@@ -1377,9 +1558,24 @@ body {
     transition-duration: var(--motion-press) !important;
   }
   .routine-composer-viewport,
-  .routine-composer-modal {
+  .routine-composer-modal,
+  .anchored-composer-modal {
     backdrop-filter: none !important;
     filter: none !important;
+  }
+  .composer-launcher-action {
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+    transition-delay: 0ms !important;
+  }
+  .composer-launcher-layer[data-open='true'] .composer-launcher-action {
+    transform: translate3d(var(--composer-action-x), var(--composer-action-y), 0) scale(1) !important;
+  }
+  .composer-launcher-plus,
+  .composer-launcher[data-open='true'] .composer-launcher-plus {
+    transform: none !important;
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
   }
   .motion-toast-inner {
     transform: translateY(0) !important;

@@ -4,10 +4,13 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { BrainDump } from './components/BrainDump'
 import { Guide } from './components/Guide'
 import { Home } from './components/Home'
+import { HabitForm } from './components/HabitForm'
 import { HabitTracker } from './components/HabitTracker'
 import { EMPTY_PRESETS, EmptyState } from './components/EmptyState'
 import { Header } from './components/Header'
 import { GlobalSearch } from './components/GlobalSearch'
+import { MobileComposerLauncher, type ComposerKind } from './components/MobileComposerLauncher'
+import { NoteComposerModal } from './components/NoteComposerModal'
 import { Panel, PanelBody, PanelHeader } from './components/Panel'
 import { Settings } from './components/Settings'
 import { Sidebar } from './components/Sidebar'
@@ -17,7 +20,12 @@ import type { TaskDraftInput } from './components/TaskComposerFields'
 import { TaskInput } from './components/TaskInput'
 import { TaskItem } from './components/TaskItem'
 import { UndoToast } from './components/UndoToast'
-import { isNativeApp, nativeSelectionHaptic, nativeWarningHaptic } from './native/platform'
+import {
+  isNativeApp,
+  nativeSelectionHaptic,
+  nativeSuccessHaptic,
+  nativeWarningHaptic,
+} from './native/platform'
 import { useHabits } from './store/habitStore'
 import { loadView, saveView } from './store/storage'
 import { checkReminders, syncNativeReminders } from './store/notifications'
@@ -27,6 +35,7 @@ import AuthGate from './components/AuthGate'
 import {
   DEFAULT_FILTERS,
   type Filters,
+  type Habit,
   type HabitFilter,
   type HabitTemplate,
   type SortMode,
@@ -55,6 +64,7 @@ import {
 import type { DrawerMotion } from './utils/mobileDrawer'
 import { useMediaQuery } from './utils/useMediaQuery'
 import { usePresenceValue } from './components/MotionPresence'
+import { composerDestination, isComposerLauncherView } from './utils/composerLauncher'
 
 type MobileDrawerDrag = {
   pointerId: number
@@ -146,7 +156,7 @@ function AppShell() {
     for (const n of notes) for (const t of n.tags) counts.set(t, (counts.get(t) ?? 0) + 1)
     return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   }, [notes])
-  const { habits, templates, deleteTemplate } = useHabits()
+  const { habits, templates, addHabit, saveAsTemplate, deleteTemplate } = useHabits()
 
   // Reopen where you left off.
   const [view, setView] = useState<ViewId>(restoreView)
@@ -177,6 +187,13 @@ function AppShell() {
   const suppressClick = useRef(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [launcherOpen, setLauncherOpen] = useState(false)
+  const [composerKind, setComposerKind] = useState<ComposerKind | null>(null)
+  const composerAnchorRef = useRef<HTMLElement | null>(null)
+  const [creationReveal, setCreationReveal] = useState<{
+    kind: ComposerKind
+    id: string
+  } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [undoVisible, setUndoVisible] = useState(false)
   const undoTimer = useRef<number | null>(null)
@@ -185,6 +202,27 @@ function AppShell() {
   useEffect(() => {
     saveView(view)
   }, [view])
+
+  useEffect(() => {
+    if (!isComposerLauncherView(view)) setLauncherOpen(false)
+  }, [view])
+
+  useEffect(() => {
+    if (!creationReveal || view !== composerDestination(creationReveal.kind)) return
+    const frame = window.requestAnimationFrame(() => {
+      const element = [...document.querySelectorAll<HTMLElement>('[data-clarity-entity]')].find(
+        (candidate) => candidate.dataset.clarityEntity === `${creationReveal.kind}:${creationReveal.id}`,
+      )
+      if (!element) return
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      element.classList.add('creation-reveal')
+      window.setTimeout(() => {
+        element.classList.remove('creation-reveal')
+        setCreationReveal(null)
+      }, 1_200)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [creationReveal, habits, notes, tasks, view])
 
   // Handle deleted list: fall back to inbox if the current view vanishes.
   // Waits for the store, or a restored list view would be bounced on load,
@@ -258,16 +296,32 @@ function AppShell() {
     nativeSelectionHaptic()
     setQuickAddOpen(true)
   }, [])
+  const chooseComposer = useCallback((kind: ComposerKind, anchor: HTMLButtonElement) => {
+    composerAnchorRef.current = anchor
+    setComposerKind(kind)
+    // Let the selected action remain at its fanned position for the modal's
+    // layout measurement, then collapse the menu on the next painted frame.
+    window.requestAnimationFrame(() => setLauncherOpen(false))
+  }, [])
+  const finishCreation = useCallback((kind: ComposerKind, id: string) => {
+    setComposerKind(null)
+    setLauncherOpen(false)
+    setCreationReveal({ kind, id })
+    if (kind === 'note') setNoteTag(null)
+    setView(composerDestination(kind))
+    nativeSuccessHaptic()
+  }, [])
   const navigateTo = useCallback((nextView: ViewId) => {
     nativeSelectionHaptic()
     setView(nextView)
   }, [])
   const addTaskFromComposer = useCallback(
     (input: TaskDraftInput) => {
-      store.addTask({ ...input, favorite: view === 'favorites' })
+      const task = store.addTask({ ...input, favorite: view === 'favorites' })
       setQuickAddOpen(false)
+      if (composerKind === 'task') finishCreation('task', task.id)
     },
-    [store, view],
+    [composerKind, finishCreation, store, view],
   )
   const writeDrawerMotion = useCallback((motion: DrawerMotion) => {
     const host = mobileDrawerHostRef.current
@@ -316,6 +370,7 @@ function AppShell() {
     [ensureDrawerScheduler, mobileNavWidth, setDrawerProgress],
   )
   const openMobileNav = useCallback(() => {
+    setLauncherOpen(false)
     setMobileNavOpen(true)
     settleDrawer(1)
   }, [settleDrawer])
@@ -359,12 +414,21 @@ function AppShell() {
   }, [view])
 
   const onDrawerPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (window.innerWidth >= 768 || !event.isPrimary || event.button !== 0) return
+    if (
+      window.innerWidth >= 768 ||
+      !event.isPrimary ||
+      event.button !== 0 ||
+      launcherOpen ||
+      composerKind !== null
+    )
+      return
 
     const progress = mobileNavProgressRef.current
     const target = event.target as HTMLElement
     const interactiveTarget = Boolean(
-      target.closest('button, a, input, textarea, select, [contenteditable="true"]'),
+      target.closest(
+        'button, a, input, textarea, select, [contenteditable="true"], [role="dialog"], [data-drawer-gesture-lock]',
+      ),
     )
     if (
       !canStartDrawerDrag({
@@ -386,7 +450,7 @@ function AppShell() {
       velocityX: 0,
       axis: 'pending',
     }
-  }, [])
+  }, [composerKind, launcherOpen])
 
   const onDrawerPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -462,6 +526,17 @@ function AppShell() {
         e.preventDefault()
         searchRef.current?.focus()
       } else if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (isNativeApp) {
+          if (!isComposerLauncherView(viewRef.current)) return
+          const taskAction = document.querySelector<HTMLButtonElement>(
+            '.composer-launcher-action[aria-label="New task"]',
+          )
+          if (!taskAction) return
+          e.preventDefault()
+          composerAnchorRef.current = taskAction
+          setComposerKind('task')
+          return
+        }
         if (!acceptsNewTask(viewRef.current)) return
         e.preventDefault()
         nativeSelectionHaptic()
@@ -484,6 +559,9 @@ function AppShell() {
   const defaultListId = view.startsWith('list:') ? view.slice(5) : null
   const editingTaskPresence = usePresenceValue(editingTask)
   const settingsPresence = usePresenceValue(settingsOpen ? true : null)
+  const routineComposerPresence = usePresenceValue(composerKind === 'routine' ? true : null, {
+    onExited: () => composerAnchorRef.current?.focus(),
+  })
   const undoPresence = usePresenceValue(
     undoVisible && store.lastDeleted ? store.lastDeleted.task.title : null,
   )
@@ -504,7 +582,7 @@ function AppShell() {
  <div
       ref={mobileDrawerHostRef}
       className="app-shell mobile-drawer-host flex h-dvh overflow-hidden bg-bg text-ink"
-      inert={quickAddOpen && compactTaskEntry}
+      inert={(quickAddOpen && compactTaskEntry) || composerKind !== null}
       data-drawer-active={mobileNavOpen || mobileNavDragging}
       data-drawer-dragging={mobileNavDragging}
       style={{ '--mobile-drawer-width': `${mobileNavWidth}px` } as CSSProperties}
@@ -755,7 +833,7 @@ function AppShell() {
               search as font sizing and safe-area insets change. Shrinking
               it from 44px to 30px moves its top edge 20px lower while the
               four-pixel gap protects every part of the control. */}
-          {compactTaskEntry && acceptsNewTask(view) && (
+          {compactTaskEntry && !isNativeApp && acceptsNewTask(view) && (
             <button
               ref={fabRef}
               type="button"
@@ -779,6 +857,15 @@ function AppShell() {
               navigateTo('notes')
               setOpenNoteId(note.id)
             }}
+            trailing={
+              isNativeApp && isComposerLauncherView(view) ? (
+                <MobileComposerLauncher
+                  open={launcherOpen}
+                  onOpenChange={setLauncherOpen}
+                  onChoose={chooseComposer}
+                />
+              ) : undefined
+            }
           />
         </div>
       </main>
@@ -816,13 +903,38 @@ function AppShell() {
       )}
     </div>
       <TaskComposerModal
-        open={quickAddOpen && compactTaskEntry}
-        anchorRef={fabRef}
+        open={(quickAddOpen && compactTaskEntry && !isNativeApp) || composerKind === 'task'}
+        anchorRef={composerKind === 'task' ? composerAnchorRef : fabRef}
         lists={lists}
         defaultListId={defaultListId}
         defaultDueDate={defaultDueDate}
         onSubmit={addTaskFromComposer}
-        onClose={() => setQuickAddOpen(false)}
+        onClose={() => {
+          setQuickAddOpen(false)
+          if (composerKind === 'task') setComposerKind(null)
+        }}
+      />
+
+      {routineComposerPresence && (
+        <HabitForm
+          templates={templates}
+          anchorRef={composerAnchorRef}
+          onSaveTemplate={(draft) => saveAsTemplate(draft as Habit)}
+          onDeleteTemplate={deleteTemplate}
+          onSave={(draft) => {
+            const routine = addHabit(draft)
+            finishCreation('routine', routine.id)
+          }}
+          onClose={() => setComposerKind(null)}
+          phase={routineComposerPresence.phase}
+        />
+      )}
+
+      <NoteComposerModal
+        open={composerKind === 'note'}
+        anchorRef={composerAnchorRef}
+        onCreated={(id) => finishCreation('note', id)}
+        onClose={() => setComposerKind(null)}
       />
     </>
   )

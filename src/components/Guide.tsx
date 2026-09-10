@@ -108,6 +108,11 @@ export function Guide({
           scheduled for today, tasks due today or already overdue, and your three most recent
           notes. Opening a recent note takes you straight back into its editor.
         </p>
+        <p>
+          On iPhone, a short deliberate swipe to the right from ordinary page content opens the
+          navigation drawer. Text fields, sliders, horizontal history grids, and open composers
+          keep their own gestures.
+        </p>
       </Part>
 
       <Part title="Tasks">
@@ -125,13 +130,14 @@ export function Guide({
             to at most one. Categories are filters rather than folders, so their tasks also remain
             visible in the Inbox.
           </Feature>
-          <Feature name="Quick add follows the view">
-            On desktop, the inline Add a task form stays in the task view. On iPhone, the floating
-            Add button opens the same task composer. Adding from a category preselects that
-            category. Today preselects today's date, Upcoming starts with tomorrow, and Favorites
-            stars the new task, so it stays in the view where you captured it. Cancel, tapping the
-            backdrop, or pressing Escape closes the iPhone composer. Its motion respects Reduce
-            Motion, and its layout stays within the iPhone safe area in landscape. Press{' '}
+          <Feature name="One iPhone create button">
+            On desktop, the inline Add a task form stays in the task view. On iPhone, the button
+            beside search fans out Task, Routine, and Note choices from every task, routine, and
+            notes page. Each choice opens the same full composer used elsewhere. A new task opens
+            in Inbox, a new routine opens in My Routines, and a new note opens in Notes, with the
+            created item brought into view. Cancel, tapping the backdrop, or pressing Escape
+            closes the composer. Motion respects Reduce Motion and every composer stays within
+            the iPhone safe area in landscape. Press{' '}
             <kbd className="rounded border border-line bg-surface px-1 py-0.5 font-mono text-2xs text-muted">
               N
             </kbd>{' '}
@@ -147,7 +153,6 @@ export function Guide({
             Sunday. Marking it complete keeps that occurrence in Completed and creates the next
             occurrence automatically. If several dates have passed, Clarity skips missed slots and
             schedules the first future one. Monthly tasks keep their preferred day and use the last
-            valid day in shorter months.
           </Feature>
           <Feature name="Priority, tags and search">
             Three priority flags, free-form tags, and a search bar docked to the foot of every
@@ -183,7 +188,7 @@ export function Guide({
             out of eight would be lying to you.
           </Feature>
           <Feature name="The grid">
-            Each card shows its history as This month, This quarter, or the last 365 days, and
+            Each card shows its history as This month, Last 4 months, or Last 12 months, and
             remembers which you last chose. Today's box wears a ring that breathes. Click any day
             to open it, log it after the fact, or write a line about what you did.
           </Feature>

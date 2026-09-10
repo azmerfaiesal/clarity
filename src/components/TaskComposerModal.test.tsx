@@ -64,6 +64,42 @@ describe('TaskComposerModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('measures the selected launcher action as its entrance origin', () => {
+    const anchor = document.createElement('button')
+    const anchorRef = { current: anchor }
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      if (this === anchor) return new DOMRect(300, 700, 44, 44)
+      if (this.getAttribute('role') === 'dialog') return new DOMRect(20, 100, 340, 500)
+      return new DOMRect()
+    })
+
+    const { rerender } = render(
+      <TaskComposerModal
+        open={false}
+        anchorRef={anchorRef}
+        lists={lists}
+        onSubmit={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    rerender(
+      <TaskComposerModal
+        open
+        anchorRef={anchorRef}
+        lists={lists}
+        onSubmit={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    const dialog = screen.getByRole('dialog', { name: 'Add a task' })
+    expect(dialog.style.getPropertyValue('--composer-anchor-x')).toBe('132px')
+    expect(dialog.style.getPropertyValue('--composer-anchor-y')).toBe('372px')
+  })
+
   it('closes from Cancel without submitting', async () => {
     const user = userEvent.setup()
     const { onSubmit, onClose } = renderComposer()

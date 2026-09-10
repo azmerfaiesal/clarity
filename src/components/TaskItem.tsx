@@ -45,6 +45,7 @@ export function TaskItem({
 
   return (
     <div
+      data-clarity-entity={`task:${task.id}`}
       className={`motion-content group relative flex items-start gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-line hover:bg-surface ${
         task.completed ? 'opacity-50' : ''
       }`}

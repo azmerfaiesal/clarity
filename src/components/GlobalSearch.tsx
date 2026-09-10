@@ -1,5 +1,5 @@
 import { ArrowRight, CheckSquare, NotebookPen, Search, X } from 'lucide-react'
-import { useMemo, useState, type RefObject } from 'react'
+import { useMemo, useState, type ReactNode, type RefObject } from 'react'
 import type { BrainDump as Note, Task, TaskList } from '../types'
 import { applySearch } from '../utils/taskUtils'
 import { formatDateTime } from '../utils/dateUtils'
@@ -38,6 +38,7 @@ export function GlobalSearch({
   inputRef,
   onSelectTask,
   onSelectNote,
+  trailing,
 }: {
   tasks: Task[]
   lists: TaskList[]
@@ -46,6 +47,7 @@ export function GlobalSearch({
   inputRef: RefObject<HTMLInputElement | null>
   onSelectTask: (task: Task) => void
   onSelectNote: (note: Note) => void
+  trailing?: ReactNode
 }) {
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -161,8 +163,8 @@ export function GlobalSearch({
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-2xl px-4 py-2.5 sm:px-6">
-        <div className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 transition-colors focus-within:border-accent">
+      <div className="mx-auto flex w-full max-w-2xl items-center gap-2 px-4 py-2.5 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 transition-colors focus-within:border-accent">
           <Search className="h-4 w-4 shrink-0 text-faint" aria-hidden />
           <input
             ref={inputRef}
@@ -224,6 +226,7 @@ export function GlobalSearch({
             </kbd>
           )}
         </div>
+        {trailing}
       </div>
     </div>
   )

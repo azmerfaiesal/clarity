@@ -90,6 +90,20 @@ describe('motion CSS foundation', () => {
     expect(reducedMotion).toContain('filter: none !important')
   })
 
+  it('docks the native creation launcher beside search and fans its actions up and left', () => {
+    expect(css).toContain('.composer-launcher-trigger')
+    expect(css).toMatch(/\.composer-launcher-trigger\s*\{[\s\S]*width:\s*44px[\s\S]*height:\s*30px/)
+    expect(css).toContain('.composer-launcher-layer[data-open=\'true\']')
+    expect(css).toContain('.composer-launcher-action:nth-child(1)')
+    expect(css).toContain('.composer-launcher-action:nth-child(2)')
+    expect(css).toContain('.composer-launcher-action:nth-child(3)')
+    expect(appSource).toContain('trailing={')
+
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+    expect(reducedMotion).toContain('.composer-launcher-action')
+    expect(reducedMotion).toContain('.composer-launcher-plus')
+  })
+
   it('keeps native toasts inside two-sided safe bounds and protects every full-screen dialog', () => {
     const nativeToast = css.slice(
       css.indexOf('.native-app .anim-toast-in'),

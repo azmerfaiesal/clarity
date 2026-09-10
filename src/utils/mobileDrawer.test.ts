@@ -75,7 +75,7 @@ describe('mobile drawer motion', () => {
 
   it('settles by distance unless a deliberate fling chooses the direction', () => {
     expect(shouldOpenDrawer(0.5, 0)).toBe(true)
-    expect(shouldOpenDrawer(0.3, 0)).toBe(false)
+    expect(shouldOpenDrawer(0.1, 0)).toBe(false)
     expect(shouldOpenDrawer(0.2, 0.6)).toBe(true)
     expect(shouldOpenDrawer(0.8, -0.6)).toBe(false)
   })
@@ -89,6 +89,17 @@ describe('mobile drawer motion', () => {
   it('allows an open drawer to be swiped from a navigation control', () => {
     expect(canStartDrawerDrag({ progress: 1, startX: 220, interactiveTarget: true })).toBe(true)
     expect(canStartDrawerDrag({ progress: 0, startX: 220, interactiveTarget: true })).toBe(false)
+  })
+
+  it('starts a closed drawer from anywhere on ordinary page content', () => {
+    expect(canStartDrawerDrag({ progress: 0, startX: 220, interactiveTarget: false })).toBe(true)
+    expect(canStartDrawerDrag({ progress: 0, startX: 380, interactiveTarget: false })).toBe(true)
+  })
+
+  it('opens after a short deliberate pull while keeping a leftward fling authoritative', () => {
+    expect(shouldOpenDrawer(0.14, 0)).toBe(true)
+    expect(shouldOpenDrawer(0.1, 0)).toBe(false)
+    expect(shouldOpenDrawer(0.3, -0.6)).toBe(false)
   })
 
   it('uses the same responsive width as the mobile sidebar', () => {

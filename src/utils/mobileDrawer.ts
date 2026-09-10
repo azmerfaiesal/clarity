@@ -1,9 +1,8 @@
-const OPEN_THRESHOLD = 0.42
+const OPEN_THRESHOLD = 0.14
 const FLING_VELOCITY = 0.45
 const DRAG_SLOP = 8
 const DRAWER_VIEWPORT_RATIO = 0.86
 const DRAWER_MAX_WIDTH = 320
-const EDGE_GESTURE_WIDTH = 24
 const OPEN_PAGE_SCALE = 0.975
 const OPEN_PAGE_RADIUS = 24
 
@@ -38,8 +37,9 @@ export function canStartDrawerDrag({
   startX: number
   interactiveTarget: boolean
 }): boolean {
+  if (!Number.isFinite(startX)) return false
   if (progress > 0) return true
-  return startX <= EDGE_GESTURE_WIDTH && !interactiveTarget
+  return !interactiveTarget
 }
 
 export type DrawerMotion = {

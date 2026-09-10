@@ -791,7 +791,11 @@ export function BrainDump({
             ) : (
               <ul role="list">
                 {visible.map((note) => (
-                  <li key={note.id} className="group relative border-b border-line last:border-b-0">
+                  <li
+                    key={note.id}
+                    data-clarity-entity={`note:${note.id}`}
+                    className="group relative border-b border-line last:border-b-0"
+                  >
                     <button
                       type="button"
                       onClick={() => openForEdit(note)}

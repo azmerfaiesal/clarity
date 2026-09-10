@@ -205,7 +205,11 @@ export function HabitHeatmap({
   return (
     // `overflow-x-auto` clips vertically too, so the scroller needs a little
     // headroom or the firework on an edge cell is guillotined.
-    <div ref={scroller} className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+    <div
+      ref={scroller}
+      data-drawer-gesture-lock
+      className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain"
+    >
       {/* End padding keeps the newest cell and its animated today ring fully
           inside the card when the grid opens scrolled to the present day. */}
       <div className="inline-flex gap-1.5 py-1.5 pr-2">
@@ -428,7 +432,7 @@ export function HabitMonthRows({
   const todayInView = rows.some((r) => r.current)
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" data-drawer-gesture-lock>
       <div className="inline-flex flex-col gap-1 py-2">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center" style={{ gap: `${gap}px` }}>
