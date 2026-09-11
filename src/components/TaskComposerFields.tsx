@@ -1,5 +1,5 @@
 import { Bell, Calendar, Flag, Inbox, Tag, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Priority, TaskList, TaskRecurrence } from '../types'
 import { addDays, fromDateTimeLocal, todayStr } from '../utils/dateUtils'
 import { taskRecurrenceAnchor } from '../utils/taskRecurrence'
@@ -31,7 +31,9 @@ export type TaskComposerFieldsProps = {
   defaultListId?: string | null
   defaultDueDate?: string | null
   autoFocus?: boolean
-  onSubmit: (input: TaskDraftInput) => void
+  onSubmit: (input: TaskDraftInput, autosavedTaskId?: string) => void | Promise<void>
+  onAutosave?: (input: TaskDraftInput, taskId: string | null) => string | Promise<string>
+  autosaveEnabled?: boolean
   onCancel: () => void
 }
 
@@ -42,6 +44,8 @@ export function TaskComposerFields({
   defaultDueDate,
   autoFocus,
   onSubmit,
+  onAutosave,
+  autosaveEnabled = true,
   onCancel,
 }: TaskComposerFieldsProps) {
   const [title, setTitle] = useState('')
@@ -53,14 +57,73 @@ export function TaskComposerFields({
   const [reminder, setReminder] = useState('')
   const [recurrence, setRecurrence] = useState<TaskRecurrence | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
-  const recurrenceAnchor = taskRecurrenceAnchor({
-    reminder: fromDateTimeLocal(reminder),
-    dueDate,
-  })
+  const autosavedTaskIdRef = useRef<string | null>(null)
+  const autosaveTimerRef = useRef<number | null>(null)
+  const autosaveInFlightRef = useRef<Promise<string> | null>(null)
+  const recurrenceAnchor = useMemo(
+    () =>
+      taskRecurrenceAnchor({
+        reminder: fromDateTimeLocal(reminder),
+        dueDate,
+      }),
+    [dueDate, reminder],
+  )
 
   useEffect(() => {
     if (autoFocus) titleRef.current?.focus({ preventScroll: true })
   }, [autoFocus])
+
+  const clearAutosave = useCallback(() => {
+    if (autosaveTimerRef.current === null) return
+    window.clearTimeout(autosaveTimerRef.current)
+    autosaveTimerRef.current = null
+  }, [])
+
+  const draft = useCallback(
+    (): TaskDraftInput => ({
+      title: title.trim(),
+      description,
+      priority,
+      dueDate,
+      listId,
+      tags: tagsInput
+        .split(',')
+        .map((tag) => tag.trim().replace(/^#/, ''))
+        .filter(Boolean),
+      reminder: fromDateTimeLocal(reminder),
+      recurrence: recurrenceAnchor ? recurrence : null,
+    }),
+    [description, dueDate, listId, priority, recurrence, recurrenceAnchor, reminder, tagsInput, title],
+  )
+
+  const persistAutosave = useCallback(async () => {
+    if (!onAutosave) return null
+    const input = draft()
+    if (!input.title) return null
+    const run = async () => {
+      const id = await onAutosave(input, autosavedTaskIdRef.current)
+      autosavedTaskIdRef.current = id
+      return id
+    }
+    const previous = autosaveInFlightRef.current
+    const operation = (previous ? previous.catch(() => null) : Promise.resolve(null)).then(run)
+    autosaveInFlightRef.current = operation
+    try {
+      return await operation
+    } finally {
+      if (autosaveInFlightRef.current === operation) autosaveInFlightRef.current = null
+    }
+  }, [draft, onAutosave])
+
+  useEffect(() => {
+    clearAutosave()
+    if (!autosaveEnabled || !onAutosave || !title.trim()) return
+    autosaveTimerRef.current = window.setTimeout(() => {
+      autosaveTimerRef.current = null
+      void persistAutosave()
+    }, 5_000)
+    return clearAutosave
+  }, [autosaveEnabled, clearAutosave, onAutosave, persistAutosave, title])
 
   const updateDueDate = (next: string | null) => {
     setDueDate(next)
@@ -81,29 +144,24 @@ export function TaskComposerFields({
     setTagsInput('')
     setReminder('')
     setRecurrence(null)
+    autosavedTaskIdRef.current = null
   }
 
-  const submit = () => {
-    const trimmed = title.trim()
-    if (!trimmed) return
-    onSubmit({
-      title: trimmed,
-      description,
-      priority,
-      dueDate,
-      listId,
-      tags: tagsInput
-        .split(',')
-        .map((tag) => tag.trim().replace(/^#/, ''))
-        .filter(Boolean),
-      reminder: fromDateTimeLocal(reminder),
-      recurrence: recurrenceAnchor ? recurrence : null,
-    })
+  const submit = async () => {
+    const input = draft()
+    if (!input.title) return
+    clearAutosave()
+    const pendingAutosave = autosaveInFlightRef.current
+    if (pendingAutosave) await pendingAutosave.catch(() => null)
+    const autosavedTaskId = autosavedTaskIdRef.current
+    if (autosavedTaskId) await onSubmit(input, autosavedTaskId)
+    else await onSubmit(input)
     reset()
     onCancel()
   }
 
   const close = () => {
+    clearAutosave()
     reset()
     onCancel()
   }
@@ -118,7 +176,7 @@ export function TaskComposerFields({
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               event.preventDefault()
-              submit()
+              void submit()
             } else if (event.key === 'Escape') {
               event.preventDefault()
               close()
@@ -134,7 +192,7 @@ export function TaskComposerFields({
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               event.preventDefault()
-              submit()
+              void submit()
             } else if (event.key === 'Escape') {
               event.preventDefault()
               close()
@@ -282,6 +340,11 @@ export function TaskComposerFields({
       </div>
 
       <div className="flex items-center justify-end gap-2 border-t border-line px-3 py-2">
+        {onAutosave && (
+          <span className="mr-auto font-mono text-3xs text-faint" aria-live="polite">
+            Autosaves after 5 seconds
+          </span>
+        )}
         <button
           type="button"
           onClick={close}
@@ -291,7 +354,7 @@ export function TaskComposerFields({
         </button>
         <button
           type="button"
-          onClick={submit}
+          onClick={() => void submit()}
           disabled={!title.trim()}
           className="motion-primary motion-interactive cursor-pointer rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-40"
         >

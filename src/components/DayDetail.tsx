@@ -77,14 +77,15 @@ export function DayDetail({
     const r = el.getBoundingClientRect()
     const bounds = getSafeViewportBounds()
     if (anchor.rail && anchor.rail.width > 0 && anchor.rail.height > 0) {
+      const railTop = Math.max(anchor.rail.top, bounds.top)
+      const railBottom = Math.min(anchor.rail.top + anchor.rail.height, bounds.bottom)
       const left = Math.min(
         Math.max(anchor.rail.left, bounds.left),
         Math.max(bounds.left, bounds.right - r.width),
       )
-      const top = Math.min(
-        Math.max(anchor.rail.top, bounds.top),
-        Math.max(bounds.top, bounds.bottom - r.height),
-      )
+      // Keep the panel in the right-hand rail, but align its top edge with the
+      // selected cell's row. The rail and safe viewport clamp the last rows.
+      const top = Math.min(Math.max(anchor.y, railTop), Math.max(railTop, railBottom - r.height))
       setPos({ left, top, placement: 'rail' })
       return
     }

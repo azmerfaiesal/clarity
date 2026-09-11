@@ -13,7 +13,8 @@ export type TaskComposerModalProps = {
   lists: TaskList[]
   defaultListId?: string | null
   defaultDueDate?: string | null
-  onSubmit: (input: TaskDraftInput) => void
+  onSubmit: (input: TaskDraftInput, autosavedTaskId?: string) => void | Promise<void>
+  onAutosave?: (input: TaskDraftInput, taskId: string | null) => string | Promise<string>
   onClose: () => void
 }
 
@@ -24,6 +25,7 @@ export function TaskComposerModal({
   defaultListId,
   defaultDueDate,
   onSubmit,
+  onAutosave,
   onClose,
 }: TaskComposerModalProps) {
   const [composerSession, setComposerSession] = useState(0)
@@ -41,8 +43,10 @@ export function TaskComposerModal({
     setComposerSession((session) => session + 1)
     onClose()
   }
-  const submit = (input: TaskDraftInput) => {
-    if (interactive) onSubmit(input)
+  const submit = (input: TaskDraftInput, autosavedTaskId?: string) => {
+    if (!interactive) return
+    if (autosavedTaskId) return onSubmit(input, autosavedTaskId)
+    return onSubmit(input)
   }
   const dismissBackdrop = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return
@@ -78,6 +82,8 @@ export function TaskComposerModal({
           defaultListId={defaultListId}
           defaultDueDate={defaultDueDate}
           autoFocus={interactive}
+          autosaveEnabled={interactive}
+          onAutosave={onAutosave}
           onSubmit={submit}
           onCancel={close}
         />

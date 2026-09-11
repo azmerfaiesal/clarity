@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Habit } from '../types'
 import { HabitCard } from './HabitCard'
 
@@ -56,6 +56,10 @@ describe('HabitCard history labels', () => {
     rangeStorage.saved = null
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('offers rolling month ranges instead of quarter and day-count labels', () => {
     render(
       <HabitCard
@@ -106,6 +110,57 @@ describe('HabitCard history labels', () => {
     expect(screen.getByRole('radio', { name: selectedLabel }).getAttribute('aria-checked')).toBe(
       'true',
     )
+  })
+
+  it('transitions the card from its captured height to the selected range height', () => {
+    rangeStorage.saved = 'month'
+    let frameCallback: FrameRequestCallback | null = null
+    const measuredHeights: number[] = []
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      if (this.dataset.clarityEntity === 'routine:routine-range-labels') {
+        const height = measuredHeights.length === 0 ? 240 : 420
+        measuredHeights.push(height)
+        return new DOMRect(0, 0, 864, height)
+      }
+      return new DOMRect()
+    })
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frameCallback = callback
+      return 101
+    })
+
+    render(
+      <HabitCard
+        habit={habit}
+        onToggle={vi.fn()}
+        onAdjust={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        justCompleted={false}
+        onSetAmount={vi.fn()}
+        onSaveTemplate={vi.fn()}
+        onOpenSummary={vi.fn()}
+        onPickDay={vi.fn()}
+        onSetNotes={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Last 4 months' }))
+
+    const card = screen.getByRole('article')
+    expect(screen.getByRole('radio', { name: 'Last 4 months' }).getAttribute('aria-checked')).toBe(
+      'true',
+    )
+    expect(measuredHeights).toEqual([240, 420])
+    expect(frameCallback).not.toBeNull()
+    expect(card.style.height).toBe('240px')
+    expect(card.dataset.rangeMotion).toBe('running')
+
+    ;(frameCallback as unknown as FrameRequestCallback)(0)
+    expect(card.style.height).toBe('420px')
   })
 
   it('attaches visible detail-rail bounds to a clicked day on wide cards', () => {

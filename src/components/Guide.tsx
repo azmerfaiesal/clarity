@@ -136,9 +136,11 @@ export function Guide({
             iPhone actions fan up-left. Each choice opens the same full composer from its selected
             icon. Desktop task views also keep the inline Add a task form. A new task opens in
             Inbox, a new routine opens in My Routines, and a new note opens in Notes, with the
-            created item brought into view. Cancel, tapping the backdrop, or pressing Escape
-            closes the composer. Motion respects Reduce Motion and every composer stays within
-            the iPhone safe area in landscape. On iPhone or a narrow browser, press{' '}
+            created item brought into view. Task drafts autosave after five idle seconds without
+            closing or clearing the composer; later edits update that same task. Cancel, tapping
+            the backdrop, or pressing Escape closes the composer. Motion respects Reduce Motion
+            and every composer stays within the iPhone safe area in landscape. On iPhone or a
+            narrow browser, press{' '}
             <kbd className="rounded border border-line bg-surface px-1 py-0.5 font-mono text-2xs text-muted">
               N
             </kbd>{' '}
@@ -190,8 +192,10 @@ export function Guide({
           </Feature>
           <Feature name="The grid">
             Each card shows its history as This month, Last 4 months, or Last 12 months, and
-            remembers which you last chose. Today's box wears a ring that breathes. Click any day
-            to open it, log it after the fact, or write a line about what you did.
+            remembers which you last chose. The card smoothly resizes with the selected range.
+            Today's box wears a ring that breathes. Click any day to open it, log it after the
+            fact, or write a line about what you did; on a wide screen its detail panel aligns
+            beside the selected row.
           </Feature>
           <Feature name="Streaks">
             Counted in days, or in weeks for a “× per week” routine. A day that is still open never

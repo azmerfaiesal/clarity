@@ -143,7 +143,7 @@ function restoreView(): ViewId {
 
 function AppShell() {
   const store = useTaskStore()
-  const { tasks, lists } = store
+  const { tasks, lists, addTask, updateTask } = store
   const { notes } = useNotes()
   // Keep this hook unconditional: a native iPad in landscape still uses the
   // compact composer even though its viewport is wider than the web breakpoint.
@@ -315,12 +315,23 @@ function AppShell() {
     setView(nextView)
   }, [])
   const addTaskFromComposer = useCallback(
-    (input: TaskDraftInput) => {
-      const task = store.addTask({ ...input, favorite: view === 'favorites' })
+    (input: TaskDraftInput, autosavedTaskId?: string) => {
+      const taskId = autosavedTaskId ?? addTask({ ...input, favorite: view === 'favorites' }).id
+      if (autosavedTaskId) updateTask(autosavedTaskId, input)
       setQuickAddOpen(false)
-      if (composerKind === 'task') finishCreation('task', task.id)
+      if (composerKind === 'task') finishCreation('task', taskId)
     },
-    [composerKind, finishCreation, store, view],
+    [addTask, composerKind, finishCreation, updateTask, view],
+  )
+  const autosaveTaskFromComposer = useCallback(
+    (input: TaskDraftInput, taskId: string | null) => {
+      if (taskId) {
+        updateTask(taskId, input)
+        return taskId
+      }
+      return addTask({ ...input, favorite: view === 'favorites' }).id
+    },
+    [addTask, updateTask, view],
   )
   const writeDrawerMotion = useCallback((motion: DrawerMotion) => {
     const host = mobileDrawerHostRef.current
@@ -891,6 +902,7 @@ function AppShell() {
         lists={lists}
         defaultListId={defaultListId}
         defaultDueDate={defaultDueDate}
+        onAutosave={autosaveTaskFromComposer}
         onSubmit={addTaskFromComposer}
         onClose={() => {
           setQuickAddOpen(false)

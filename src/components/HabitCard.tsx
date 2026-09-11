@@ -11,7 +11,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Habit } from '../types'
 import { todayStr } from '../utils/dateUtils'
 import { formatAmount, habitStats, repetitionLabel, totalAmount } from '../utils/habitUtils'
@@ -27,6 +27,7 @@ import { usePresenceValue } from './MotionPresence'
 import type { DayDetailAnchor } from './DayDetail'
 
 type Range = 'month' | 'fourMonths' | 'twelveMonths'
+const RANGE_HEIGHT_MOTION_MS = 520
 
 /**
  * One habit: a large check to log today on the left, the streak and lifetime
@@ -71,7 +72,10 @@ export function HabitCard({
 }) {
   const [sliderOpen, setSliderOpen] = useState(false)
   const sliderPresence = usePresenceValue(sliderOpen ? true : null)
+  const cardRef = useRef<HTMLElement>(null)
   const detailRailRef = useRef<HTMLDivElement>(null)
+  const rangeStartHeightRef = useRef<number | null>(null)
+  const rangeMotionCleanupRef = useRef<(() => void) | null>(null)
   // Which span of history the card is showing. Per card, not global — one
   // habit is worth reading a year of while another only matters this month —
   // and remembered, so the choice survives leaving the page.
@@ -82,9 +86,48 @@ export function HabitCard({
     return 'twelveMonths'
   })
   const pickRange = (r: Range) => {
+    if (r === range) return
+    rangeStartHeightRef.current = cardRef.current?.getBoundingClientRect().height ?? null
     setRange(r)
     saveHabitRange(habit.id, r)
   }
+
+  useLayoutEffect(() => {
+    const element = cardRef.current
+    const fromHeight = rangeStartHeightRef.current
+    rangeStartHeightRef.current = null
+    if (!element || fromHeight === null) return
+
+    rangeMotionCleanupRef.current?.()
+    const toHeight = element.getBoundingClientRect().height
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (Math.abs(fromHeight - toHeight) < 1 || reducedMotion) return
+
+    let frameId: number | null = null
+    let fallbackId: number | null = null
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.propertyName === 'height') cleanup()
+    }
+    const cleanup = () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
+      if (fallbackId !== null) window.clearTimeout(fallbackId)
+      element.removeEventListener('transitionend', onTransitionEnd)
+      element.style.height = ''
+      delete element.dataset.rangeMotion
+      if (rangeMotionCleanupRef.current === cleanup) rangeMotionCleanupRef.current = null
+    }
+
+    element.style.height = `${fromHeight}px`
+    element.dataset.rangeMotion = 'running'
+    element.addEventListener('transitionend', onTransitionEnd)
+    frameId = window.requestAnimationFrame(() => {
+      element.style.height = `${toHeight}px`
+      fallbackId = window.setTimeout(cleanup, RANGE_HEIGHT_MOTION_MS + 100)
+    })
+    rangeMotionCleanupRef.current = cleanup
+  }, [range])
+
+  useEffect(() => () => rangeMotionCleanupRef.current?.(), [])
   const holdTimer = useRef<number | null>(null)
   const heldRef = useRef(false)
   const today = todayStr()
@@ -128,6 +171,7 @@ export function HabitCard({
 
   return (
     <article
+      ref={cardRef}
       data-clarity-entity={`routine:${habit.id}`}
       className={`routine-card motion-content min-w-0 max-w-full rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
         justCompleted ? 'border-success' : 'border-line'
@@ -411,12 +455,14 @@ export function HabitCard({
             </div>
             <HeatmapLegend habit={habit} />
           </div>
-          <HabitMonthRows
-            habit={habit}
-            span={range}
-            burstDate={burstDate}
-            onPickDay={pickDay}
-          />
+          <div key={range} className="routine-history-range-content">
+            <HabitMonthRows
+              habit={habit}
+              span={range}
+              burstDate={burstDate}
+              onPickDay={pickDay}
+            />
+          </div>
         </div>
         <div
           ref={detailRailRef}

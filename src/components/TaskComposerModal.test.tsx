@@ -32,7 +32,10 @@ function renderComposer(overrides: Partial<React.ComponentProps<typeof TaskCompo
 }
 
 describe('TaskComposerModal', () => {
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
 
   it('uses the shared bottom-center global composer surface', () => {
     renderComposer()
@@ -71,6 +74,71 @@ describe('TaskComposerModal', () => {
         listId: 'work',
         dueDate: '2026-09-04',
       }),
+    )
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('autosaves after five idle seconds without closing or clearing the composer', async () => {
+    vi.useFakeTimers()
+    const onAutosave = vi.fn().mockResolvedValue('task-autosaved')
+    const { onClose } = renderComposer({ onAutosave })
+
+    fireEvent.change(screen.getByLabelText('Task name'), {
+      target: { value: 'Prepare launch notes' },
+    })
+
+    await act(async () => vi.advanceTimersByTime(4_999))
+    expect(onAutosave).not.toHaveBeenCalled()
+
+    await act(async () => vi.advanceTimersByTime(1))
+    expect(onAutosave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Prepare launch notes',
+        listId: 'work',
+        dueDate: '2026-09-04',
+      }),
+      null,
+    )
+    expect((screen.getByLabelText('Task name') as HTMLInputElement).value).toBe(
+      'Prepare launch notes',
+    )
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('updates the same autosaved task after later idle edits and finalizes it once', async () => {
+    vi.useFakeTimers()
+    const onAutosave = vi
+      .fn()
+      .mockImplementation(async (_input, taskId: string | null) => taskId ?? 'task-autosaved')
+    const onSubmit = vi.fn()
+    const onClose = vi.fn()
+    renderComposer({ onAutosave, onSubmit, onClose })
+
+    fireEvent.change(screen.getByLabelText('Task name'), {
+      target: { value: 'Prepare launch notes' },
+    })
+    await act(async () => vi.advanceTimersByTime(5_000))
+
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'Include the deployment checklist' },
+    })
+    await act(async () => vi.advanceTimersByTime(5_000))
+
+    expect(onAutosave).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ description: 'Include the deployment checklist' }),
+      'task-autosaved',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add task' }))
+    await act(async () => Promise.resolve())
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Prepare launch notes',
+        description: 'Include the deployment checklist',
+      }),
+      'task-autosaved',
     )
     expect(onClose).toHaveBeenCalledTimes(1)
   })

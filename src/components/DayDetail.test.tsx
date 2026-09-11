@@ -46,21 +46,21 @@ function renderDetail(anchor: React.ComponentProps<typeof DayDetail>['anchor']) 
 describe('DayDetail responsive placement', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('uses a visible Routine rail on wide cards', async () => {
+  it('aligns a wide-card detail rail panel with the clicked Routine row', async () => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(0, 0, 240, 160),
     )
 
     renderDetail({
       x: 420,
-      y: 260,
-      rail: { left: 640, top: 210, width: 240, height: 190 },
+      y: 360,
+      rail: { left: 640, top: 210, width: 240, height: 360 },
     })
 
     const dialog = screen.getByRole('dialog', { name: 'Read on 2026-09-11' })
     await waitFor(() => expect(dialog.dataset.placement).toBe('rail'))
     expect(dialog.style.left).toBe('640px')
-    expect(dialog.style.top).toBe('210px')
+    expect(dialog.style.top).toBe('360px')
   })
 
   it('keeps the safe fixed popover when no wide rail is available', async () => {
