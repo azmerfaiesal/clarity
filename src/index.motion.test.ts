@@ -62,11 +62,9 @@ describe('motion CSS foundation', () => {
     expect(reducedMotion).toContain('.motion-page')
   })
 
-  it('owns native safe areas on all four sides and keeps the FAB above docked search', () => {
+  it('owns native safe areas on all four sides and keeps creation docked with search', () => {
     expect(css).toContain('padding-left: env(safe-area-inset-left)')
     expect(css).toContain('padding-right: env(safe-area-inset-right)')
-    expect(css).toContain('right: calc(1.25rem + env(safe-area-inset-right))')
-    expect(css).toContain('bottom: calc(100% + 4px)')
     expect(appSource).toContain('className="native-search-dock relative shrink-0"')
     expect(appSource.indexOf('className="native-search-dock relative shrink-0"')).toBeLessThan(
       appSource.indexOf('<GlobalSearch'),
@@ -75,12 +73,16 @@ describe('motion CSS foundation', () => {
   })
 
   it('keeps the mobile task add control at 44 by 30 and defines button-origin routine motion', () => {
-    const fabStart = css.indexOf('.native-fab')
-    const fabRule = css.slice(fabStart, css.indexOf('\n}', fabStart))
+    const nativeTriggerStart = css.indexOf(
+      ".composer-launcher[data-variant='native'] .composer-launcher-trigger",
+    )
+    const nativeTriggerRule = css.slice(
+      nativeTriggerStart,
+      css.indexOf('\n}', nativeTriggerStart),
+    )
 
-    expect(fabRule).toContain('width: 44px')
-    expect(fabRule).toContain('height: 30px')
-    expect(fabRule).toContain('border-radius: var(--radius-md)')
+    expect(nativeTriggerRule).toContain('width: 44px')
+    expect(nativeTriggerRule).toContain('height: 30px')
     expect(css).toContain('.routine-composer-viewport')
     expect(css).toContain('.routine-composer-modal')
     expect(css).toContain('var(--routine-anchor-x)')
@@ -102,6 +104,17 @@ describe('motion CSS foundation', () => {
     const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
     expect(reducedMotion).toContain('.composer-launcher-action')
     expect(reducedMotion).toContain('.composer-launcher-plus')
+  })
+
+  it('gives the web launcher the former header button footprint and a straight-up fan', () => {
+    expect(css).toContain(".composer-launcher[data-variant='web']")
+    expect(css).toMatch(
+      /\.composer-launcher\[data-variant='web'\] \.composer-launcher-trigger\s*\{[\s\S]*padding:\s*0\.375rem 0\.75rem/,
+    )
+    expect(css).toContain(".composer-launcher-layer[data-layout='vertical']")
+    expect(css).toContain('--composer-action-x: 0px')
+    expect(appSource).toContain("variant={isNativeApp ? 'native' : 'web'}")
+    expect(appSource).not.toContain('compactTaskEntry && !isNativeApp && acceptsNewTask(view)')
   })
 
   it('keeps native toasts inside two-sided safe bounds and protects every full-screen dialog', () => {

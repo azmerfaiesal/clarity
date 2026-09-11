@@ -1,4 +1,4 @@
-import { Flag, Plus, RotateCcw, SearchX, Trash2 } from 'lucide-react'
+import { Flag, RotateCcw, SearchX, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { BrainDump } from './components/BrainDump'
@@ -197,7 +197,6 @@ function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [undoVisible, setUndoVisible] = useState(false)
   const undoTimer = useRef<number | null>(null)
-  const fabRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     saveView(view)
@@ -526,7 +525,7 @@ function AppShell() {
         e.preventDefault()
         searchRef.current?.focus()
       } else if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        if (isNativeApp) {
+        if (compactTaskEntry) {
           if (!isComposerLauncherView(viewRef.current)) return
           const taskAction = document.querySelector<HTMLButtonElement>(
             '.composer-launcher-action[aria-label="New task"]',
@@ -545,7 +544,7 @@ function AppShell() {
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [])
+  }, [compactTaskEntry])
 
   const visibleTasks = useMemo(() => {
     let result = tasksForView(tasks, view)
@@ -829,23 +828,6 @@ function AppShell() {
         </div>
 
         <div className="native-search-dock relative shrink-0">
-          {/* Dock-relative placement keeps the compact control fully above
-              search as font sizing and safe-area insets change. Shrinking
-              it from 44px to 30px moves its top edge 20px lower while the
-              four-pixel gap protects every part of the control. */}
-          {compactTaskEntry && !isNativeApp && acceptsNewTask(view) && (
-            <button
-              ref={fabRef}
-              type="button"
-              onClick={openQuickAdd}
-              aria-label="Add task"
-              aria-expanded={quickAddOpen}
-              className="native-fab motion-primary motion-interactive absolute z-30 flex cursor-pointer items-center justify-center bg-accent text-accent-ink hover:bg-accent-hi"
-            >
-              <Plus className="h-5 w-5" strokeWidth={2.5} />
-            </button>
-          )}
-
           <GlobalSearch
             tasks={tasks}
             lists={lists}
@@ -858,8 +840,9 @@ function AppShell() {
               setOpenNoteId(note.id)
             }}
             trailing={
-              isNativeApp && isComposerLauncherView(view) ? (
+              isComposerLauncherView(view) ? (
                 <MobileComposerLauncher
+                  variant={isNativeApp ? 'native' : 'web'}
                   open={launcherOpen}
                   onOpenChange={setLauncherOpen}
                   onChoose={chooseComposer}
@@ -901,10 +884,10 @@ function AppShell() {
           }}
         />
       )}
-    </div>
+      </div>
       <TaskComposerModal
-        open={(quickAddOpen && compactTaskEntry && !isNativeApp) || composerKind === 'task'}
-        anchorRef={composerKind === 'task' ? composerAnchorRef : fabRef}
+        open={composerKind === 'task'}
+        anchorRef={composerAnchorRef}
         lists={lists}
         defaultListId={defaultListId}
         defaultDueDate={defaultDueDate}

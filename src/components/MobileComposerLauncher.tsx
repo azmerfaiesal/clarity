@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { nativeSelectionHaptic } from '../native/platform'
 
 export type ComposerKind = 'task' | 'routine' | 'note'
+export type ComposerLauncherVariant = 'native' | 'web'
 
 const ACTIONS: Array<{
   kind: ComposerKind
@@ -17,10 +18,12 @@ const ACTIONS: Array<{
 ]
 
 export function MobileComposerLauncher({
+  variant = 'native',
   open,
   onOpenChange,
   onChoose,
 }: {
+  variant?: ComposerLauncherVariant
   open: boolean
   onOpenChange: (open: boolean) => void
   onChoose: (kind: ComposerKind, anchor: HTMLButtonElement) => void
@@ -59,6 +62,8 @@ export function MobileComposerLauncher({
   const layer = (
     <div
       className="composer-launcher-layer"
+      data-testid="composer-launcher-layer"
+      data-layout={variant === 'web' ? 'vertical' : 'up-left'}
       data-open={open || undefined}
       style={
         {
@@ -102,16 +107,21 @@ export function MobileComposerLauncher({
   return (
     <>
       {createPortal(layer, document.body)}
-      <div className="composer-launcher" data-open={open || undefined}>
+      <div
+        className="composer-launcher"
+        data-variant={variant}
+        data-open={open || undefined}
+      >
         <button
           ref={triggerRef}
           type="button"
-          aria-label={open ? 'Close creation menu' : 'Create new'}
+          aria-label={open ? 'Close creation menu' : variant === 'web' ? 'Create' : 'Create new'}
           aria-expanded={open}
           onClick={toggle}
           className="composer-launcher-trigger motion-primary motion-interactive"
         >
           <Plus className="composer-launcher-plus h-5 w-5" strokeWidth={2.5} aria-hidden />
+          {variant === 'web' && <span>Create</span>}
         </button>
       </div>
     </>

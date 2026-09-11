@@ -5,6 +5,42 @@ import { describe, expect, it, vi } from 'vitest'
 import { MobileComposerLauncher } from './MobileComposerLauncher'
 
 describe('MobileComposerLauncher', () => {
+  it('uses the familiar Create treatment and a vertical action fan on the web', () => {
+    render(
+      <MobileComposerLauncher
+        variant="web"
+        open={false}
+        onOpenChange={vi.fn()}
+        onChoose={vi.fn()}
+      />,
+    )
+
+    const trigger = screen.getByRole('button', { name: 'Create' })
+    expect(trigger.textContent).toContain('Create')
+    expect(trigger.closest('.composer-launcher')?.getAttribute('data-variant')).toBe('web')
+    expect(screen.getByTestId('composer-launcher-layer').getAttribute('data-layout')).toBe(
+      'vertical',
+    )
+  })
+
+  it('keeps the compact native trigger and its up-left action fan', () => {
+    render(
+      <MobileComposerLauncher
+        variant="native"
+        open={false}
+        onOpenChange={vi.fn()}
+        onChoose={vi.fn()}
+      />,
+    )
+
+    const trigger = screen.getByRole('button', { name: 'Create new' })
+    expect(trigger.textContent).not.toContain('Create')
+    expect(trigger.closest('.composer-launcher')?.getAttribute('data-variant')).toBe('native')
+    expect(screen.getByTestId('composer-launcher-layer').getAttribute('data-layout')).toBe(
+      'up-left',
+    )
+  })
+
   it('fans out all creation choices and reports the chosen button as the composer origin', async () => {
     const user = userEvent.setup()
     const onChoose = vi.fn()

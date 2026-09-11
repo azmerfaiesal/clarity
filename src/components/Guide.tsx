@@ -130,14 +130,15 @@ export function Guide({
             to at most one. Categories are filters rather than folders, so their tasks also remain
             visible in the Inbox.
           </Feature>
-          <Feature name="One iPhone create button">
-            On desktop, the inline Add a task form stays in the task view. On iPhone, the button
-            beside search fans out Task, Routine, and Note choices from every task, routine, and
-            notes page. Each choice opens the same full composer used elsewhere. A new task opens
-            in Inbox, a new routine opens in My Routines, and a new note opens in Notes, with the
+          <Feature name="One global create button">
+            On the web and iPhone, the button beside search offers Task, Routine, and Note from
+            every task, routine, and notes page. The web actions fan straight upward; the compact
+            iPhone actions fan up-left. Each choice opens the same full composer from its selected
+            icon. Desktop task views also keep the inline Add a task form. A new task opens in
+            Inbox, a new routine opens in My Routines, and a new note opens in Notes, with the
             created item brought into view. Cancel, tapping the backdrop, or pressing Escape
             closes the composer. Motion respects Reduce Motion and every composer stays within
-            the iPhone safe area in landscape. Press{' '}
+            the iPhone safe area in landscape. On iPhone or a narrow browser, press{' '}
             <kbd className="rounded border border-line bg-surface px-1 py-0.5 font-mono text-2xs text-muted">
               N
             </kbd>{' '}
