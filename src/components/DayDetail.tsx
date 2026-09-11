@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Habit } from '../types'
 import { parseDate } from '../utils/dateUtils'
 import { amountOn, formatAmount, isCompletedOn, isScheduled, runContaining } from '../utils/habitUtils'
@@ -8,6 +9,19 @@ import { LogNotes } from './LogNotes'
 import { HabitTimer } from './HabitTimer'
 import type { MotionPhase } from '../utils/motion'
 import { getSafeViewportBounds, placeFixedPopover } from '../utils/fixedPopover'
+
+export type DayDetailRailBounds = {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export type DayDetailAnchor = {
+  x: number
+  y: number
+  rail?: DayDetailRailBounds
+}
 
 /**
  * One day's record, opened from a heatmap cell: what happened, where it sits in
@@ -30,7 +44,7 @@ export function DayDetail({
   habit: Habit
   date: string
   today: string
-  anchor: { x: number; y: number }
+  anchor: DayDetailAnchor
   /** Writing habits are derived from Notes, so their days are not annotatable. */
   editable: boolean
   onSetNotes: (notes: string[]) => void
@@ -40,7 +54,11 @@ export function DayDetail({
   phase: MotionPhase
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const [pos, setPos] = useState<{
+    left: number
+    top: number
+    placement: 'rail' | 'popover'
+  } | null>(null)
 
   const amount = amountOn(habit, date)
   const done = isCompletedOn(habit, date)
@@ -53,11 +71,27 @@ export function DayDetail({
   const canTime = habit.trackBy === 'duration' && date === today && editable && !!onLogMinutes
   const interactive = phase !== 'exiting'
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     const r = el.getBoundingClientRect()
-    setPos(placeFixedPopover({ anchor, size: r, bounds: getSafeViewportBounds() }))
+    const bounds = getSafeViewportBounds()
+    if (anchor.rail && anchor.rail.width > 0 && anchor.rail.height > 0) {
+      const left = Math.min(
+        Math.max(anchor.rail.left, bounds.left),
+        Math.max(bounds.left, bounds.right - r.width),
+      )
+      const top = Math.min(
+        Math.max(anchor.rail.top, bounds.top),
+        Math.max(bounds.top, bounds.bottom - r.height),
+      )
+      setPos({ left, top, placement: 'rail' })
+      return
+    }
+    setPos({
+      ...placeFixedPopover({ anchor, size: r, bounds }),
+      placement: 'popover',
+    })
   }, [anchor])
 
   useEffect(() => {
@@ -92,84 +126,88 @@ export function DayDetail({
     year: 'numeric',
   })
 
-  return (
+  return createPortal(
     <div
       ref={ref}
       role="dialog"
       aria-label={`${habit.name} on ${date}`}
       inert={!interactive}
       data-motion-state={phase}
+      data-placement={pos?.placement}
       style={{
         left: pos?.left ?? 0,
         top: pos?.top ?? 0,
         visibility: pos ? 'visible' : 'hidden',
       }}
-      className="motion-popover fixed z-50 w-60 origin-bottom rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
+      className="routine-day-detail motion-popover fixed z-50 w-60 origin-bottom rounded-xl border border-line bg-raised p-3 shadow-2xl shadow-black/30 dark:shadow-black/70"
     >
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-ink">{heading}</p>
-          <p className="mt-0.5 flex items-center gap-1.5 text-xs">
-            {done ? (
-              <>
-                <Check className="h-3.5 w-3.5 shrink-0" style={{ color: habit.color }} />
-                <span style={{ color: habit.color }}>
-                  Completed{counted && ` (${formatAmount(habit, amount)})`}
+      <div key={`${habit.id}:${date}`} className="routine-day-detail-content">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">{heading}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs">
+              {done ? (
+                <>
+                  <Check className="h-3.5 w-3.5 shrink-0" style={{ color: habit.color }} />
+                  <span style={{ color: habit.color }}>
+                    Completed{counted && ` (${formatAmount(habit, amount)})`}
+                  </span>
+                </>
+              ) : amount > 0 ? (
+                <span className="text-muted">
+                  {formatAmount(habit, amount)} of {formatAmount(habit, habit.dailyTarget ?? 1)} —
+                  partial
                 </span>
-              </>
-            ) : amount > 0 ? (
-              <span className="text-muted">
-                {formatAmount(habit, amount)} of {formatAmount(habit, habit.dailyTarget ?? 1)} —
-                partial
+              ) : date > today ? (
+                <span className="text-faint">Still to come</span>
+              ) : date < habit.createdAt.slice(0, 10) ? (
+                <span className="text-faint">Before this routine existed</span>
+              ) : !due ? (
+                <span className="text-faint">Not scheduled</span>
+              ) : date === today ? (
+                <span className="text-faint">Still open</span>
+              ) : (
+                <span className="text-faint">Missed</span>
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (interactive) onClose()
+            }}
+            aria-label="Close"
+            className="motion-interactive -mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {run && (
+          <p className="mt-2 border-t border-line pt-2 font-mono text-3xs text-faint">
+            {run.length === 1
+              ? 'A run of one.'
+              : `Day ${run.index} of a ${run.length}${
+                  habit.repetitionType === 'timesPerWeek' ? '-week' : ''
+                } run`}
+            {run.length > 1 && (
+              <span className="block">
+                {run.from} → {run.to}
               </span>
-            ) : date > today ? (
-              <span className="text-faint">Still to come</span>
-            ) : date < habit.createdAt.slice(0, 10) ? (
-              <span className="text-faint">Before this routine existed</span>
-            ) : !due ? (
-              <span className="text-faint">Not scheduled</span>
-            ) : date === today ? (
-              <span className="text-faint">Still open</span>
-            ) : (
-              <span className="text-faint">Missed</span>
             )}
           </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (interactive) onClose()
-          }}
-          aria-label="Close"
-          className="motion-interactive -mt-0.5 -mr-1 shrink-0 cursor-pointer rounded p-1 text-faint transition-colors hover:text-ink"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        )}
+
+        {canTime && <HabitTimer habit={habit} date={date} onLog={onLogMinutes} />}
+
+        {(notes.length > 0 || (editable && amount > 0)) && (
+          <div className="mt-2 border-t border-line pt-2">
+            <span className="label mb-1 block">Notes</span>
+            <LogNotes notes={notes} onChange={onSetNotes} editable={editable} />
+          </div>
+        )}
       </div>
-
-      {run && (
-        <p className="mt-2 border-t border-line pt-2 font-mono text-3xs text-faint">
-          {run.length === 1
-            ? 'A run of one.'
-            : `Day ${run.index} of a ${run.length}${
-                habit.repetitionType === 'timesPerWeek' ? '-week' : ''
-              } run`}
-          {run.length > 1 && (
-            <span className="block">
-              {run.from} → {run.to}
-            </span>
-          )}
-        </p>
-      )}
-
-      {canTime && <HabitTimer habit={habit} date={date} onLog={onLogMinutes} />}
-
-      {(notes.length > 0 || (editable && amount > 0)) && (
-        <div className="mt-2 border-t border-line pt-2">
-          <span className="label mb-1 block">Notes</span>
-          <LogNotes notes={notes} onChange={onSetNotes} editable={editable} />
-        </div>
-      )}
-    </div>
+    </div>,
+    document.body,
   )
 }

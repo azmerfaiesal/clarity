@@ -149,7 +149,7 @@ export function NoteComposerModal({
     <>
       <div
         data-motion-state={presence.phase}
-        className="native-modal-viewport motion-overlay fixed inset-0 z-50"
+        className="native-modal-viewport global-composer-viewport motion-overlay fixed inset-0 z-50"
         onClick={(event) => {
           if (event.target === event.currentTarget && interactive) close()
         }}
@@ -160,7 +160,7 @@ export function NoteComposerModal({
           aria-modal="true"
           aria-label="New note"
           inert={!interactive}
-          className="note-composer-modal anchored-composer-modal motion-dialog"
+          className="note-composer-modal global-composer-modal anchored-composer-modal motion-dialog"
           onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => {
             if (event.key === 'Escape' && !event.defaultPrevented) {

@@ -960,6 +960,19 @@ body {
   border-radius: var(--radius-lg);
   background: var(--raised);
 }
+.global-composer-viewport {
+  box-sizing: border-box;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+}
+.global-composer-modal {
+  width: min(100%, 32rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-lg);
+}
 .anchored-composer-modal {
   --composer-anchor-x: 0px;
   --composer-anchor-y: 0px;
@@ -1003,6 +1016,12 @@ body {
   padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
   padding-left: calc(env(safe-area-inset-left) + 0.75rem);
 }
+.native-app .global-composer-viewport {
+  padding-top: calc(env(safe-area-inset-top) + 0.75rem);
+  padding-right: calc(env(safe-area-inset-right) + 0.75rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+  padding-left: calc(env(safe-area-inset-left) + 0.75rem);
+}
 .native-app .task-composer-modal {
   max-height: calc(
     100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem
@@ -1012,6 +1031,88 @@ body {
   max-height: calc(
     100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem
   );
+}
+
+/* Routine history is compact by default. A detail rail is reserved only when
+   the card itself is wide enough for the complete month row and the panel. */
+.routine-card {
+  container-name: routine-card;
+  container-type: inline-size;
+  width: min(100%, 54rem);
+  margin-inline: auto;
+}
+.routine-history-grid {
+  min-width: 0;
+}
+.routine-day-detail-rail {
+  display: none;
+  min-height: 10rem;
+}
+@container routine-card (min-width: 48rem) {
+  .routine-history-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    align-items: start;
+    gap: 1rem;
+  }
+  .routine-day-detail-rail {
+    display: block;
+    width: 15rem;
+    min-height: 100%;
+  }
+}
+
+/* On a wide Routine card the day record springs horizontally into its
+   measured rail. Keyed content gives every newly selected box a fresh reveal
+   without restarting the surrounding presence lifecycle. */
+.routine-day-detail[data-placement='rail'] {
+  transform-origin: left center;
+  filter: blur(0);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 34px -8px var(--glow),
+    0 20px 48px -26px rgb(0 0 0 / 0.72);
+  transition:
+    opacity var(--motion-standard) ease,
+    transform 480ms var(--ease-spring),
+    scale 480ms var(--ease-spring),
+    filter var(--motion-standard) ease,
+    box-shadow var(--motion-prominent) ease;
+}
+.routine-day-detail[data-placement='rail'][data-motion-state='entering'] {
+  opacity: 0;
+  transform: translate3d(-18px, 0, 0);
+  scale: 0.94;
+  filter: blur(2px);
+  box-shadow: 0 0 20px -8px var(--glow);
+}
+.routine-day-detail[data-placement='rail'][data-motion-state='entered'] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  scale: 1;
+  filter: blur(0);
+}
+.routine-day-detail[data-placement='rail'][data-motion-state='exiting'] {
+  opacity: 0;
+  transform: translate3d(-10px, 0, 0);
+  scale: 0.98;
+  filter: blur(1px);
+  transition-duration: var(--motion-exit);
+  transition-timing-function: var(--ease-exit);
+}
+.routine-day-detail[data-placement='rail'] .routine-day-detail-content {
+  animation: routine-day-detail-content-in var(--motion-standard) var(--ease-spring) both;
+}
+
+@keyframes routine-day-detail-content-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes motion-content-enter {
@@ -1564,6 +1665,21 @@ body {
     scale: 1 !important;
     transition-property: opacity !important;
     transition-duration: var(--motion-press) !important;
+  }
+  .routine-day-detail,
+  .routine-day-detail[data-placement='rail'][data-motion-state='entering'],
+  .routine-day-detail[data-placement='rail'][data-motion-state='entered'],
+  .routine-day-detail[data-placement='rail'][data-motion-state='exiting'] {
+    transform: none !important;
+    scale: 1 !important;
+    filter: none !important;
+    box-shadow: 0 18px 40px -26px rgb(0 0 0 / 0.62) !important;
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+    transition-timing-function: ease !important;
+  }
+  .routine-day-detail-content {
+    animation: none !important;
   }
   .motion-repeat-panel,
   .motion-repeat-panel[data-open='true'] {

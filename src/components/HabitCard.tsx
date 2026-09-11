@@ -24,6 +24,7 @@ import { HabitMonthRows, HeatmapLegend } from './HabitHeatmap'
 import { loadHabitRange, saveHabitRange } from '../store/storage'
 import { nativeSelectionHaptic, nativeSuccessHaptic } from '../native/platform'
 import { usePresenceValue } from './MotionPresence'
+import type { DayDetailAnchor } from './DayDetail'
 
 type Range = 'month' | 'fourMonths' | 'twelveMonths'
 
@@ -60,7 +61,7 @@ export function HabitCard({
   onSetAmount: (amount: number, date?: string) => void
   onSaveTemplate: () => void
   onOpenSummary: () => void
-  onPickDay: (date: string, anchor: { x: number; y: number }) => void
+  onPickDay: (date: string, anchor: DayDetailAnchor) => void
   onSetNotes: (date: string, notes: string[]) => void
   /** A day just finished on this habit — its box lets off a firework. */
   burstDate?: string | null
@@ -70,6 +71,7 @@ export function HabitCard({
 }) {
   const [sliderOpen, setSliderOpen] = useState(false)
   const sliderPresence = usePresenceValue(sliderOpen ? true : null)
+  const detailRailRef = useRef<HTMLDivElement>(null)
   // Which span of history the card is showing. Per card, not global — one
   // habit is worth reading a year of while another only matters this month —
   // and remembered, so the choice survives leaving the page.
@@ -107,10 +109,27 @@ export function HabitCard({
     holdTimer.current = null
   }
 
+  const pickDay = (date: string, anchor: { x: number; y: number }) => {
+    const railBox = detailRailRef.current?.getBoundingClientRect()
+    if (railBox && railBox.width > 0 && railBox.height > 0) {
+      onPickDay(date, {
+        ...anchor,
+        rail: {
+          left: railBox.left,
+          top: railBox.top,
+          width: railBox.width,
+          height: railBox.height,
+        },
+      })
+      return
+    }
+    onPickDay(date, anchor)
+  }
+
   return (
     <article
       data-clarity-entity={`routine:${habit.id}`}
-      className={`motion-content min-w-0 max-w-full rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
+      className={`routine-card motion-content min-w-0 max-w-full rounded-xl border bg-raised px-4 py-4 transition-colors sm:px-5 ${
         justCompleted ? 'border-success' : 'border-line'
       } ${archived ? 'opacity-60' : ''}`}
       style={
@@ -361,41 +380,49 @@ export function HabitCard({
       </div>
 
       {/* History */}
-      <div className="mt-4 min-w-0 max-w-full">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <div
-            role="radiogroup"
-            aria-label="History range"
-            className="inline-flex rounded-md border border-line p-0.5"
-          >
-            {(
-              [
-                ['month', 'This month'],
-                ['fourMonths', 'Last 4 months'],
-                ['twelveMonths', 'Last 12 months'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={range === value}
-                onClick={() => pickRange(value)}
-                className={`motion-interactive cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
-                  range === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+      <div className="routine-history-layout mt-4 min-w-0 max-w-full">
+        <div className="routine-history-grid min-w-0">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div
+              role="radiogroup"
+              aria-label="History range"
+              className="inline-flex rounded-md border border-line p-0.5"
+            >
+              {(
+                [
+                  ['month', 'This month'],
+                  ['fourMonths', 'Last 4 months'],
+                  ['twelveMonths', 'Last 12 months'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={range === value}
+                  onClick={() => pickRange(value)}
+                  className={`motion-interactive cursor-pointer rounded px-1.5 py-0.5 font-mono text-3xs transition-colors ${
+                    range === value ? 'bg-accent-soft text-ink' : 'text-faint hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <HeatmapLegend habit={habit} />
           </div>
-          <HeatmapLegend habit={habit} />
+          <HabitMonthRows
+            habit={habit}
+            span={range}
+            burstDate={burstDate}
+            onPickDay={pickDay}
+          />
         </div>
-        <HabitMonthRows
-          habit={habit}
-          span={range}
-          burstDate={burstDate}
-          onPickDay={onPickDay}
+        <div
+          ref={detailRailRef}
+          data-routine-detail-rail
+          aria-hidden="true"
+          className="routine-day-detail-rail"
         />
       </div>
 

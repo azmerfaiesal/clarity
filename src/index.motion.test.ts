@@ -30,6 +30,23 @@ describe('motion CSS foundation', () => {
     expect(reducedMotion).toContain('transition-duration: var(--motion-press) !important')
   })
 
+  it('removes Routine detail-rail travel, blur, and keyed motion for reduced motion', () => {
+    const reducedMotion = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+    const detailRuleStart = reducedMotion.indexOf('.routine-day-detail,')
+    const detailRule = reducedMotion.slice(
+      detailRuleStart,
+      reducedMotion.indexOf('\n  }', detailRuleStart),
+    )
+
+    expect(detailRuleStart).toBeGreaterThan(-1)
+    expect(detailRule).toContain('transform: none !important')
+    expect(detailRule).toContain('filter: none !important')
+    expect(detailRule).toContain('transition-property: opacity !important')
+    expect(reducedMotion).toMatch(
+      /\.routine-day-detail-content[\s\S]*animation:\s*none !important;/,
+    )
+  })
+
   it('provides the full app-wide interaction and content motion inventory', () => {
     for (const name of [
       '.motion-interactive',

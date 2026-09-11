@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Habit } from '../types'
 import { HabitCard } from './HabitCard'
@@ -16,7 +16,15 @@ vi.mock('../native/platform', () => ({
 }))
 vi.mock('./HabitHeatmap', () => ({
   HabitHeatmap: () => <div />,
-  HabitMonthRows: () => <div />,
+  HabitMonthRows: ({
+    onPickDay,
+  }: {
+    onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+  }) => (
+    <button type="button" onClick={() => onPickDay?.('2026-09-11', { x: 180, y: 320 })}>
+      Pick September 11
+    </button>
+  ),
   HeatmapLegend: () => <div />,
 }))
 
@@ -98,5 +106,41 @@ describe('HabitCard history labels', () => {
     expect(screen.getByRole('radio', { name: selectedLabel }).getAttribute('aria-checked')).toBe(
       'true',
     )
+  })
+
+  it('attaches visible detail-rail bounds to a clicked day on wide cards', () => {
+    const onPickDay = vi.fn()
+    const { container } = render(
+      <HabitCard
+        habit={habit}
+        onToggle={vi.fn()}
+        onAdjust={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        justCompleted={false}
+        onSetAmount={vi.fn()}
+        onSaveTemplate={vi.fn()}
+        onOpenSummary={vi.fn()}
+        onPickDay={onPickDay}
+        onSetNotes={vi.fn()}
+      />,
+    )
+
+    const card = container.querySelector('[data-clarity-entity="routine:routine-range-labels"]')
+    const rail = container.querySelector('[data-routine-detail-rail]') as HTMLDivElement | null
+    expect(card?.classList).toContain('routine-card')
+    expect(rail).not.toBeNull()
+    vi.spyOn(rail as HTMLDivElement, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(640, 210, 240, 190),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pick September 11' }))
+
+    expect(onPickDay).toHaveBeenCalledWith('2026-09-11', {
+      x: 180,
+      y: 320,
+      rail: { left: 640, top: 210, width: 240, height: 190 },
+    })
   })
 })

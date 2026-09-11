@@ -219,7 +219,7 @@ export function HabitForm({
     <div
       data-motion-state={phase}
       className={`motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6${
-        anchorRef ? ' routine-composer-viewport' : ''
+        anchorRef ? ' routine-composer-viewport global-composer-viewport' : ''
       }`}
       onClick={close}
       role="presentation"
@@ -232,7 +232,7 @@ export function HabitForm({
         inert={!interactive}
         onClick={(e) => e.stopPropagation()}
         className={`motion-dialog max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70${
-          anchorRef ? ' routine-composer-modal' : ''
+          anchorRef ? ' routine-composer-modal global-composer-modal' : ''
         }`}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">

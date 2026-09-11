@@ -9,7 +9,7 @@ import { SUGGESTED_TEMPLATES } from '../store/habitTemplates'
 import { EMPTY_PRESETS, EmptyState } from './EmptyState'
 import { HabitCard } from './HabitCard'
 import { HabitIcon } from './HabitIcon'
-import { DayDetail } from './DayDetail'
+import { DayDetail, type DayDetailAnchor } from './DayDetail'
 import { HabitSummary } from './HabitSummary'
 import { HabitForm } from './HabitForm'
 import { nativeFeedback, nativeSelectionHaptic, nativeWarningHaptic } from '../native/platform'
@@ -53,7 +53,7 @@ export function HabitTracker({
   const [day, setDay] = useState<{
     habit: Habit
     date: string
-    anchor: { x: number; y: number }
+    anchor: DayDetailAnchor
   } | null>(null)
 
   const [formOpen, setFormOpen] = useState(false)

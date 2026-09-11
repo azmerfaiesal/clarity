@@ -52,7 +52,7 @@ export function TaskComposerModal({
 
   return (
     <div
-      className="native-modal-viewport motion-overlay fixed inset-0 z-50"
+      className="native-modal-viewport global-composer-viewport motion-overlay fixed inset-0 z-50"
       data-motion-state={presence.phase}
       data-testid="task-composer-backdrop"
       onClick={dismissBackdrop}
@@ -63,7 +63,7 @@ export function TaskComposerModal({
         aria-modal="true"
         aria-label="Add a task"
         inert={!interactive}
-        className="task-composer-modal anchored-composer-modal motion-dialog"
+        className="task-composer-modal global-composer-modal anchored-composer-modal motion-dialog"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && !event.defaultPrevented) {

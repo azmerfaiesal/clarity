@@ -55,7 +55,10 @@ describe('HabitTracker exiting form boundary', () => {
     expect(addButton.classList.contains('h-[30px]')).toBe(true)
     expect(addButton.classList.contains('w-11')).toBe(true)
     fireEvent.click(addButton)
-    expect(screen.getByRole('dialog', { name: 'New routine' })).not.toBeNull()
+    const dialog = screen.getByRole('dialog', { name: 'New routine' })
+    expect(dialog).not.toBeNull()
+    expect(dialog.parentElement?.classList).toContain('global-composer-viewport')
+    expect(dialog.classList).toContain('global-composer-modal')
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     act(() => vi.advanceTimersByTime(300))

@@ -38,6 +38,21 @@ describe('NoteComposerModal', () => {
 
   afterEach(() => vi.useRealTimers())
 
+  it('uses the shared bottom-center global composer surface', () => {
+    render(
+      <NoteComposerModal
+        open
+        anchorRef={{ current: document.createElement('button') }}
+        onCreated={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    const dialog = screen.getByRole('dialog', { name: 'New note' })
+    expect(dialog.parentElement?.classList).toContain('global-composer-viewport')
+    expect(dialog.classList).toContain('global-composer-modal')
+  })
+
   it('autosaves after five idle seconds without closing the composer', async () => {
     vi.useFakeTimers()
     const onCreated = vi.fn()

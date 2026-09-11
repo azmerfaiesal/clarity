@@ -34,6 +34,17 @@ function renderComposer(overrides: Partial<React.ComponentProps<typeof TaskCompo
 describe('TaskComposerModal', () => {
   afterEach(() => vi.useRealTimers())
 
+  it('uses the shared bottom-center global composer surface', () => {
+    renderComposer()
+
+    expect(screen.getByTestId('task-composer-backdrop').classList).toContain(
+      'global-composer-viewport',
+    )
+    expect(screen.getByRole('dialog', { name: 'Add a task' }).classList).toContain(
+      'global-composer-modal',
+    )
+  })
+
   it('submits the shared draft defaults and closes the composer', async () => {
     const onSubmit = vi.fn()
     const onClose = vi.fn()
