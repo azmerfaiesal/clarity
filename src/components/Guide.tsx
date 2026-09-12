@@ -193,9 +193,12 @@ export function Guide({
           <Feature name="The grid">
             Each card shows its history as This month, Last 4 months, or Last 12 months, and
             remembers which you last chose. The card smoothly resizes with the selected range.
-            Today's box wears a ring that breathes. Click any day to open it, log it after the
-            fact, or write a line about what you did; on a wide screen its detail panel aligns
-            beside the selected row.
+            On iPhone, the longer ranges become bordered monthly calendars with Monday-to-Sunday
+            rows and week columns; swipe sideways to move through the months. Today's box wears a
+            ring that breathes. Click any day to open it, log it after the fact, or write a line
+            about what you did; on a wide screen its detail panel aligns beside the selected row.
+            Click the routine title for a summary that opens directly from the title, without
+            moving you down the page.
           </Feature>
           <Feature name="Streaks">
             Counted in days, or in weeks for a “× per week” routine. A day that is still open never

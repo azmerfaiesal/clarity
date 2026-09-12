@@ -13,6 +13,7 @@ import {
 } from '../utils/habitUtils'
 import { useWeekStart } from '../store/theme'
 import { useMediaQuery } from '../utils/useMediaQuery'
+import { isNativeApp } from '../native/platform'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -356,6 +357,157 @@ function MonthFlow({
   )
 }
 
+const NATIVE_WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+/**
+ * One native multi-month panel. Days flow down fixed Monday-to-Sunday rows,
+ * then into the next week column, so every box keeps its calendar position.
+ */
+function NativeMonthWeekGrid({
+  habit,
+  year,
+  month,
+  today,
+  cell,
+  burstDate,
+  onPickDay,
+}: {
+  habit: Habit
+  year: number
+  month: number
+  today: string
+  cell: number
+  burstDate?: string | null
+  onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+}) {
+  const { label, slots } = useMemo(() => {
+    const first = new Date(year, month, 1)
+    const leading = (first.getDay() + 6) % 7
+    const dayCount = new Date(year, month + 1, 0).getDate()
+    const slotCount = Math.ceil((leading + dayCount) / 7) * 7
+    const values = Array.from({ length: slotCount }, (_, index) => {
+      const day = index - leading + 1
+      if (day < 1 || day > dayCount) return null
+      const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      return cellFor(habit, date, today)
+    })
+    return {
+      label: new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(first),
+      slots: values,
+    }
+  }, [habit, month, today, year])
+
+  const gap = gapFor(cell)
+  const radius = radiusFor(cell)
+
+  return (
+    <section
+      role="group"
+      aria-label={`${label} history`}
+      className="shrink-0 snap-end rounded-lg border border-line/80 bg-surface/25 p-2.5"
+    >
+      <h4 className="mb-2 font-mono text-3xs font-medium text-muted">{label}</h4>
+      <div className="flex items-start" style={{ gap: `${gap + 2}px` }}>
+        <div
+          className="grid shrink-0"
+          style={{ gridTemplateRows: `repeat(7, ${cell}px)`, gap: `${gap}px` }}
+          aria-hidden="true"
+        >
+          {NATIVE_WEEKDAYS.map((weekday) => (
+            <span
+              key={weekday}
+              className="flex items-center font-mono text-faint"
+              style={{ height: `${cell}px`, fontSize: Math.max(8, cell - 4), lineHeight: 1 }}
+            >
+              {weekday}
+            </span>
+          ))}
+        </div>
+        <div
+          data-native-month-grid
+          className="grid"
+          style={{
+            gridAutoFlow: 'column',
+            gridTemplateRows: `repeat(7, ${cell}px)`,
+            gridAutoColumns: `${cell}px`,
+            gap: `${gap}px`,
+          }}
+        >
+          {slots.map((day, index) =>
+            day ? (
+              <HeatCell
+                key={day.date}
+                habit={habit}
+                cell={day}
+                size={cell}
+                radius={radius}
+                today={today}
+                showFuture
+                bursting={day.date === burstDate}
+                onPickDay={onPickDay}
+              />
+            ) : (
+              <span
+                key={`blank-${index}`}
+                aria-hidden="true"
+                style={{ width: `${cell}px`, height: `${cell}px` }}
+              />
+            ),
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function NativeMonthScroller({
+  habit,
+  months,
+  today,
+  cell,
+  burstDate,
+  onPickDay,
+}: {
+  habit: Habit
+  months: { year: number; month: number }[]
+  today: string
+  cell: number
+  burstDate?: string | null
+  onPickDay?: (date: string, anchor: { x: number; y: number }) => void
+}) {
+  const scroller = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const element = scroller.current
+    if (element) element.scrollLeft = element.scrollWidth
+  }, [habit.id, months.length])
+
+  return (
+    <div
+      ref={scroller}
+      role="region"
+      aria-label="Routine history by month"
+      data-drawer-gesture-lock
+      className="w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain pb-1"
+    >
+      <div className="inline-flex gap-2 pr-1">
+        {months.map(({ year, month }) => (
+          <NativeMonthWeekGrid
+            key={`${year}-${month}`}
+            habit={habit}
+            year={year}
+            month={month}
+            today={today}
+            cell={cell}
+            burstDate={burstDate}
+            onPickDay={onPickDay}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /**
  * Rolling calendar-month windows, ending with the current month, as one row of
  * days each — numbered underneath.
@@ -405,6 +557,19 @@ export function HabitMonthRows({
       }
     })
   }, [habit, months, today])
+
+  if (isNativeApp && span !== 'month') {
+    return (
+      <NativeMonthScroller
+        habit={habit}
+        months={months}
+        today={today}
+        cell={cell}
+        burstDate={burstDate}
+        onPickDay={onPickDay}
+      />
+    )
+  }
 
   if (narrow) {
     return (

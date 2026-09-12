@@ -50,6 +50,7 @@ export function HabitTracker({
   const firstDay = useWeekStart()
   const [dragId, setDragId] = useState<string | null>(null)
   const [summary, setSummary] = useState<Habit | null>(null)
+  const summaryAnchorRef = useRef<HTMLElement>(null)
   const [day, setDay] = useState<{
     habit: Habit
     date: string
@@ -67,7 +68,9 @@ export function HabitTracker({
   // box can go off again if the day is undone and redone.
   const [burst, setBurst] = useState<{ habitId: string; date: string } | null>(null)
   const dayPresence = usePresenceValue(day)
-  const summaryPresence = usePresenceValue(summary)
+  const summaryPresence = usePresenceValue(summary, {
+    onExited: () => summaryAnchorRef.current?.focus(),
+  })
   const formRequest = useMemo(
     () =>
       formOpen
@@ -349,7 +352,10 @@ export function HabitTracker({
                 onAdjust={(delta, date) => handleAdjust(h, delta, date)}
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
-                onOpenSummary={() => setSummary(h)}
+                onOpenSummary={(anchor) => {
+                  summaryAnchorRef.current = anchor
+                  setSummary(h)
+                }}
                 onPickDay={(date, anchor) => setDay({ habit: h, date, anchor })}
                 onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
@@ -381,7 +387,10 @@ export function HabitTracker({
                 onAdjust={(delta, date) => handleAdjust(h, delta, date)}
                 onSetAmount={(amount, date) => handleSetAmount(h, amount, date)}
                 onSaveTemplate={() => saveAsTemplate(h)}
-                onOpenSummary={() => setSummary(h)}
+                onOpenSummary={(anchor) => {
+                  summaryAnchorRef.current = anchor
+                  setSummary(h)
+                }}
                 onPickDay={(date, anchor) => setDay({ habit: h, date, anchor })}
                 onSetNotes={(date, notes) => setLogNotes(h.id, date, notes)}
                 onEdit={() => {
@@ -421,6 +430,7 @@ export function HabitTracker({
       {summaryPresence && (
         <HabitSummary
           habit={habits.find((h) => h.id === summaryPresence.value.id) ?? summaryPresence.value}
+          anchorRef={summaryAnchorRef}
           onClose={() => setSummary(null)}
           phase={summaryPresence.phase}
         />

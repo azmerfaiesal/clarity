@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import type { Habit } from '../types'
 import { addDays, formatDateTime, todayStr } from '../utils/dateUtils'
 import {
@@ -14,6 +15,7 @@ import {
 import { useWeekStart } from '../store/theme'
 import { HabitIcon } from './HabitIcon'
 import type { MotionPhase } from '../utils/motion'
+import { useComposerAnchor } from './useComposerAnchor'
 
 /**
  * The habit's record at a glance: the numbers, the last fortnight day by day,
@@ -22,10 +24,12 @@ import type { MotionPhase } from '../utils/motion'
  */
 export function HabitSummary({
   habit,
+  anchorRef,
   onClose,
   phase,
 }: {
   habit: Habit
+  anchorRef: RefObject<HTMLElement | null>
   onClose: () => void
   phase: MotionPhase
 }) {
@@ -34,6 +38,8 @@ export function HabitSummary({
   const s = habitStats(habit, today, firstDay)
   const counted = habit.trackBy !== 'checkoff'
   const interactive = phase !== 'exiting'
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useComposerAnchor(anchorRef, dialogRef)
   const close = () => {
     if (interactive) onClose()
   }
@@ -69,20 +75,21 @@ export function HabitSummary({
     return Array.from({ length: 7 }, (_, i) => addDays(from, i))
   }, [today, firstDay])
 
-  return (
+  return createPortal(
     <div
       data-motion-state={phase}
-      className="motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
+      className="routine-summary-viewport native-modal-viewport motion-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] backdrop-blur-[3px] sm:items-center sm:p-6"
       onClick={close}
       role="presentation"
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`${habit.name} summary`}
         inert={!interactive}
         onClick={(e) => e.stopPropagation()}
-        className="motion-dialog max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
+        className="routine-summary-modal motion-dialog max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-xl border border-line bg-raised shadow-2xl shadow-black/20 sm:rounded-xl dark:shadow-black/70"
       >
         <div className="flex items-start gap-3 border-b border-line px-5 py-4">
           <span
@@ -220,6 +227,7 @@ export function HabitSummary({
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

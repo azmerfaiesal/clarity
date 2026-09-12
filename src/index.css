@@ -918,6 +918,60 @@ body {
     var(--ease-exit), var(--ease-exit), var(--ease-exit), var(--ease-exit),
     var(--ease-exit);
 }
+
+/* A Routine summary grows directly from its title. This is intentionally
+   quicker than a composer: it is a read-only peek, not a new workspace. */
+.routine-summary-viewport {
+  transition:
+    opacity 180ms ease,
+    backdrop-filter 260ms ease;
+}
+.routine-summary-modal {
+  --composer-anchor-x: 0px;
+  --composer-anchor-y: 0px;
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center;
+  scale: 1;
+  filter: blur(0);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 44px -7px var(--glow),
+    0 24px 64px -28px rgb(0 0 0 / 0.78);
+  transition:
+    opacity 180ms ease,
+    transform 340ms var(--ease-spring),
+    filter 180ms ease,
+    box-shadow 340ms ease;
+}
+.routine-summary-viewport[data-motion-state='entering'],
+.routine-summary-viewport[data-motion-state='exiting'] {
+  backdrop-filter: blur(0);
+}
+.routine-summary-viewport[data-motion-state='entering'] .routine-summary-modal {
+  opacity: 0;
+  transform: translate3d(var(--composer-anchor-x), var(--composer-anchor-y), 0) scale(0.18);
+  scale: 1;
+  filter: blur(2px);
+  box-shadow: 0 0 24px -6px var(--glow);
+  will-change: transform, opacity, filter;
+}
+.routine-summary-viewport[data-motion-state='entered'] .routine-summary-modal {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  scale: 1;
+  filter: blur(0);
+  will-change: auto;
+}
+.routine-summary-viewport[data-motion-state='exiting'] .routine-summary-modal {
+  opacity: 0;
+  transform: translate3d(var(--composer-anchor-x), var(--composer-anchor-y), 0) scale(0.24);
+  scale: 1;
+  filter: blur(1.5px);
+  box-shadow: 0 0 18px -6px var(--glow);
+  transition-duration: 180ms;
+  transition-timing-function: var(--ease-exit);
+  will-change: transform, opacity, filter;
+}
 .motion-overlay[data-motion-state='entering'] .native-settings-panel {
   transform: translateX(-100%);
   scale: 1;
@@ -1702,6 +1756,20 @@ body {
   .routine-day-detail-content,
   .routine-history-range-content {
     animation: none !important;
+  }
+  .routine-summary-viewport {
+    backdrop-filter: none !important;
+  }
+  .routine-summary-modal,
+  .routine-summary-viewport[data-motion-state='entering'] .routine-summary-modal,
+  .routine-summary-viewport[data-motion-state='entered'] .routine-summary-modal,
+  .routine-summary-viewport[data-motion-state='exiting'] .routine-summary-modal {
+    transform: translate3d(0, 0, 0) scale(1) !important;
+    scale: 1 !important;
+    filter: none !important;
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+    transition-timing-function: ease !important;
   }
   .motion-repeat-panel,
   .motion-repeat-panel[data-open='true'] {

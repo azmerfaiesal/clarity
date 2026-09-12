@@ -85,6 +85,31 @@ describe('HabitCard history labels', () => {
     expect(screen.queryByRole('radio', { name: 'Last 365 days' })).toBeNull()
   })
 
+  it('passes the clicked title element to the summary opener', () => {
+    const onOpenSummary = vi.fn()
+    render(
+      <HabitCard
+        habit={habit}
+        onToggle={vi.fn()}
+        onAdjust={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+        justCompleted={false}
+        onSetAmount={vi.fn()}
+        onSaveTemplate={vi.fn()}
+        onOpenSummary={onOpenSummary}
+        onPickDay={vi.fn()}
+        onSetNotes={vi.fn()}
+      />,
+    )
+
+    const title = screen.getByRole('button', { name: 'Open Read summary' })
+    fireEvent.click(title)
+
+    expect(onOpenSummary).toHaveBeenCalledWith(title)
+  })
+
   it.each([
     ['quarter', 'Last 4 months'],
     ['year', 'Last 12 months'],

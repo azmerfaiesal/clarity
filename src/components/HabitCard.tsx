@@ -61,7 +61,7 @@ export function HabitCard({
   justCompleted: boolean
   onSetAmount: (amount: number, date?: string) => void
   onSaveTemplate: () => void
-  onOpenSummary: () => void
+  onOpenSummary: (anchor: HTMLElement) => void
   onPickDay: (date: string, anchor: DayDetailAnchor) => void
   onSetNotes: (date: string, notes: string[]) => void
   /** A day just finished on this habit — its box lets off a firework. */
@@ -304,7 +304,7 @@ export function HabitCard({
         {/* Title + meta. Clicking opens the read-only record. */}
         <button
           type="button"
-          onClick={onOpenSummary}
+          onClick={(event) => onOpenSummary(event.currentTarget)}
           aria-label={`Open ${habit.name} summary`}
           className="motion-interactive min-w-0 flex-1 cursor-pointer text-left"
         >
